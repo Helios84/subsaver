@@ -1,18 +1,40 @@
-# OS
-.DS_Store
-Thumbs.db
-
-# Node
-node_modules/
-.next/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# ENV & SECRETS
+.env
+.env.*
 
 # Python
 __pycache__/
 *.pyc
+*.pyo
 .venv/
+venv/
+env/
 
-# Env
-.env
+# Node / Frontend
+node_modules/
+.next/
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Databases / Local data
+*.sqlite
+*.db
+data/
