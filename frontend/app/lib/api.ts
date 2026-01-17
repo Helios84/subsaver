@@ -1,32 +1,39 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+"use client";
 
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("subsaver_token");
-}
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000";
 
-export async function apiFetch(path: string, options: RequestInit = {}) {
-  const token = getToken();
+type ApiFetchOptions = RequestInit & { skipAuth?: boolean };
 
-  const headers = new Headers(options.headers);
-  if (!headers.has("Content-Type") && options.body) {
+export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
+  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+
+  const headers = new Headers(opts.headers || {});
+  if (!headers.has("Content-Type") && opts.body) {
     headers.set("Content-Type", "application/json");
   }
-  if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
-
-  let data: any = null;
-  try {
-    data = await res.json();
-  } catch {
-    data = null;
+  if (!opts.skipAuth) {
+    const token = localStorage.getItem("subsaver_token");
+    if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
+  const res = await fetch(url, {
+    ...opts,
+    headers,
+  });
+
+  // Auto logout on 401
+  if (res.status === 401) {
+    localStorage.removeItem("subsaver_token");
+    if (typeof window !== "undefined") window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
+
+  const data = await res.json().catch(() => ({}));
+
   if (!res.ok) {
-    const message = data?.detail ?? `Request failed (${res.status})`;
-    throw new Error(message);
+    const msg = data?.detail || data?.message || `Request failed (${res.status})`;
+    throw new Error(msg);
   }
 
   return data;

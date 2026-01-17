@@ -120,23 +120,40 @@ export default function DashboardPage() {
   async function saveEdit(subId: number) {
     setMsg("");
     try {
-      const payload: any = {
-        name: editName.trim(),
-        price_cents: Math.max(0, Math.round(editPriceCents)),
-        billing_cycle: editCycle,
-        status: editStatus,
-      };
-
       const updated = await apiFetch(`/subscriptions/${subId}`, {
         method: "PATCH",
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          name: editName.trim(),
+          price_cents: Math.max(0, Math.round(editPriceCents)),
+          billing_cycle: editCycle,
+          status: editStatus,
+        }),
       });
 
-      // Update locally without full reload
       setSubs((prev) => prev.map((s) => (s.id === subId ? updated : s)));
       setEditingId(null);
     } catch (err: any) {
       setMsg(err?.message ?? "Update failed");
+    }
+  }
+
+  async function toggleStatus(s: Sub) {
+    setMsg("");
+    const next: Status = s.status === "active" ? "cancelled" : "active";
+
+    // optimistic UI
+    setSubs((prev) => prev.map((x) => (x.id === s.id ? { ...x, status: next } : x)));
+
+    try {
+      const updated = await apiFetch(`/subscriptions/${s.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: next }),
+      });
+      setSubs((prev) => prev.map((x) => (x.id === s.id ? updated : x)));
+    } catch (err: any) {
+      // rollback
+      setSubs((prev) => prev.map((x) => (x.id === s.id ? s : x)));
+      setMsg(err?.message ?? "Toggle failed");
     }
   }
 
@@ -156,14 +173,12 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-black text-white">
-      {/* Top bar */}
       <header className="sticky top-0 z-10 border-b border-white/10 bg-black/70 backdrop-blur">
         <div className="mx-auto max-w-5xl px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold tracking-tight">SubSaver</h1>
             <p className="text-sm text-white/60">
-              Active monthly spend:{" "}
-              <span className="text-white">{totalMonthly}</span>
+              Active monthly spend: <span className="text-white">{totalMonthly}</span>
             </p>
           </div>
 
@@ -171,10 +186,7 @@ export default function DashboardPage() {
             <Link className="text-sm text-white/70 hover:text-white" href="/">
               Home
             </Link>
-            <button
-              onClick={logout}
-              className="text-sm text-white/70 hover:text-white"
-            >
+            <button onClick={logout} className="text-sm text-white/70 hover:text-white">
               Logout
             </button>
           </div>
@@ -186,13 +198,8 @@ export default function DashboardPage() {
           {/* Create */}
           <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-white/90">
-                Add subscription
-              </h2>
-              <button
-                onClick={load}
-                className="text-xs text-white/60 hover:text-white"
-              >
+              <h2 className="text-sm font-semibold text-white/90">Add subscription</h2>
+              <button onClick={load} className="text-xs text-white/60 hover:text-white">
                 Refresh
               </button>
             </div>
@@ -210,9 +217,7 @@ export default function DashboardPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-white/60 mb-1">
-                  Price (cents)
-                </label>
+                <label className="block text-xs text-white/60 mb-1">Price (cents)</label>
                 <input
                   value={priceCents}
                   onChange={(e) => setPriceCents(Number(e.target.value))}
@@ -220,15 +225,11 @@ export default function DashboardPage() {
                   min={0}
                   className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/25"
                 />
-                <p className="mt-1 text-[11px] text-white/45">
-                  Example: $15.99 = 1599
-                </p>
+                <p className="mt-1 text-[11px] text-white/45">Example: $15.99 = 1599</p>
               </div>
 
               <div>
-                <label className="block text-xs text-white/60 mb-1">
-                  Billing cycle
-                </label>
+                <label className="block text-xs text-white/60 mb-1">Billing cycle</label>
                 <select
                   value={cycle}
                   onChange={(e) => setCycle(e.target.value as BillingCycle)}
@@ -250,12 +251,8 @@ export default function DashboardPage() {
           {/* List */}
           <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-white/90">
-                Your subscriptions
-              </h2>
-              <span className="text-xs text-white/50">
-                {subs.length} total
-              </span>
+              <h2 className="text-sm font-semibold text-white/90">Your subscriptions</h2>
+              <span className="text-xs text-white/50">{subs.length} total</span>
             </div>
 
             {loading ? (
@@ -263,9 +260,7 @@ export default function DashboardPage() {
             ) : subs.length === 0 ? (
               <div className="rounded-xl border border-white/10 bg-black/20 p-4">
                 <p className="text-sm text-white/70">No subscriptions yet.</p>
-                <p className="text-xs text-white/45 mt-1">
-                  Add your first one on the left.
-                </p>
+                <p className="text-xs text-white/45 mt-1">Add your first one on the left.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -273,10 +268,7 @@ export default function DashboardPage() {
                   const isEditing = editingId === s.id;
 
                   return (
-                    <div
-                      key={s.id}
-                      className="rounded-2xl border border-white/10 bg-black/20 p-4"
-                    >
+                    <div key={s.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
                           {!isEditing ? (
@@ -284,18 +276,14 @@ export default function DashboardPage() {
                               <p className="font-medium truncate">{s.name}</p>
                               <p className="text-xs text-white/55 mt-1">
                                 {s.billing_cycle} • {s.status} •{" "}
-                                <span className="text-white/70">
-                                  {formatMoney(s.price_cents)}
-                                </span>
+                                <span className="text-white/70">{formatMoney(s.price_cents)}</span>
                               </p>
                             </>
                           ) : (
                             <div className="space-y-2">
                               <div className="grid gap-2 sm:grid-cols-2">
                                 <div>
-                                  <label className="block text-[11px] text-white/55 mb-1">
-                                    Name
-                                  </label>
+                                  <label className="block text-[11px] text-white/55 mb-1">Name</label>
                                   <input
                                     value={editName}
                                     onChange={(e) => setEditName(e.target.value)}
@@ -304,16 +292,12 @@ export default function DashboardPage() {
                                 </div>
 
                                 <div>
-                                  <label className="block text-[11px] text-white/55 mb-1">
-                                    Price (cents)
-                                  </label>
+                                  <label className="block text-[11px] text-white/55 mb-1">Price (cents)</label>
                                   <input
                                     type="number"
                                     min={0}
                                     value={editPriceCents}
-                                    onChange={(e) =>
-                                      setEditPriceCents(Number(e.target.value))
-                                    }
+                                    onChange={(e) => setEditPriceCents(Number(e.target.value))}
                                     className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/25"
                                   />
                                 </div>
@@ -321,14 +305,10 @@ export default function DashboardPage() {
 
                               <div className="grid gap-2 sm:grid-cols-2">
                                 <div>
-                                  <label className="block text-[11px] text-white/55 mb-1">
-                                    Billing cycle
-                                  </label>
+                                  <label className="block text-[11px] text-white/55 mb-1">Billing cycle</label>
                                   <select
                                     value={editCycle}
-                                    onChange={(e) =>
-                                      setEditCycle(e.target.value as BillingCycle)
-                                    }
+                                    onChange={(e) => setEditCycle(e.target.value as BillingCycle)}
                                     className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/25"
                                   >
                                     <option value="monthly">monthly</option>
@@ -337,14 +317,10 @@ export default function DashboardPage() {
                                 </div>
 
                                 <div>
-                                  <label className="block text-[11px] text-white/55 mb-1">
-                                    Status
-                                  </label>
+                                  <label className="block text-[11px] text-white/55 mb-1">Status</label>
                                   <select
                                     value={editStatus}
-                                    onChange={(e) =>
-                                      setEditStatus(e.target.value as Status)
-                                    }
+                                    onChange={(e) => setEditStatus(e.target.value as Status)}
                                     className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/25"
                                   >
                                     <option value="active">active</option>
@@ -360,11 +336,20 @@ export default function DashboardPage() {
                           {!isEditing ? (
                             <>
                               <button
+                                onClick={() => toggleStatus(s)}
+                                className="rounded-xl bg-white px-3 py-2 text-xs font-medium text-black hover:bg-white/90"
+                                title="Toggle active/cancelled"
+                              >
+                                {s.status === "active" ? "Cancel" : "Activate"}
+                              </button>
+
+                              <button
                                 onClick={() => startEdit(s)}
                                 className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/80 hover:bg-white/10"
                               >
                                 Edit
                               </button>
+
                               <button
                                 onClick={() => deleteSub(s.id)}
                                 className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/80 hover:bg-white/10"
@@ -397,9 +382,7 @@ export default function DashboardPage() {
             )}
 
             {msg && (
-              <p className="text-xs text-white/70 mt-4 border-t border-white/10 pt-4">
-                {msg}
-              </p>
+              <p className="text-xs text-white/70 mt-4 border-t border-white/10 pt-4">{msg}</p>
             )}
           </section>
         </div>
