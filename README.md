@@ -1,2 +1,2 @@
 # subsaver
-My first big personal project. It also serves as a SENIOR PROJECT IN UNI
+The application will not start if JWT_SECRET is not set. This is intentional for security reasons.
