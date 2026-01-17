@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { apiFetch } from "../lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,23 +16,16 @@ export default function LoginPage() {
     setMsg("");
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/auth/login", {
+      const data = await apiFetch("/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        setMsg(data?.detail ?? "Login failed");
-        return;
-      }
-
-      localStorage.setItem("subsaver_token", data.token);
+      // ВАЖНО: backend возвращает access_token
+      localStorage.setItem("subsaver_token", data.access_token);
       router.push("/dashboard");
-    } catch {
-      setMsg("Network error");
+    } catch (err: any) {
+      setMsg(err?.message ?? "Network error");
     }
   }
 
@@ -43,7 +37,6 @@ export default function LoginPage() {
           Access your SubSaver dashboard.
         </p>
 
-        {/* IMPORTANT: only ONE form */}
         <form className="space-y-4" onSubmit={onSubmit}>
           <div>
             <label className="block text-sm mb-1">Email</label>
