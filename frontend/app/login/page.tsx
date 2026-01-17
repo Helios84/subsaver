@@ -21,7 +21,6 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      // ВАЖНО: backend возвращает access_token
       localStorage.setItem("subsaver_token", data.access_token);
       router.push("/dashboard");
     } catch (err: any) {
@@ -30,33 +29,39 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6">
-        <h1 className="text-2xl font-semibold mb-1">Log in</h1>
-        <p className="text-sm text-white/60 mb-6">
-          Access your SubSaver dashboard.
-        </p>
+    <main className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Log in</h1>
+          <p className="text-gray-600">
+            Access your SubSaver dashboard
+          </p>
+        </div>
 
-        <form className="space-y-4" onSubmit={onSubmit}>
+        <form className="space-y-5" onSubmit={onSubmit}>
           <div>
-            <label className="block text-sm mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email
+            </label>
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               type="email"
-              className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 outline-none"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition"
               placeholder="you@example.com"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm mb-1">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Password
+            </label>
             <input
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               type="password"
-              className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 outline-none"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition"
               placeholder="••••••••"
               required
             />
@@ -64,17 +69,21 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full rounded-xl bg-white text-black font-medium py-2"
+            className="w-full bg-red-600 text-white font-semibold py-3 rounded-lg hover:bg-red-700 transition shadow-sm"
           >
             Log in
           </button>
         </form>
 
-        {msg && <p className="text-sm text-white/70 mt-4">{msg}</p>}
+        {msg && (
+          <p className="text-sm text-red-600 mt-4 bg-red-50 p-3 rounded-lg">
+            {msg}
+          </p>
+        )}
 
-        <p className="text-sm text-white/60 mt-4">
+        <p className="text-sm text-gray-600 mt-6 text-center">
           Don&apos;t have an account?{" "}
-          <Link className="underline" href="/register">
+          <Link className="text-red-600 font-medium hover:text-red-700 underline" href="/register">
             Create one
           </Link>
         </p>

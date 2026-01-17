@@ -172,95 +172,97 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-black/70 backdrop-blur">
-        <div className="mx-auto max-w-5xl px-6 py-4 flex items-center justify-between">
+    <main className="min-h-screen bg-gray-50">
+      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white shadow-sm">
+        <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">SubSaver</h1>
-            <p className="text-sm text-white/60">
-              Active monthly spend: <span className="text-white">{totalMonthly}</span>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Sub<span className="text-red-600">Saver</span>
+            </h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Active monthly spend: <span className="font-semibold text-red-600">{totalMonthly}</span>
             </p>
           </div>
 
           <div className="flex items-center gap-4">
-            <Link className="text-sm text-white/70 hover:text-white" href="/">
+            <Link className="text-sm text-gray-600 hover:text-gray-900 font-medium" href="/">
               Home
             </Link>
-            <button onClick={logout} className="text-sm text-white/70 hover:text-white">
+            <button onClick={logout} className="text-sm text-gray-600 hover:text-gray-900 font-medium">
               Logout
             </button>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-6 py-8">
-        <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+      <div className="mx-auto max-w-6xl px-6 py-8">
+        <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
           {/* Create */}
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-white/90">Add subscription</h2>
-              <button onClick={load} className="text-xs text-white/60 hover:text-white">
+          <section className="bg-white rounded-2xl border border-gray-200 p-6 h-fit shadow-sm">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-gray-900">Add subscription</h2>
+              <button onClick={load} className="text-xs text-gray-500 hover:text-gray-700 font-medium">
                 Refresh
               </button>
             </div>
 
-            <form className="space-y-3" onSubmit={createSub}>
+            <form className="space-y-4" onSubmit={createSub}>
               <div>
-                <label className="block text-xs text-white/60 mb-1">Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/25"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition text-sm"
                   placeholder="Netflix"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-white/60 mb-1">Price (cents)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price (cents)</label>
                 <input
                   value={priceCents}
                   onChange={(e) => setPriceCents(Number(e.target.value))}
                   type="number"
                   min={0}
-                  className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/25"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition text-sm"
                 />
-                <p className="mt-1 text-[11px] text-white/45">Example: $15.99 = 1599</p>
+                <p className="mt-1.5 text-xs text-gray-500">Example: $15.99 = 1599</p>
               </div>
 
               <div>
-                <label className="block text-xs text-white/60 mb-1">Billing cycle</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Billing cycle</label>
                 <select
                   value={cycle}
                   onChange={(e) => setCycle(e.target.value as BillingCycle)}
-                  className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/25"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition text-sm"
                 >
                   <option value="monthly">monthly</option>
                   <option value="yearly">yearly</option>
                 </select>
               </div>
 
-              <button className="w-full rounded-xl bg-white text-black text-sm font-medium py-2 hover:bg-white/90">
+              <button className="w-full bg-red-600 text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-red-700 transition shadow-sm">
                 Create
               </button>
 
-              {msg && <p className="text-xs text-white/70 pt-2">{msg}</p>}
+              {msg && <p className="text-xs text-red-600 pt-2 bg-red-50 p-3 rounded-lg">{msg}</p>}
             </form>
           </section>
 
           {/* List */}
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-white/90">Your subscriptions</h2>
-              <span className="text-xs text-white/50">{subs.length} total</span>
+          <section className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-gray-900">Your subscriptions</h2>
+              <span className="text-xs text-gray-500 font-medium">{subs.length} total</span>
             </div>
 
             {loading ? (
-              <p className="text-sm text-white/60">Loading…</p>
+              <p className="text-sm text-gray-600">Loading…</p>
             ) : subs.length === 0 ? (
-              <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-                <p className="text-sm text-white/70">No subscriptions yet.</p>
-                <p className="text-xs text-white/45 mt-1">Add your first one on the left.</p>
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 text-center">
+                <p className="text-sm text-gray-700 font-medium">No subscriptions yet</p>
+                <p className="text-xs text-gray-500 mt-1">Add your first one on the left</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -268,48 +270,53 @@ export default function DashboardPage() {
                   const isEditing = editingId === s.id;
 
                   return (
-                    <div key={s.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <div key={s.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4 hover:border-gray-300 transition">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
                           {!isEditing ? (
                             <>
-                              <p className="font-medium truncate">{s.name}</p>
-                              <p className="text-xs text-white/55 mt-1">
-                                {s.billing_cycle} • {s.status} •{" "}
-                                <span className="text-white/70">{formatMoney(s.price_cents)}</span>
+                              <p className="font-semibold text-gray-900 truncate">{s.name}</p>
+                              <p className="text-xs text-gray-600 mt-1.5 flex items-center gap-2">
+                                <span className="capitalize">{s.billing_cycle}</span>
+                                <span>•</span>
+                                <span className={s.status === "active" ? "text-red-600 font-medium" : "text-gray-500"}>
+                                  {s.status}
+                                </span>
+                                <span>•</span>
+                                <span className="font-semibold text-gray-900">{formatMoney(s.price_cents)}</span>
                               </p>
                             </>
                           ) : (
-                            <div className="space-y-2">
-                              <div className="grid gap-2 sm:grid-cols-2">
+                            <div className="space-y-3">
+                              <div className="grid gap-3 sm:grid-cols-2">
                                 <div>
-                                  <label className="block text-[11px] text-white/55 mb-1">Name</label>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
                                   <input
                                     value={editName}
                                     onChange={(e) => setEditName(e.target.value)}
-                                    className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/25"
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition text-sm"
                                   />
                                 </div>
 
                                 <div>
-                                  <label className="block text-[11px] text-white/55 mb-1">Price (cents)</label>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Price (cents)</label>
                                   <input
                                     type="number"
                                     min={0}
                                     value={editPriceCents}
                                     onChange={(e) => setEditPriceCents(Number(e.target.value))}
-                                    className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/25"
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition text-sm"
                                   />
                                 </div>
                               </div>
 
-                              <div className="grid gap-2 sm:grid-cols-2">
+                              <div className="grid gap-3 sm:grid-cols-2">
                                 <div>
-                                  <label className="block text-[11px] text-white/55 mb-1">Billing cycle</label>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Billing cycle</label>
                                   <select
                                     value={editCycle}
                                     onChange={(e) => setEditCycle(e.target.value as BillingCycle)}
-                                    className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/25"
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition text-sm"
                                   >
                                     <option value="monthly">monthly</option>
                                     <option value="yearly">yearly</option>
@@ -317,11 +324,11 @@ export default function DashboardPage() {
                                 </div>
 
                                 <div>
-                                  <label className="block text-[11px] text-white/55 mb-1">Status</label>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
                                   <select
                                     value={editStatus}
                                     onChange={(e) => setEditStatus(e.target.value as Status)}
-                                    className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none focus:border-white/25"
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition text-sm"
                                   >
                                     <option value="active">active</option>
                                     <option value="cancelled">cancelled</option>
@@ -337,7 +344,10 @@ export default function DashboardPage() {
                             <>
                               <button
                                 onClick={() => toggleStatus(s)}
-                                className="rounded-xl bg-white px-3 py-2 text-xs font-medium text-black hover:bg-white/90"
+                                className={`px-3 py-2 text-xs font-semibold rounded-lg transition ${s.status === "active"
+                                    ? "bg-red-600 text-white hover:bg-red-700"
+                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                  }`}
                                 title="Toggle active/cancelled"
                               >
                                 {s.status === "active" ? "Cancel" : "Activate"}
@@ -345,14 +355,14 @@ export default function DashboardPage() {
 
                               <button
                                 onClick={() => startEdit(s)}
-                                className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/80 hover:bg-white/10"
+                                className="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
                               >
                                 Edit
                               </button>
 
                               <button
                                 onClick={() => deleteSub(s.id)}
-                                className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/80 hover:bg-white/10"
+                                className="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
                               >
                                 Delete
                               </button>
@@ -361,13 +371,13 @@ export default function DashboardPage() {
                             <>
                               <button
                                 onClick={() => saveEdit(s.id)}
-                                className="rounded-xl bg-white px-3 py-2 text-xs font-medium text-black hover:bg-white/90"
+                                className="px-3 py-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
                               >
                                 Save
                               </button>
                               <button
                                 onClick={cancelEdit}
-                                className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/80 hover:bg-white/10"
+                                className="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
                               >
                                 Cancel
                               </button>
@@ -382,7 +392,7 @@ export default function DashboardPage() {
             )}
 
             {msg && (
-              <p className="text-xs text-white/70 mt-4 border-t border-white/10 pt-4">{msg}</p>
+              <p className="text-xs text-red-600 mt-4 border-t border-gray-200 pt-4 bg-red-50 p-3 rounded-lg">{msg}</p>
             )}
           </section>
         </div>
