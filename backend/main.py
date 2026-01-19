@@ -8,10 +8,13 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import sessionmaker, declarative_base, Session, relationship
 
 from dotenv import load_dotenv
+
+# Import dependencies
+from dependencies import get_db, get_current_email, get_current_user
 
 # --- Load .env ---
 load_dotenv()  # ищет .env в текущей папке (backend/)
@@ -41,6 +44,10 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Reminder settings
+    reminder_enabled = Column(Boolean, default=True)
+    reminder_days_before = Column(Integer, default=7)  # 3, 7, or 14 days
 
     subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
 
@@ -55,6 +62,11 @@ class Subscription(Base):
     billing_cycle = Column(String, default="monthly")  # monthly|yearly
     status = Column(String, default="active")          # active|cancelled
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Reminder tracking
+    next_billing_date = Column(DateTime, nullable=True)  # When subscription renews
+    reminder_sent = Column(Boolean, default=False)
+    last_reminder_date = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="subscriptions")
 
@@ -62,19 +74,8 @@ class Subscription(Base):
 Base.metadata.create_all(bind=engine)
 
 
-def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 # --- Auth helpers ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# ВАЖНО: tokenUrl должен совпадать с эндпоинтом, который принимает form-data
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
 def hash_password(pw: str) -> str:
@@ -89,24 +90,6 @@ def create_access_token(email: str) -> str:
     exp = datetime.utcnow() + timedelta(minutes=JWT_EXPIRES_MIN)
     payload = {"sub": email, "exp": exp}
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
-
-
-def get_current_email(token: str = Depends(oauth2_scheme)) -> str:
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
-        email = payload.get("sub")
-        if not email:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        return email
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-
-def get_current_user(db: Session = Depends(get_db), email: str = Depends(get_current_email)) -> User:
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
 
 
 # --- API models ---
@@ -130,6 +113,7 @@ class SubscriptionCreate(BaseModel):
     price_cents: int
     billing_cycle: str = "monthly"
     status: str = "active"
+    next_billing_date: Optional[datetime] = None
 
 
 class SubscriptionUpdate(BaseModel):
@@ -137,6 +121,7 @@ class SubscriptionUpdate(BaseModel):
     price_cents: Optional[int] = None
     billing_cycle: Optional[str] = None
     status: Optional[str] = None
+    next_billing_date: Optional[datetime] = None
 
 
 class SubscriptionOut(BaseModel):
@@ -146,6 +131,8 @@ class SubscriptionOut(BaseModel):
     billing_cycle: str
     status: str
     created_at: datetime
+    next_billing_date: Optional[datetime] = None
+    reminder_sent: bool = False
 
     class Config:
         from_attributes = True
@@ -160,6 +147,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include reminder router
+from routers.reminders import router as reminder_router
+app.include_router(reminder_router)
+
+# Initialize scheduler on startup
+from services.scheduler import reminder_scheduler
+
+@app.on_event("startup")
+def startup_event():
+    """Initialize services on app startup."""
+    reminder_scheduler.set_db_session_maker(SessionLocal)
+    reminder_scheduler.start()
+    print("✅ Reminder scheduler initialized")
+
+@app.on_event("shutdown")
+def shutdown_event():
+    """Cleanup on app shutdown."""
+    reminder_scheduler.stop()
+    print("✅ Reminder scheduler stopped")
 
 
 @app.get("/health")
@@ -230,12 +237,22 @@ def create_subscription(payload: SubscriptionCreate, current_user: User = Depend
     if payload.status not in ("active", "cancelled"):
         raise HTTPException(status_code=400, detail="status must be 'active' or 'cancelled'")
 
+    # Auto-calculate next_billing_date if not provided
+    from services.reminder_service import reminder_service
+    next_billing_date = payload.next_billing_date
+    if not next_billing_date and payload.status == "active":
+        next_billing_date = reminder_service.calculate_next_billing_date(
+            datetime.utcnow(),
+            payload.billing_cycle
+        )
+
     sub = Subscription(
         user_id=current_user.id,
         name=payload.name,
         price_cents=payload.price_cents,
         billing_cycle=payload.billing_cycle,
         status=payload.status,
+        next_billing_date=next_billing_date,
     )
     db.add(sub)
     db.commit()
