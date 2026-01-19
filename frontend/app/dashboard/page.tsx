@@ -40,6 +40,7 @@ type Sub = {
   billing_cycle: BillingCycle;
   status: Status;
   created_at: string;
+  next_billing_date?: string;
 };
 
 const COLORS = ["#DC2626", "#F87171", "#FDA4AF", "#E5E7EB"];
@@ -59,12 +60,14 @@ export default function DashboardPage() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState<string>("9.99");
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
+  const [billingDate, setBillingDate] = useState<string>("");
 
   // Edit state
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState<string>("0");
   const [editCycle, setEditCycle] = useState<BillingCycle>("monthly");
+  const [editBillingDate, setEditBillingDate] = useState<string>("");
 
   const [editStatus, setEditStatus] = useState<Status>("active");
 
@@ -139,18 +142,25 @@ export default function DashboardPage() {
     e.preventDefault();
     setMsg("");
     try {
+      const body: any = {
+        name: name.trim(),
+        price_cents: Math.max(0, Math.round(Number(price) * 100)),
+        billing_cycle: cycle,
+        status: "active",
+      };
+
+      if (billingDate) {
+        body.next_billing_date = new Date(billingDate).toISOString();
+      }
+
       await apiFetch("/subscriptions", {
         method: "POST",
-        body: JSON.stringify({
-          name: name.trim(),
-          price_cents: Math.max(0, Math.round(Number(price) * 100)),
-          billing_cycle: cycle,
-          status: "active",
-        }),
+        body: JSON.stringify(body),
       });
       setName("");
       setPrice("9.99");
       setCycle("monthly");
+      setBillingDate("");
       await load();
     } catch (err: any) {
       setMsg(err?.message ?? "Create failed");
@@ -163,6 +173,7 @@ export default function DashboardPage() {
     setEditPrice((s.price_cents / 100).toFixed(2));
     setEditCycle(s.billing_cycle);
     setEditStatus(s.status);
+    setEditBillingDate(s.next_billing_date ? s.next_billing_date.split('T')[0] : "");
     setMsg("");
   }
 
@@ -174,14 +185,20 @@ export default function DashboardPage() {
   async function saveEdit(subId: number) {
     setMsg("");
     try {
+      const body: any = {
+        name: editName.trim(),
+        price_cents: Math.max(0, Math.round(Number(editPrice) * 100)),
+        billing_cycle: editCycle,
+        status: editStatus,
+      };
+
+      if (editBillingDate) {
+        body.next_billing_date = new Date(editBillingDate).toISOString();
+      }
+
       const updated = await apiFetch(`/subscriptions/${subId}`, {
         method: "PATCH",
-        body: JSON.stringify({
-          name: editName.trim(),
-          price_cents: Math.max(0, Math.round(Number(editPrice) * 100)),
-          billing_cycle: editCycle,
-          status: editStatus,
-        }),
+        body: JSON.stringify(body),
       });
 
       setSubs((prev) => prev.map((s) => (s.id === subId ? updated : s)));
@@ -250,6 +267,9 @@ export default function DashboardPage() {
           <div className="flex items-center gap-6">
             <Link className="text-sm text-gray-600 hover:text-red-600 font-medium transition-colors" href="/">
               Home
+            </Link>
+            <Link className="text-sm text-gray-600 hover:text-red-600 font-medium transition-colors" href="/settings">
+              Settings
             </Link>
             <button
               onClick={logout}
@@ -462,6 +482,15 @@ export default function DashboardPage() {
                                   <option value="cancelled">Cancelled</option>
                                 </select>
                               </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Next Billing Date</label>
+                                <input
+                                  type="date"
+                                  value={editBillingDate}
+                                  onChange={(e) => setEditBillingDate(e.target.value)}
+                                  className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none text-sm"
+                                />
+                              </div>
                             </div>
                           )}
                         </div>
@@ -592,6 +621,17 @@ export default function DashboardPage() {
                       Yearly
                     </button>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Next Billing Date</label>
+                  <input
+                    value={billingDate}
+                    onChange={(e) => setBillingDate(e.target.value)}
+                    type="date"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Optional - for email reminders</p>
                 </div>
 
                 <button className="w-full bg-red-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-red-700 active:scale-[0.98] transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 mt-2">
