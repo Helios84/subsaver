@@ -61,6 +61,7 @@ class Subscription(Base):
     price_cents = Column(Integer, nullable=False)
     billing_cycle = Column(String, default="monthly")  # monthly|yearly
     status = Column(String, default="active")          # active|cancelled
+    category = Column(String, default="Other")         # Entertainment, Productivity, Gaming, etc.
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Reminder tracking
@@ -113,6 +114,7 @@ class SubscriptionCreate(BaseModel):
     price_cents: int
     billing_cycle: str = "monthly"
     status: str = "active"
+    category: str = "Other"
     next_billing_date: Optional[datetime] = None
 
 
@@ -121,6 +123,7 @@ class SubscriptionUpdate(BaseModel):
     price_cents: Optional[int] = None
     billing_cycle: Optional[str] = None
     status: Optional[str] = None
+    category: Optional[str] = None
     next_billing_date: Optional[datetime] = None
 
 
@@ -130,6 +133,7 @@ class SubscriptionOut(BaseModel):
     price_cents: int
     billing_cycle: str
     status: str
+    category: str = "Other"
     created_at: datetime
     next_billing_date: Optional[datetime] = None
     reminder_sent: bool = False
@@ -281,6 +285,10 @@ def update_subscription(sub_id: int, payload: SubscriptionUpdate, current_user: 
         sub.billing_cycle = payload.billing_cycle
     if payload.status is not None:
         sub.status = payload.status
+    if payload.category is not None:
+        sub.category = payload.category
+    if payload.next_billing_date is not None:
+        sub.next_billing_date = payload.next_billing_date
 
     db.commit()
     db.refresh(sub)
