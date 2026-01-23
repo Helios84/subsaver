@@ -36,6 +36,8 @@ import {
   Clock,
   AlertCircle,
 } from "lucide-react";
+import StudentDiscountBanner from "../components/StudentDiscountBanner";
+import StudentDiscountModal from "../components/StudentDiscountModal";
 
 type BillingCycle = "monthly" | "yearly";
 type Status = "active" | "cancelled";
@@ -49,6 +51,25 @@ type Sub = {
   category: string;
   created_at: string;
   next_billing_date?: string;
+  student_discount_applied?: boolean;
+};
+
+type StudentDiscount = {
+  id: number;
+  service_name: string;
+  category: string;
+  regular_price_cents: number;
+  student_price_cents: number;
+  discount_percentage: number;
+  monthly_savings_cents: number;
+  annual_savings_cents: number;
+  requirements: string;
+  verification_method: string;
+  direct_link: string;
+  availability: string;
+  notes: string | null;
+  subscription_id?: number;
+  already_applied?: boolean;
 };
 
 const COLORS = ["#DC2626", "#F87171", "#FDA4AF", "#E5E7EB"];
@@ -163,6 +184,11 @@ export default function DashboardPage() {
   const [subs, setSubs] = useState<Sub[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [msg, setMsg] = useState<string>("");
+
+  // Student discount state
+  const [studentDiscounts, setStudentDiscounts] = useState<Map<number, StudentDiscount>>(new Map());
+  const [selectedDiscount, setSelectedDiscount] = useState<StudentDiscount | null>(null);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
 
   // Create form
   const [name, setName] = useState("");
@@ -348,6 +374,8 @@ export default function DashboardPage() {
     try {
       const data = await apiFetch("/subscriptions", { method: "GET" });
       setSubs(data);
+      // Load student discounts for all subscriptions
+      await loadStudentDiscounts(data);
     } catch (err: any) {
       setMsg(err?.message ?? "Failed to load subscriptions");
     } finally {
@@ -355,15 +383,68 @@ export default function DashboardPage() {
     }
   }
 
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  async function loadStudentDiscounts(subscriptions: Sub[]) {
+    try {
+      const discountMap = new Map<number, StudentDiscount>();
+
+      // Check each subscription for available discounts
+      for (const sub of subscriptions) {
+        if (sub.status === "active") {
+          try {
+            const discount = await apiFetch(`/api/student-discounts/check/${sub.id}`, { method: "GET" });
+            if (discount) {
+              discountMap.set(sub.id, discount);
+            }
+          } catch (err) {
+            // Discount not found for this subscription, skip
+            console.log(`No discount found for ${sub.name}`);
+          }
+        }
+      }
+
+      setStudentDiscounts(discountMap);
+    } catch (err) {
+      console.error("Failed to load student discounts:", err);
+    }
+  }
+
+  async function handleApplyDiscount(subscriptionId: number) {
+    try {
+      await apiFetch(`/api/student-discounts/apply/${subscriptionId}`, { method: "POST" });
+
+      // Update the subscription in state
+      setSubs(prev => prev.map(s =>
+        s.id === subscriptionId
+          ? { ...s, student_discount_applied: true }
+          : s
+      ));
+
+      // Update the discount in state
+      setStudentDiscounts(prev => {
+        const newMap = new Map(prev);
+        const discount = newMap.get(subscriptionId);
+        if (discount) {
+          newMap.set(subscriptionId, { ...discount, already_applied: true });
+        }
+        return newMap;
+      });
+
+      setMsg("✅ Student discount marked as applied!");
+      setTimeout(() => setMsg(""), 3000);
+    } catch (err: any) {
+      setMsg(err?.message ?? "Failed to apply discount");
+    }
+  }
 
   function logout() {
     localStorage.removeItem("subsaver_token");
     router.push("/login");
   }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function createSub(e: React.FormEvent) {
     e.preventDefault();
@@ -895,193 +976,209 @@ export default function DashboardPage() {
                 {subs.map((s) => {
                   const isEditing = editingId === s.id;
                   const isDeleting = deletingId === s.id;
+                  const discount = studentDiscounts.get(s.id);
+
                   return (
-                    <div
-                      key={s.id}
-                      className={`group relative rounded-xl border p-4 transition-all duration-300 ${isEditing ? 'border-red-500 ring-4 ring-red-500/10 bg-white' : 'border-gray-100 bg-white hover:border-red-200 hover:shadow-md'}`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          {!isEditing ? (
-                            <>
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-600 font-bold text-lg shrink-0">
-                                  {s.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <h3 className="font-semibold text-gray-900 truncate text-base">{s.name}</h3>
-                                  <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mt-0.5">
-                                    <span className="capitalize bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">{s.billing_cycle}</span>
-                                    <span className={`px-1.5 py-0.5 rounded capitalize ${s.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
-                                      {s.status}
-                                    </span>
+                    <div key={s.id}>
+                      {/* Student Discount Banner */}
+                      {discount && (
+                        <StudentDiscountBanner
+                          discount={discount}
+                          onLearnMore={() => {
+                            setSelectedDiscount(discount);
+                            setShowDiscountModal(true);
+                          }}
+                        />
+                      )}
+
+                      {/* Subscription Card */}
+                      <div
+                        className={`group relative rounded-xl border p-4 transition-all duration-300 ${isEditing ? 'border-red-500 ring-4 ring-red-500/10 bg-white' : 'border-gray-100 bg-white hover:border-red-200 hover:shadow-md'}`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            {!isEditing ? (
+                              <>
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-600 font-bold text-lg shrink-0">
+                                    {s.name.charAt(0).toUpperCase()}
                                   </div>
+                                  <div className="min-w-0 flex-1">
+                                    <h3 className="font-semibold text-gray-900 truncate text-base">{s.name}</h3>
+                                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mt-0.5">
+                                      <span className="capitalize bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">{s.billing_cycle}</span>
+                                      <span className={`px-1.5 py-0.5 rounded capitalize ${s.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                                        {s.status}
+                                      </span>
+                                    </div>
 
-                                  {/* Renewal Badge */}
-                                  {(() => {
-                                    const daysUntil = calculateDaysUntilRenewal(s.next_billing_date);
-                                    const badge = getRenewalBadgeColor(daysUntil);
+                                    {/* Renewal Badge */}
+                                    {(() => {
+                                      const daysUntil = calculateDaysUntilRenewal(s.next_billing_date);
+                                      const badge = getRenewalBadgeColor(daysUntil);
 
-                                    return (
-                                      <div className="mt-2 flex items-center gap-1.5">
-                                        <Calendar className="w-3 h-3 text-gray-400" />
-                                        <span className="text-xs text-gray-500">
-                                          {formatDate(s.next_billing_date)}
-                                        </span>
-                                        {daysUntil !== null && (
-                                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${badge.bg} ${badge.text} ${badge.border} ${daysUntil <= 3 && daysUntil >= 0 ? 'animate-pulse' : ''}`}>
-                                            {daysUntil <= 3 && daysUntil >= 0 && <AlertCircle className="w-3 h-3" />}
-                                            {badge.label}
+                                      return (
+                                        <div className="mt-2 flex items-center gap-1.5">
+                                          <Calendar className="w-3 h-3 text-gray-400" />
+                                          <span className="text-xs text-gray-500">
+                                            {formatDate(s.next_billing_date)}
                                           </span>
-                                        )}
-                                      </div>
-                                    );
-                                  })()}
+                                          {daysUntil !== null && (
+                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${badge.bg} ${badge.text} ${badge.border} ${daysUntil <= 3 && daysUntil >= 0 ? 'animate-pulse' : ''}`}>
+                                              {daysUntil <= 3 && daysUntil >= 0 && <AlertCircle className="w-3 h-3" />}
+                                              {badge.label}
+                                            </span>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
                                 </div>
-                              </div>
-                            </>
-                          ) : (
-                            <div className="space-y-4">
-                              <div className="grid gap-4 sm:grid-cols-2">
+                              </>
+                            ) : (
+                              <div className="space-y-4">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                  <div>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Service Name</label>
+                                    <input
+                                      value={editName}
+                                      onChange={(e) => setEditName(e.target.value)}
+                                      className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Price</label>
+                                    <div className="relative mt-1">
+                                      <span className="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">$</span>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={editPrice}
+                                        onChange={(e) => setEditPrice(e.target.value)}
+                                        className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none text-sm"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                  <select
+                                    value={editCycle}
+                                    onChange={(e) => setEditCycle(e.target.value as BillingCycle)}
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                                  >
+                                    <option value="monthly">Monthly</option>
+                                    <option value="yearly">Yearly</option>
+                                  </select>
+                                  <select
+                                    value={editStatus}
+                                    onChange={(e) => setEditStatus(e.target.value as Status)}
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                                  >
+                                    <option value="active">Active</option>
+                                    <option value="cancelled">Cancelled</option>
+                                  </select>
+                                </div>
                                 <div>
-                                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Service Name</label>
+                                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</label>
+                                  <select
+                                    value={editCategory}
+                                    onChange={(e) => setEditCategory(e.target.value)}
+                                    className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                                  >
+                                    {CATEGORIES.map((cat) => (
+                                      <option key={cat.value} value={cat.value}>
+                                        {cat.icon} {cat.value}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Next Billing Date</label>
                                   <input
-                                    value={editName}
-                                    onChange={(e) => setEditName(e.target.value)}
+                                    type="date"
+                                    value={editBillingDate}
+                                    onChange={(e) => setEditBillingDate(e.target.value)}
                                     className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none text-sm"
                                   />
                                 </div>
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Price</label>
-                                  <div className="relative mt-1">
-                                    <span className="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">$</span>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      value={editPrice}
-                                      onChange={(e) => setEditPrice(e.target.value)}
-                                      className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none text-sm"
-                                    />
-                                  </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            {isDeleting ? (
+                              <div className="flex flex-col items-end gap-2 mt-1">
+                                <span className="text-xs font-bold text-red-600 animate-pulse">Confirm Delete?</span>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => executeDelete(s.id)}
+                                    className="px-3 py-1.5 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm"
+                                  >
+                                    Yes
+                                  </button>
+                                  <button
+                                    onClick={cancelDelete}
+                                    className="px-3 py-1.5 text-xs font-medium border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition"
+                                  >
+                                    No
+                                  </button>
                                 </div>
                               </div>
-                              <div className="grid gap-4 sm:grid-cols-2">
-                                <select
-                                  value={editCycle}
-                                  onChange={(e) => setEditCycle(e.target.value as BillingCycle)}
-                                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
-                                >
-                                  <option value="monthly">Monthly</option>
-                                  <option value="yearly">Yearly</option>
-                                </select>
-                                <select
-                                  value={editStatus}
-                                  onChange={(e) => setEditStatus(e.target.value as Status)}
-                                  className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
-                                >
-                                  <option value="active">Active</option>
-                                  <option value="cancelled">Cancelled</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</label>
-                                <select
-                                  value={editCategory}
-                                  onChange={(e) => setEditCategory(e.target.value)}
-                                  className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
-                                >
-                                  {CATEGORIES.map((cat) => (
-                                    <option key={cat.value} value={cat.value}>
-                                      {cat.icon} {cat.value}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div>
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Next Billing Date</label>
-                                <input
-                                  type="date"
-                                  value={editBillingDate}
-                                  onChange={(e) => setEditBillingDate(e.target.value)}
-                                  className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none text-sm"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col items-end gap-1 shrink-0">
-                          {isDeleting ? (
-                            <div className="flex flex-col items-end gap-2 mt-1">
-                              <span className="text-xs font-bold text-red-600 animate-pulse">Confirm Delete?</span>
-                              <div className="flex items-center gap-2">
+                            ) : !isEditing ? (
+                              <>
+                                <div className="mb-2 text-lg font-bold text-gray-900 tracking-tight">
+                                  {formatMoney(s.price_cents)}
+                                </div>
+                                <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => startEdit(s)}
+                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition"
+                                    title="Edit"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => toggleStatus(s)}
+                                    className={`p-1.5 rounded-md transition ${s.status === 'active' ? 'text-gray-400 hover:text-orange-600 hover:bg-orange-50' : 'text-green-600 bg-green-50'}`}
+                                    title={s.status === 'active' ? "Cancel Subscription" : "Re-activate"}
+                                  >
+                                    <Activity className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => confirmDelete(s.id)}
+                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex flex-col gap-2 mt-4">
                                 <button
-                                  onClick={() => executeDelete(s.id)}
-                                  className="px-3 py-1.5 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm"
+                                  onClick={() => saveEdit(s.id)}
+                                  className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition shadow-sm"
                                 >
-                                  Yes
+                                  <Save className="w-3 h-3" /> Save Changes
                                 </button>
                                 <button
-                                  onClick={cancelDelete}
-                                  className="px-3 py-1.5 text-xs font-medium border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition"
+                                  onClick={cancelEdit}
+                                  className="flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
                                 >
-                                  No
+                                  <X className="w-3 h-3" /> Cancel
                                 </button>
                               </div>
-                            </div>
-                          ) : !isEditing ? (
-                            <>
-                              <div className="mb-2 text-lg font-bold text-gray-900 tracking-tight">
-                                {formatMoney(s.price_cents)}
-                              </div>
-                              <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={() => startEdit(s)}
-                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition"
-                                  title="Edit"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => toggleStatus(s)}
-                                  className={`p-1.5 rounded-md transition ${s.status === 'active' ? 'text-gray-400 hover:text-orange-600 hover:bg-orange-50' : 'text-green-600 bg-green-50'}`}
-                                  title={s.status === 'active' ? "Cancel Subscription" : "Re-activate"}
-                                >
-                                  <Activity className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => confirmDelete(s.id)}
-                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <div className="flex flex-col gap-2 mt-4">
-                              <button
-                                onClick={() => saveEdit(s.id)}
-                                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition shadow-sm"
-                              >
-                                <Save className="w-3 h-3" /> Save Changes
-                              </button>
-                              <button
-                                onClick={cancelEdit}
-                                className="flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
-                              >
-                                <X className="w-3 h-3" /> Cancel
-                              </button>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
+            )
+            }
           </section>
 
           {/* Add Form Side Panel */}
@@ -1187,6 +1284,18 @@ export default function DashboardPage() {
           </div>
         </div >
       </div >
+
+      {/* Student Discount Modal */}
+      {showDiscountModal && selectedDiscount && (
+        <StudentDiscountModal
+          discount={selectedDiscount}
+          onApply={handleApplyDiscount}
+          onClose={() => {
+            setShowDiscountModal(false);
+            setSelectedDiscount(null);
+          }}
+        />
+      )}
     </main >
   );
 }

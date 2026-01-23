@@ -24,7 +24,7 @@ JWT_ALG = os.getenv("JWT_ALG", "HS256")
 
 def get_db() -> Generator[Session, None, None]:
     """Get database session."""
-    from main import SessionLocal
+    from database import SessionLocal
     db = SessionLocal()
     try:
         yield db

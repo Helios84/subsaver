@@ -20,7 +20,8 @@ from dependencies import get_db, get_current_email, get_current_user
 load_dotenv()  # ищет .env в текущей папке (backend/)
 
 # --- Config ---
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./subsaver.db")
+# --- Config ---
+# DATABASE_URL moved to database.py
 
 JWT_SECRET = os.getenv("JWT_SECRET")
 if not JWT_SECRET:
@@ -33,9 +34,8 @@ if not JWT_SECRET:
     raise RuntimeError("JWT_SECRET is missing. Create backend/.env with JWT_SECRET=... (do NOT commit it)")
 
 # --- DB setup ---
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-Base = declarative_base()
+# --- DB setup ---
+from database import engine, SessionLocal, Base
 
 
 class User(Base):
@@ -68,23 +68,41 @@ class Subscription(Base):
     next_billing_date = Column(DateTime, nullable=True)  # When subscription renews
     reminder_sent = Column(Boolean, default=False)
     last_reminder_date = Column(DateTime, nullable=True)
+    
+    # Student discount tracking
+    student_discount_applied = Column(Boolean, default=False)
+    discount_applied_date = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="subscriptions")
 
+
+# Import StudentDiscount model to register it with Base
+from models.student_discount import StudentDiscount
 
 Base.metadata.create_all(bind=engine)
 
 
 # --- Auth helpers ---
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+import bcrypt
 
 def hash_password(pw: str) -> str:
-    return pwd_context.hash(pw)
+    """Hash a password using bcrypt"""
+    # bcrypt requires bytes
+    password_bytes = pw.encode('utf-8')
+    # Generate salt and hash
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    # Return as string for database storage
+    return hashed.decode('utf-8')
 
 
 def verify_password(pw: str, hashed: str) -> bool:
-    return pwd_context.verify(pw, hashed)
+    """Verify a password against a bcrypt hash"""
+    # Convert both to bytes
+    password_bytes = pw.encode('utf-8')
+    hashed_bytes = hashed.encode('utf-8')
+    # Verify
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 
 def create_access_token(email: str) -> str:
@@ -137,6 +155,7 @@ class SubscriptionOut(BaseModel):
     created_at: datetime
     next_billing_date: Optional[datetime] = None
     reminder_sent: bool = False
+    student_discount_applied: bool = False
 
     class Config:
         from_attributes = True
@@ -152,9 +171,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include reminder router
+# Include routers
 from routers.reminders import router as reminder_router
+from routers.student_discounts import router as student_discounts_router
 app.include_router(reminder_router)
+app.include_router(student_discounts_router)
 
 # Initialize scheduler on startup
 from services.scheduler import reminder_scheduler
