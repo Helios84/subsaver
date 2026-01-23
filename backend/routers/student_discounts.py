@@ -156,3 +156,88 @@ async def unmark_discount_applied(
     db.refresh(subscription)
     
     return {"message": "Student discount removed"}
+
+
+@router.get("/savings")
+async def get_savings_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Calculate savings summary based on applied discounts and potential opportunities.
+    """
+    try:
+        from models.student_discount import StudentDiscount
+
+        # Get all user subscriptions
+        subs = db.query(Subscription).filter(Subscription.user_id == current_user.id).all()
+        
+        # Get all active discounts
+        all_discounts = db.query(StudentDiscount).filter(StudentDiscount.is_active == True).all()
+        
+        # Map discounts by lower-case service name for easy lookup
+        # Some services might have multiple plans, we'll just take the best one or first one for simplicity
+        # Ideally we match exactly, but for "Potential" logic:
+        discount_map = {d.service_name.lower(): d for d in all_discounts}
+
+        total_saved_monthly = 0
+        potential_monthly = 0
+        discounts_applied_count = 0
+        discounts_available_count = 0
+        breakdown = []
+
+        for sub in subs:
+            sub_name_lower = sub.name.lower()
+            discount = discount_map.get(sub_name_lower)
+            
+            # Helper to check partial match if exact match fails
+            if not discount:
+                for name, d in discount_map.items():
+                    if name in sub_name_lower or sub_name_lower in name:
+                        discount = d
+                        break
+            
+            if discount:
+                monthly_savings = (discount.regular_price_cents - discount.student_price_cents)
+                if sub.billing_cycle == "yearly":
+                    # Normalize to monthly for summary
+                    monthly_savings = monthly_savings // 12
+
+                item = {
+                    "service": sub.name,
+                    "monthly_savings": monthly_savings,
+                    "applied": sub.student_discount_applied,
+                    "subscription_id": sub.id
+                }
+
+                if sub.student_discount_applied:
+                    total_saved_monthly += monthly_savings
+                    discounts_applied_count += 1
+                    item["status"] = "applied"
+                else:
+                    potential_monthly += monthly_savings
+                    discounts_available_count += 1
+                    item["status"] = "available"
+                
+                breakdown.append(item)
+
+        return {
+            "total_saved_monthly": total_saved_monthly,
+            "total_saved_yearly": total_saved_monthly * 12,
+            "potential_monthly": potential_monthly,
+            "potential_yearly": potential_monthly * 12,
+            "discounts_applied": discounts_applied_count,
+            "discounts_available": discounts_available_count, # This is potentially available ones
+            "breakdown": breakdown
+        }
+    except Exception as e:
+        print(f"Error calculating savings: {e}")
+        return {
+            "total_saved_monthly": 0, 
+            "total_saved_yearly": 0,
+            "potential_monthly": 0,
+            "potential_yearly": 0,
+             "discounts_applied": 0,
+            "discounts_available": 0,
+            "breakdown": []
+        }

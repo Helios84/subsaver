@@ -83,26 +83,31 @@ Base.metadata.create_all(bind=engine)
 
 
 # --- Auth helpers ---
-import bcrypt
+import hashlib
+import secrets
+import logging
+
+logger = logging.getLogger(__name__)
 
 def hash_password(pw: str) -> str:
-    """Hash a password using bcrypt"""
-    # bcrypt requires bytes
-    password_bytes = pw.encode('utf-8')
-    # Generate salt and hash
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password_bytes, salt)
-    # Return as string for database storage
-    return hashed.decode('utf-8')
+    """Hash a password using SHA-256 and a random salt."""
+    salt = secrets.token_hex(16)
+    combined = (pw + salt).encode("utf-8")
+    hashed = hashlib.sha256(combined).hexdigest()
+    return f"{salt}${hashed}"
 
 
 def verify_password(pw: str, hashed: str) -> bool:
-    """Verify a password against a bcrypt hash"""
-    # Convert both to bytes
-    password_bytes = pw.encode('utf-8')
-    hashed_bytes = hashed.encode('utf-8')
-    # Verify
-    return bcrypt.checkpw(password_bytes, hashed_bytes)
+    """Verify a password against the salted hash."""
+    try:
+        if "$" not in hashed:
+            return False
+        salt, stored_hash = hashed.split("$", 1)
+        combined = (pw + salt).encode("utf-8")
+        new_hash = hashlib.sha256(combined).hexdigest()
+        return secrets.compare_digest(new_hash, stored_hash)
+    except Exception:
+        return False
 
 
 def create_access_token(email: str) -> str:
@@ -165,7 +170,12 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -174,8 +184,10 @@ app.add_middleware(
 # Include routers
 from routers.reminders import router as reminder_router
 from routers.student_discounts import router as student_discounts_router
+from routers.analytics import router as analytics_router
 app.include_router(reminder_router)
 app.include_router(student_discounts_router)
+app.include_router(analytics_router)
 
 # Initialize scheduler on startup
 from services.scheduler import reminder_scheduler
@@ -201,20 +213,27 @@ def health():
 
 # --- Auth ---
 @app.post("/auth/register")
+@app.post("/auth/register")
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
-    email = payload.email.strip().lower()
+    try:
+        email = payload.email.strip().lower()
 
-    if len(payload.password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        if len(payload.password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
 
-    exists = db.query(User).filter(User.email == email).first()
-    if exists:
-        raise HTTPException(status_code=400, detail="User already exists")
+        exists = db.query(User).filter(User.email == email).first()
+        if exists:
+            raise HTTPException(status_code=400, detail="User already exists")
 
-    user = User(email=email, password_hash=hash_password(payload.password))
-    db.add(user)
-    db.commit()
-    return {"message": "registered"}
+        user = User(email=email, password_hash=hash_password(payload.password))
+        db.add(user)
+        db.commit()
+        return {"message": "registered"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 
 # JSON login (для фронта)
