@@ -114,149 +114,16 @@ class EmailService:
         days_until: int
     ) -> str:
         """Generate HTML email template for reminder."""
+        template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", "upcoming_renewal.html")
         
-        template_str = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background-color: white;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .logo {
-            font-size: 32px;
-            font-weight: bold;
-            color: #dc2626;
-            margin-bottom: 10px;
-        }
-        .alert-box {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            color: white;
-            padding: 24px;
-            border-radius: 8px;
-            margin: 20px 0;
-            text-align: center;
-        }
-        .alert-box h2 {
-            margin: 0 0 10px 0;
-            font-size: 24px;
-        }
-        .alert-box p {
-            margin: 0;
-            font-size: 16px;
-            opacity: 0.95;
-        }
-        .details {
-            background-color: #f9fafb;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        .detail-row:last-child {
-            border-bottom: none;
-        }
-        .detail-label {
-            font-weight: 600;
-            color: #6b7280;
-        }
-        .detail-value {
-            color: #111827;
-            font-weight: 500;
-        }
-        .cta-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            color: white;
-            padding: 14px 32px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            margin: 20px 0;
-            text-align: center;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-            color: #6b7280;
-            font-size: 14px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">💰 SubSaver</div>
-            <p style="color: #6b7280; margin: 0;">Your Subscription Manager</p>
-        </div>
-        
-        <div class="alert-box">
-            <h2>⏰ Renewal Reminder</h2>
-            <p>Your subscription is renewing soon!</p>
-        </div>
-        
-        <p>Hi there,</p>
-        <p>This is a friendly reminder that your <strong>{{ subscription_name }}</strong> subscription will renew in <strong>{{ days_until }} days</strong>.</p>
-        
-        <div class="details">
-            <div class="detail-row">
-                <span class="detail-label">Subscription</span>
-                <span class="detail-value">{{ subscription_name }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Amount</span>
-                <span class="detail-value">{{ price }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Billing Cycle</span>
-                <span class="detail-value">{{ billing_cycle }}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Renewal Date</span>
-                <span class="detail-value">{{ renewal_date }}</span>
-            </div>
-        </div>
-        
-        <p>If you want to cancel this subscription before it renews, make sure to do so before <strong>{{ renewal_date }}</strong>.</p>
-        
-        <div style="text-align: center;">
-            <a href="http://localhost:3000/dashboard" class="cta-button">View Dashboard</a>
-        </div>
-        
-        <div class="footer">
-            <p>You're receiving this email because you enabled renewal reminders in SubSaver.</p>
-            <p>To change your notification preferences, visit your <a href="http://localhost:3000/settings" style="color: #dc2626;">Settings</a>.</p>
-        </div>
-    </div>
-</body>
-</html>
-        """
-        
+        try:
+            with open(template_path, "r", encoding="utf-8") as f:
+                template_str = f.read()
+        except FileNotFoundError:
+            # Fallback if file not found
+            print(f"⚠️ Template not found at {template_path}, using fallback.")
+            return f"Subscription {subscription_name} is renewing on {renewal_date}."
+
         template = Template(template_str)
         return template.render(
             subscription_name=subscription_name,

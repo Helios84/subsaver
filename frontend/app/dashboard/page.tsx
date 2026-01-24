@@ -35,7 +35,10 @@ import {
   Calendar,
   Clock,
   AlertCircle,
+  BadgeCheck,
+  GraduationCap,
 } from "lucide-react";
+import VerificationModal from "../components/VerificationModal";
 import StudentDiscountBanner from "../components/StudentDiscountBanner";
 import StudentDiscountModal from "../components/StudentDiscountModal";
 import AdvancedAnalytics from "../components/AdvancedAnalytics";
@@ -71,6 +74,13 @@ type StudentDiscount = {
   notes: string | null;
   subscription_id?: number;
   already_applied?: boolean;
+};
+
+type User = {
+  id: number;
+  email: string;
+  is_verified: boolean;
+  edu_email?: string;
 };
 
 const COLORS = ["#DC2626", "#F87171", "#FDA4AF", "#E5E7EB"];
@@ -186,6 +196,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [msg, setMsg] = useState<string>("");
 
+  // User state
+  const [user, setUser] = useState<User | null>(null);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+
   // Student discount state
   const [studentDiscounts, setStudentDiscounts] = useState<Map<number, StudentDiscount>>(new Map());
   const [selectedDiscount, setSelectedDiscount] = useState<StudentDiscount | null>(null);
@@ -197,6 +211,20 @@ export default function DashboardPage() {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [category, setCategory] = useState<string>("Other");
   const [billingDate, setBillingDate] = useState<string>("");
+
+  useEffect(() => {
+    fetchSubs();
+    fetchUser();
+  }, []);
+
+  async function fetchUser() {
+    try {
+      const data = await apiFetch("/users/me");
+      setUser(data);
+    } catch (err) {
+      console.error("Failed to fetch user profile", err);
+    }
+  }
 
   // Edit state
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -369,7 +397,7 @@ export default function DashboardPage() {
     if (!t) router.push("/login");
   }, [router]);
 
-  async function load() {
+  async function fetchSubs() {
     setMsg("");
     setLoading(true);
     try {
@@ -442,11 +470,6 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   async function createSub(e: React.FormEvent) {
     e.preventDefault();
     setMsg("");
@@ -472,7 +495,7 @@ export default function DashboardPage() {
       setCycle("monthly");
       setCategory("Other");
       setBillingDate("");
-      await load();
+      await fetchSubs();
     } catch (err: any) {
       setMsg(err?.message ?? "Create failed");
     }
@@ -578,6 +601,24 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-6">
+            {user && (
+              <div className="hidden md:flex items-center">
+                {user.is_verified ? (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
+                    <BadgeCheck size={16} />
+                    <span>Student Verified</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowVerificationModal(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-full text-sm font-medium border border-blue-200 transition-colors"
+                  >
+                    <GraduationCap size={16} />
+                    <span>Verify Student Status</span>
+                  </button>
+                )}
+              </div>
+            )}
             <Link className="text-sm text-gray-600 hover:text-red-600 font-medium transition-colors" href="/">
               Home
             </Link>
@@ -998,6 +1039,12 @@ export default function DashboardPage() {
           }}
         />
       )}
-    </main >
+
+      <VerificationModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        onSuccess={() => fetchUser()}
+      />
+    </main>
   );
 }

@@ -49,6 +49,10 @@ class User(Base):
     reminder_enabled = Column(Boolean, default=True)
     reminder_days_before = Column(Integer, default=7)  # 3, 7, or 14 days
 
+    # Student Verification
+    is_verified = Column(Boolean, default=False)
+    edu_email = Column(String, nullable=True)
+
     subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -166,7 +170,52 @@ class SubscriptionOut(BaseModel):
         from_attributes = True
 
 
+class VerificationRequest(BaseModel):
+    edu_email: EmailStr
+
+
 app = FastAPI()
+
+# ... (middleware is here, usually)
+
+@app.post("/auth/verify-edu")
+async def verify_student_status(
+    req: VerificationRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Verify student status via .edu email.
+    """
+    if not req.edu_email.lower().endswith(".edu"):
+         raise HTTPException(status_code=400, detail="Must be a valid .edu email address")
+    
+    # Check if already verified
+    if current_user.is_verified:
+         return {"message": "Already verified", "is_verified": True}
+
+    # Update user
+    current_user.edu_email = req.edu_email
+    current_user.is_verified = True
+    db.commit()
+    
+    return {"message": "Verification successful", "is_verified": True}
+
+
+class UserOut(BaseModel):
+    id: int
+    email: EmailStr
+    is_verified: bool
+    edu_email: Optional[str] = None
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+@app.get("/users/me", response_model=UserOut)
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
 
 app.add_middleware(
     CORSMiddleware,
