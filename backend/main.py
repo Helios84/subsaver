@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 from dependencies import get_db, get_current_email, get_current_user
 
 # --- Load .env ---
-load_dotenv()  # ищет .env в текущей папке (backend/)
+load_dotenv()
 
 # --- Config ---
 # --- Config ---
@@ -52,6 +52,8 @@ class User(Base):
     # Student Verification
     is_verified = Column(Boolean, default=False)
     edu_email = Column(String, nullable=True)
+    verification_code = Column(String, nullable=True)
+    verification_code_expires = Column(DateTime, nullable=True)
 
     subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
 
@@ -73,9 +75,10 @@ class Subscription(Base):
     reminder_sent = Column(Boolean, default=False)
     last_reminder_date = Column(DateTime, nullable=True)
     
-    # Student discount tracking
+    # Discount and Sharing tracking
     student_discount_applied = Column(Boolean, default=False)
     discount_applied_date = Column(DateTime, nullable=True)
+    split_with = Column(Integer, default=1)  # Number of people splitting the cost
 
     user = relationship("User", back_populates="subscriptions")
 
@@ -143,6 +146,7 @@ class SubscriptionCreate(BaseModel):
     status: str = "active"
     category: str = "Other"
     next_billing_date: Optional[datetime] = None
+    split_with: int = 1
 
 
 class SubscriptionUpdate(BaseModel):
@@ -152,6 +156,7 @@ class SubscriptionUpdate(BaseModel):
     status: Optional[str] = None
     category: Optional[str] = None
     next_billing_date: Optional[datetime] = None
+    split_with: Optional[int] = None
 
 
 class SubscriptionOut(BaseModel):
@@ -165,6 +170,7 @@ class SubscriptionOut(BaseModel):
     next_billing_date: Optional[datetime] = None
     reminder_sent: bool = False
     student_discount_applied: bool = False
+    split_with: int = 1
 
     class Config:
         from_attributes = True
@@ -219,12 +225,7 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -246,13 +247,13 @@ def startup_event():
     """Initialize services on app startup."""
     reminder_scheduler.set_db_session_maker(SessionLocal)
     reminder_scheduler.start()
-    print("✅ Reminder scheduler initialized")
+    print("Reminder scheduler initialized")
 
 @app.on_event("shutdown")
 def shutdown_event():
     """Cleanup on app shutdown."""
     reminder_scheduler.stop()
-    print("✅ Reminder scheduler stopped")
+    print("Reminder scheduler stopped")
 
 
 @app.get("/health")
@@ -323,34 +324,42 @@ def list_subscriptions(current_user: User = Depends(get_current_user), db: Sessi
 
 @app.post("/subscriptions", response_model=SubscriptionOut)
 def create_subscription(payload: SubscriptionCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    if payload.price_cents < 0:
-        raise HTTPException(status_code=400, detail="price_cents must be >= 0")
-    if payload.billing_cycle not in ("monthly", "yearly"):
-        raise HTTPException(status_code=400, detail="billing_cycle must be 'monthly' or 'yearly'")
-    if payload.status not in ("active", "cancelled"):
-        raise HTTPException(status_code=400, detail="status must be 'active' or 'cancelled'")
+    import traceback
+    try:
+        print(f"DEBUG: Creating subscription: {payload}")
+        if payload.price_cents < 0:
+            raise HTTPException(status_code=400, detail="price_cents must be >= 0")
+        if payload.billing_cycle not in ("monthly", "yearly"):
+            raise HTTPException(status_code=400, detail="billing_cycle must be 'monthly' or 'yearly'")
+        if payload.status not in ("active", "cancelled"):
+            raise HTTPException(status_code=400, detail="status must be 'active' or 'cancelled'")
 
-    # Auto-calculate next_billing_date if not provided
-    from services.reminder_service import reminder_service
-    next_billing_date = payload.next_billing_date
-    if not next_billing_date and payload.status == "active":
-        next_billing_date = reminder_service.calculate_next_billing_date(
-            datetime.utcnow(),
-            payload.billing_cycle
+        # Auto-calculate next_billing_date if not provided
+        from services.reminder_service import reminder_service
+        next_billing_date = payload.next_billing_date
+        if not next_billing_date and payload.status == "active":
+            next_billing_date = reminder_service.calculate_next_billing_date(
+                datetime.utcnow(),
+                payload.billing_cycle
+            )
+
+        sub = Subscription(
+            user_id=current_user.id,
+            name=payload.name,
+            price_cents=payload.price_cents,
+            billing_cycle=payload.billing_cycle,
+            status=payload.status,
+            category=payload.category,
+            next_billing_date=next_billing_date,
+            split_with=payload.split_with
         )
-
-    sub = Subscription(
-        user_id=current_user.id,
-        name=payload.name,
-        price_cents=payload.price_cents,
-        billing_cycle=payload.billing_cycle,
-        status=payload.status,
-        next_billing_date=next_billing_date,
-    )
-    db.add(sub)
-    db.commit()
-    db.refresh(sub)
-    return sub
+        db.add(sub)
+        db.commit()
+        db.refresh(sub)
+        return sub
+    except Exception:
+        traceback.print_exc()
+        raise
 
 
 @app.patch("/subscriptions/{sub_id}", response_model=SubscriptionOut)
@@ -361,6 +370,8 @@ def update_subscription(sub_id: int, payload: SubscriptionUpdate, current_user: 
 
     if payload.price_cents is not None and payload.price_cents < 0:
         raise HTTPException(status_code=400, detail="price_cents must be >= 0")
+    if payload.split_with is not None and payload.split_with < 1:
+        raise HTTPException(status_code=400, detail="split_with must be >= 1")
     if payload.billing_cycle is not None and payload.billing_cycle not in ("monthly", "yearly"):
         raise HTTPException(status_code=400, detail="billing_cycle must be 'monthly' or 'yearly'")
     if payload.status is not None and payload.status not in ("active", "cancelled"):
@@ -378,6 +389,8 @@ def update_subscription(sub_id: int, payload: SubscriptionUpdate, current_user: 
         sub.category = payload.category
     if payload.next_billing_date is not None:
         sub.next_billing_date = payload.next_billing_date
+    if payload.split_with is not None:
+        sub.split_with = payload.split_with
 
     db.commit()
     db.refresh(sub)

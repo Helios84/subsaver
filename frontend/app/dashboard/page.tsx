@@ -37,11 +37,13 @@ import {
   AlertCircle,
   BadgeCheck,
   GraduationCap,
+  Search, // Added Search icon
 } from "lucide-react";
 import VerificationModal from "../components/VerificationModal";
 import StudentDiscountBanner from "../components/StudentDiscountBanner";
 import StudentDiscountModal from "../components/StudentDiscountModal";
 import AdvancedAnalytics from "../components/AdvancedAnalytics";
+import ServicePickerModal from "../components/ServicePickerModal"; // Added ServicePickerModal import
 
 type BillingCycle = "monthly" | "yearly";
 type Status = "active" | "cancelled";
@@ -56,6 +58,7 @@ type Sub = {
   created_at: string;
   next_billing_date?: string;
   student_discount_applied?: boolean;
+  split_with?: number;
 };
 
 type StudentDiscount = {
@@ -204,6 +207,23 @@ export default function DashboardPage() {
   const [studentDiscounts, setStudentDiscounts] = useState<Map<number, StudentDiscount>>(new Map());
   const [selectedDiscount, setSelectedDiscount] = useState<StudentDiscount | null>(null);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [showServicePicker, setShowServicePicker] = useState(false); // Added ServicePickerModal import
+
+  // Autocomplete State
+  const [allServices, setAllServices] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Fetch all services for autocomplete on mount
+  useEffect(() => {
+    apiFetch("/api/student-discounts")
+      .then(data => {
+        if (Array.isArray(data)) {
+          setAllServices(data);
+        }
+      })
+      .catch(err => console.error("Failed to fetch autocomplete services", err));
+  }, []);
 
   // Create form
   const [name, setName] = useState("");
@@ -211,6 +231,8 @@ export default function DashboardPage() {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [category, setCategory] = useState<string>("Other");
   const [billingDate, setBillingDate] = useState<string>("");
+  const [splitWith, setSplitWith] = useState<number>(1);
+  const [isSplit, setIsSplit] = useState(false);
 
   useEffect(() => {
     fetchSubs();
@@ -233,6 +255,8 @@ export default function DashboardPage() {
   const [editCycle, setEditCycle] = useState<BillingCycle>("monthly");
   const [editCategory, setEditCategory] = useState<string>("Other");
   const [editBillingDate, setEditBillingDate] = useState<string>("");
+  const [editSplitWith, setEditSplitWith] = useState<number>(1);
+  const [editIsSplit, setEditIsSplit] = useState(false);
 
   const [editStatus, setEditStatus] = useState<Status>("active");
 
@@ -480,6 +504,7 @@ export default function DashboardPage() {
         billing_cycle: cycle,
         status: "active",
         category: category,
+        split_with: isSplit ? splitWith : 1,
       };
 
       if (billingDate) {
@@ -495,7 +520,10 @@ export default function DashboardPage() {
       setCycle("monthly");
       setCategory("Other");
       setBillingDate("");
-      await fetchSubs();
+      setSplitWith(1);
+      setIsSplit(false);
+      setMsg("✅ Subscription created!");
+      fetchSubs();
     } catch (err: any) {
       setMsg(err?.message ?? "Create failed");
     }
@@ -509,6 +537,9 @@ export default function DashboardPage() {
     setEditStatus(s.status);
     setEditCategory(s.category || "Other");
     setEditBillingDate(s.next_billing_date ? s.next_billing_date.split('T')[0] : "");
+    const split = (s.split_with || 1);
+    setEditSplitWith(split);
+    setEditIsSplit(split > 1);
     setMsg("");
   }
 
@@ -526,6 +557,7 @@ export default function DashboardPage() {
         billing_cycle: editCycle,
         status: editStatus,
         category: editCategory,
+        split_with: editIsSplit ? editSplitWith : 1,
       };
 
       if (editBillingDate) {
@@ -585,6 +617,27 @@ export default function DashboardPage() {
       setMsg(err?.message ?? "Delete failed");
     }
   }
+
+  const handleServiceSelect = (service: any) => {
+    setName(service.service_name);
+    setPrice((service.student_price_cents / 100).toFixed(2)); // Convert to string with 2 decimal places
+    setCategory(service.category);
+    setShowServicePicker(false);
+    setShowSuggestions(false);
+  };
+
+  const handleNameChange = (val: string) => {
+    setName(val);
+    if (val.length > 1) {
+      const filtered = allServices.filter(s =>
+        s.service_name.toLowerCase().includes(val.toLowerCase())
+      );
+      setSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
 
   return (
     <main className="min-h-screen pb-12">
@@ -845,6 +898,30 @@ export default function DashboardPage() {
                                     className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none text-sm"
                                   />
                                 </div>
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Split Cost?</label>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={editIsSplit}
+                                      onChange={(e) => setEditIsSplit(e.target.checked)}
+                                      className="w-4 h-4 text-red-600 rounded focus:ring-red-500 border-gray-300"
+                                    />
+                                    <span className="text-sm text-gray-700">Yes, split with others</span>
+                                  </div>
+                                  {editIsSplit && (
+                                    <div className="mt-2">
+                                      <label className="text-xs text-gray-400">Total people (including you)</label>
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={editSplitWith}
+                                        onChange={(e) => setEditSplitWith(parseInt(e.target.value) || 1)}
+                                        className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 outline-none text-sm"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -870,8 +947,21 @@ export default function DashboardPage() {
                               </div>
                             ) : !isEditing ? (
                               <>
-                                <div className="mb-2 text-lg font-bold text-gray-900 tracking-tight">
-                                  {formatMoney(s.price_cents)}
+                                <div className="mb-2">
+                                  {(s.split_with && s.split_with > 1) ? (
+                                    <div className="flex flex-col items-end">
+                                      <div className="text-lg font-bold text-gray-900 tracking-tight">
+                                        {formatMoney(s.price_cents / s.split_with)}
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        My Share (Total: {formatMoney(s.price_cents)})
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="text-lg font-bold text-gray-900 tracking-tight">
+                                      {formatMoney(s.price_cents)}
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                                   <button
@@ -935,13 +1025,58 @@ export default function DashboardPage() {
               <form className="space-y-4" onSubmit={createSub}>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Service Name</label>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
-                    placeholder="e.g. Spotify"
-                    required
-                  />
+                  <div className="relative">
+                    <div className="flex gap-2">
+                      <input
+                        value={name}
+                        onChange={(e) => handleNameChange(e.target.value)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
+                        placeholder="e.g. Spotify"
+                        required
+                        autoComplete="off"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowServicePicker(true)}
+                        className="px-3 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition border border-blue-200 flex items-center justify-center shadow-sm"
+                        title="Browse Services"
+                      >
+                        <Search className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Autocomplete Dropdown */}
+                    {showSuggestions && (
+                      <div className="absolute top-full left-0 w-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 z-50 max-h-60 overflow-y-auto">
+                        {suggestions.map((service) => (
+                          <button
+                            key={service.id}
+                            type="button"
+                            onClick={() => handleServiceSelect(service)}
+                            className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between group transition border-b border-gray-50 last:border-0"
+                          >
+                            <div>
+                              <div className="font-medium text-gray-900 group-hover:text-blue-600 transition">
+                                {service.service_name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {service.category}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-bold text-green-600">
+                                ${(service.student_price_cents / 100).toFixed(2)}
+                              </div>
+                              <div className="text-[10px] text-gray-400 line-through">
+                                ${(service.regular_price_cents / 100).toFixed(2)}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -1005,6 +1140,32 @@ export default function DashboardPage() {
                   <p className="text-xs text-gray-400 mt-1">Optional - for email reminders</p>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Split Cost?</label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <input
+                      type="checkbox"
+                      checked={isSplit}
+                      onChange={(e) => setIsSplit(e.target.checked)}
+                      className="w-4 h-4 text-red-600 rounded focus:ring-red-500 border-gray-300"
+                    />
+                    <span className="text-sm text-gray-700">Yes, I share this subscription</span>
+                  </div>
+
+                  {isSplit && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Number of People (including you)</label>
+                      <input
+                        value={splitWith}
+                        onChange={(e) => setSplitWith(parseInt(e.target.value) || 1)}
+                        type="number"
+                        min="1"
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <button className="w-full bg-red-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-red-700 active:scale-[0.98] transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 mt-2">
                   <Plus className="w-4 h-4" />
                   Add Subscription
@@ -1045,6 +1206,12 @@ export default function DashboardPage() {
         onClose={() => setShowVerificationModal(false)}
         onSuccess={() => fetchUser()}
       />
+      {showServicePicker && (
+        <ServicePickerModal
+          onSelect={handleServiceSelect}
+          onClose={() => setShowServicePicker(false)}
+        />
+      )}
     </main>
   );
 }

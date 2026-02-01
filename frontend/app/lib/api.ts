@@ -1,6 +1,6 @@
 "use client";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000";
+const API_BASE = "/backend_api";
 
 type ApiFetchOptions = RequestInit & { skipAuth?: boolean };
 
@@ -17,24 +17,29 @@ export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(url, {
-    ...opts,
-    headers,
-  });
+  try {
+    const res = await fetch(url, {
+      ...opts,
+      headers,
+    });
 
-  // Auto logout on 401
-  if (res.status === 401) {
-    localStorage.removeItem("subsaver_token");
-    if (typeof window !== "undefined") window.location.href = "/login";
-    throw new Error("Unauthorized");
+    // Auto logout on 401
+    if (res.status === 401) {
+      localStorage.removeItem("subsaver_token");
+      if (typeof window !== "undefined") window.location.href = "/login";
+      throw new Error("Unauthorized");
+    }
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      const msg = data?.detail || data?.message || `Request failed (${res.status})`;
+      throw new Error(msg);
+    }
+
+    return data;
+  } catch (err) {
+    console.error("[API DEBUG] Fetch Error:", err);
+    throw err;
   }
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    const msg = data?.detail || data?.message || `Request failed (${res.status})`;
-    throw new Error(msg);
-  }
-
-  return data;
 }
