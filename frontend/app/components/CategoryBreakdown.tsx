@@ -9,15 +9,15 @@ interface CategoryData {
 }
 
 const CATEGORIES = [
-    { value: "Entertainment", icon: "🎬", color: "#DC2626" },
-    { value: "Productivity", icon: "💼", color: "#F59E0B" },
-    { value: "Gaming", icon: "🎮", color: "#8B5CF6" },
-    { value: "Utilities", icon: "🔧", color: "#3B82F6" },
-    { value: "Communication", icon: "📱", color: "#10B981" },
-    { value: "Health & Fitness", icon: "🏋️", color: "#EF4444" },
-    { value: "Education", icon: "📚", color: "#6366F1" },
-    { value: "Food & Delivery", icon: "🍔", color: "#F97316" },
-    { value: "Other", icon: "🎨", color: "#6B7280" },
+    { value: "Entertainment", icon: "🎬", color: "#8B5CF6" }, // Violet
+    { value: "Productivity", icon: "💼", color: "#F59E0B" }, // Amber
+    { value: "Gaming", icon: "🎮", color: "#D946EF" }, // Fuchsia
+    { value: "Utilities", icon: "🔧", color: "#3B82F6" }, // Blue
+    { value: "Communication", icon: "📱", color: "#10B981" }, // Emerald
+    { value: "Health & Fitness", icon: "🏋️", color: "#EC4899" }, // Pink
+    { value: "Education", icon: "📚", color: "#6366F1" }, // Indigo
+    { value: "Food & Delivery", icon: "🍔", color: "#F97316" }, // Orange
+    { value: "Other", icon: "🎨", color: "#64748B" }, // Slate
 ];
 
 export default function CategoryBreakdown({ data }: { data: CategoryData[] }) {
@@ -34,9 +34,9 @@ export default function CategoryBreakdown({ data }: { data: CategoryData[] }) {
     });
 
     return (
-        <div className="glass-card rounded-2xl p-6 h-[400px] flex flex-col">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-red-500" />
+        <div className="glass-card rounded-2xl p-6 h-[400px] flex flex-col border-white/10 bg-white/5 backdrop-blur-xl">
+            <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-fuchsia-500" />
                 Category Breakdown
             </h3>
 
@@ -51,13 +51,21 @@ export default function CategoryBreakdown({ data }: { data: CategoryData[] }) {
                             outerRadius={80}
                             paddingAngle={5}
                             dataKey="value"
+                            stroke="none"
                         >
                             {chartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                                <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                         </Pie>
                         <Tooltip
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            contentStyle={{
+                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                borderRadius: '12px',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)',
+                                color: '#fff'
+                            }}
+                            itemStyle={{ color: '#fff' }}
                             formatter={(value: any) => `$${value.toFixed(2)}`}
                         />
                     </PieChart>
@@ -66,8 +74,8 @@ export default function CategoryBreakdown({ data }: { data: CategoryData[] }) {
                 {/* Center Text */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="text-center">
-                        <p className="text-xs text-gray-500 font-medium uppercase">Total</p>
-                        <p className="text-xl font-bold text-gray-900">
+                        <p className="text-xs text-gray-400 font-medium uppercase">Total</p>
+                        <p className="text-xl font-bold text-white">
                             ${chartData.reduce((acc, curr) => acc + curr.value, 0).toFixed(0)}
                         </p>
                     </div>
@@ -76,17 +84,17 @@ export default function CategoryBreakdown({ data }: { data: CategoryData[] }) {
 
             <div className="mt-4 space-y-2 overflow-y-auto pr-2 max-h-[120px] custom-scrollbar">
                 {chartData.slice(0, 5).map((cat, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-sm group">
+                    <div key={idx} className="flex items-center justify-between text-sm group hover:bg-white/5 p-2 rounded-lg transition-colors">
                         <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full ring-2 ring-opacity-50 ring-offset-1" style={{ backgroundColor: cat.color, borderColor: cat.color }} />
-                            <span className="text-gray-600 font-medium flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: cat.color, color: cat.color }} />
+                            <span className="text-gray-300 font-medium flex items-center gap-2">
                                 <span>{cat.icon}</span>
                                 {cat.name}
                             </span>
                         </div>
                         <div className="flex items-center gap-3">
-                            <span className="font-semibold text-gray-900">${cat.value.toFixed(2)}</span>
-                            <span className="text-xs text-gray-400 w-8 text-right">{cat.percentage.toFixed(0)}%</span>
+                            <span className="font-semibold text-white">${cat.value.toFixed(2)}</span>
+                            <span className="text-xs text-gray-500 w-8 text-right">{cat.percentage.toFixed(0)}%</span>
                         </div>
                     </div>
                 ))}

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { TrendingUp, Mail, Lock, ArrowRight, Sparkles } from "lucide-react";
+import Image from "next/image";
+import { Layers, Mail, Lock, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -36,73 +37,78 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
+    <main className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-fuchsia-600/10 rounded-full blur-[120px] pointer-events-none" />
+
       {/* Logo/Brand */}
-      <Link href="/" className="absolute top-6 left-6 flex items-center gap-2 group">
-        <div className="bg-red-600 rounded-lg p-1.5 shadow-md group-hover:scale-110 transition-transform">
-          <TrendingUp className="w-5 h-5 text-white" />
+      <Link href="/" className="absolute top-6 left-6 flex items-center gap-2 group z-10">
+        <div className="bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-lg p-1.5 shadow-lg group-hover:scale-110 transition-transform">
+          <Image src="/logo.png" alt="SubSaver Logo" width={24} height={24} className="w-6 h-6 rounded" />
         </div>
-        <span className="text-xl font-bold tracking-tight text-gray-900">
-          Sub<span className="text-red-600">Saver</span>
+        <span className="text-xl font-bold tracking-tight text-white">
+          Sub<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">Saver</span>
         </span>
       </Link>
 
-      <div className="w-full max-w-md">
-        <div className="glass-card rounded-2xl p-8 lg:p-10">
+      <div className="w-full max-w-md relative z-10">
+        <div className="glass-card rounded-2xl p-8 lg:p-10 border-white/10 bg-white/5 backdrop-blur-xl">
           <div className="mb-8">
-            <div className="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3 py-1.5 rounded-full text-sm font-semibold mb-4">
-              <Sparkles className="w-4 h-4" />
-              Free Forever
+            <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 text-violet-300 px-3 py-1.5 rounded-full text-xs font-semibold mb-4 backdrop-blur-md">
+              <Sparkles className="w-3 h-3" />
+              Join 10,000+ Students
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h1>
-            <p className="text-gray-600">
-              Start tracking subscriptions in under 2 minutes
+            <h1 className="text-3xl font-bold text-white mb-2">Create account</h1>
+            <p className="text-gray-400">
+              Start saving money in under 2 minutes
             </p>
           </div>
 
           <form className="space-y-5" onSubmit={onSubmit}>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Email
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Student Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10 pointer-events-none" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 z-10 pointer-events-none" />
                 <input
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   type="email"
                   style={{ paddingLeft: '3rem' }}
-                  className="w-full pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
-                  placeholder="you@example.com"
+                  className="w-full pr-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-500 focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 outline-none transition text-sm"
+                  placeholder="you@edu.com"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10 pointer-events-none" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 z-10 pointer-events-none" />
                 <input
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   type="password"
                   style={{ paddingLeft: '3rem' }}
-                  className="w-full pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
+                  className="w-full pr-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-500 focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 outline-none transition text-sm"
                   placeholder="••••••••"
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Use at least 6 characters for better security
+              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-green-500" />
+                At least 6 characters
               </p>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-red-600 text-white font-bold py-3.5 rounded-xl hover:bg-red-700 active:scale-[0.98] transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 mt-6"
+              className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-bold py-3.5 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-violet-600/20 flex items-center justify-center gap-2 mt-6"
             >
               Create free account
               <ArrowRight className="w-4 h-4" />
@@ -110,15 +116,15 @@ export default function RegisterPage() {
           </form>
 
           {msg && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-xl">
-              <p className="text-sm text-red-600 font-medium">{msg}</p>
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+              <p className="text-sm text-red-400 font-medium">{msg}</p>
             </div>
           )}
 
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600 text-center">
+          <div className="mt-8 pt-6 border-t border-white/10">
+            <p className="text-sm text-gray-400 text-center">
               Already have an account?{" "}
-              <Link className="text-red-600 font-semibold hover:text-red-700 transition-colors" href="/login">
+              <Link className="text-violet-400 font-semibold hover:text-violet-300 transition-colors" href="/login">
                 Log in
               </Link>
             </p>

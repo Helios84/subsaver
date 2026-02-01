@@ -86,15 +86,15 @@ type User = {
   edu_email?: string;
 };
 
-const COLORS = ["#DC2626", "#F87171", "#FDA4AF", "#E5E7EB"];
+const COLORS = ["#7C3AED", "#db2777", "#F472B6", "#E5E7EB"]; // Violet, Pink, Light Pink, Gray
 
 const CATEGORIES = [
-  { value: "Entertainment", icon: "🎬", color: "#DC2626" },
+  { value: "Entertainment", icon: "🎬", color: "#7C3AED" }, // Violet
   { value: "Productivity", icon: "💼", color: "#F59E0B" },
   { value: "Gaming", icon: "🎮", color: "#8B5CF6" },
   { value: "Utilities", icon: "🔧", color: "#3B82F6" },
   { value: "Communication", icon: "📱", color: "#10B981" },
-  { value: "Health & Fitness", icon: "🏋️", color: "#EF4444" },
+  { value: "Health & Fitness", icon: "🏋️", color: "#db2777" }, // Pink
   { value: "Education", icon: "📚", color: "#6366F1" },
   { value: "Food & Delivery", icon: "🍔", color: "#F97316" },
   { value: "Other", icon: "🎨", color: "#6B7280" },
@@ -130,8 +130,8 @@ function getRenewalBadgeColor(daysUntil: number | null): {
   if (daysUntil === null) {
     return {
       bg: "bg-gray-100",
-      text: "text-gray-600",
-      border: "border-gray-200",
+      text: "text-gray-400",
+      border: "border-white/10",
       label: "No date set"
     };
   }
@@ -640,7 +640,10 @@ export default function DashboardPage() {
   };
 
   return (
-    <main className="min-h-screen pb-12">
+    <main className="min-h-screen bg-[#0F172A] text-white pb-20 relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-fuchsia-600/10 rounded-full blur-[120px] pointer-events-none" />
       {/* Header */}
       <header className="sticky top-0 z-20 glass-panel border-b-0">
         <div className="mx-auto max-w-[1600px] px-6 lg:px-10 py-4 flex items-center justify-between">
@@ -648,8 +651,8 @@ export default function DashboardPage() {
             <div className="bg-red-600 rounded-lg p-1.5 shadow-md">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-gray-900">
-              Sub<span className="text-red-600">Saver</span>
+            <h1 className="text-xl font-bold tracking-tight text-white">
+              Sub<span className="text-violet-400">Saver</span>
             </h1>
           </div>
 
@@ -672,15 +675,15 @@ export default function DashboardPage() {
                 )}
               </div>
             )}
-            <Link className="text-sm text-gray-600 hover:text-red-600 font-medium transition-colors" href="/">
+            <Link className="text-sm text-gray-400 hover:text-violet-400 font-medium transition-colors" href="/">
               Home
             </Link>
-            <Link className="text-sm text-gray-600 hover:text-red-600 font-medium transition-colors" href="/settings">
+            <Link className="text-sm text-gray-400 hover:text-violet-400 font-medium transition-colors" href="/settings">
               Settings
             </Link>
             <button
               onClick={logout}
-              className="group flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 font-medium transition-colors"
+              className="group flex items-center gap-2 text-sm text-gray-400 hover:text-violet-400 font-medium transition-colors"
             >
               <LogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               Logout
@@ -695,45 +698,45 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="glass-card rounded-2xl p-5 sm:p-6 relative overflow-hidden">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Total Monthly Spend</h3>
-              <div className="p-2 bg-red-100 rounded-full text-red-600">
+              <h3 className="text-sm font-medium text-gray-400">Total Monthly Spend</h3>
+              <div className="p-2 bg-red-100 rounded-full text-violet-400">
                 <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalMonthly}</p>
-            <div className="absolute -right-6 -bottom-6 w-24 h-24 sm:w-32 sm:h-32 bg-red-500/5 rounded-full blur-2xl" />
+            <p className="text-2xl sm:text-3xl font-bold text-white">{totalMonthly}</p>
+            <div className="absolute -right-6 -bottom-6 w-24 h-24 sm:w-32 sm:h-32 bg-violet-500/100/5 rounded-full blur-2xl" />
           </div>
 
           <div className="glass-card rounded-2xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Active Subscriptions</h3>
+              <h3 className="text-sm font-medium text-gray-400">Active Subscriptions</h3>
               <div className="p-2 bg-blue-100 rounded-full text-blue-600">
                 <Activity className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalActive}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-white">{totalActive}</p>
           </div>
 
           <div className="glass-card rounded-2xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Yearly Projection</h3>
+              <h3 className="text-sm font-medium text-gray-400">Yearly Projection</h3>
               <div className="p-2 bg-green-100 rounded-full text-green-600">
                 <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">
+            <p className="text-2xl sm:text-3xl font-bold text-white">
               {formatMoney(Number(totalMonthly.replace('$', '')) * 12 * 100)}
             </p>
           </div>
 
           <div className="glass-card rounded-2xl p-5 sm:p-6 relative overflow-hidden">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-500">Avg per Sub</h3>
+              <h3 className="text-sm font-medium text-gray-400">Avg per Sub</h3>
               <div className="p-2 bg-purple-100 rounded-full text-purple-600">
                 <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{avgPerSub}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-white">{avgPerSub}</p>
             <div className="absolute -right-6 -bottom-6 w-24 h-24 sm:w-32 sm:h-32 bg-purple-500/5 rounded-full blur-2xl" />
           </div>
         </div>
@@ -747,7 +750,7 @@ export default function DashboardPage() {
           {/* Subscription List */}
           <section className="glass-card rounded-2xl p-6 min-h-[400px]">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                 Your Subscriptions
                 <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">{subs.length}</span>
               </h2>
@@ -756,11 +759,11 @@ export default function DashboardPage() {
             {loading ? (
               <div className="space-y-4">
                 {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="h-24 bg-gray-50/80 animate-pulse rounded-xl border border-gray-100" />
+                  <div key={i} className="h-24 bg-white/5/80 animate-pulse rounded-xl border border-gray-100" />
                 ))}
               </div>
             ) : subs.length === 0 ? (
-              <div className="rounded-xl border-2 border-dashed border-gray-200 p-12 text-center text-gray-500">
+              <div className="rounded-xl border-2 border-dashed border-white/10 p-12 text-center text-gray-400">
                 <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
                   <Plus className="w-6 h-6 text-gray-400" />
                 </div>
@@ -796,14 +799,14 @@ export default function DashboardPage() {
                             {!isEditing ? (
                               <>
                                 <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-600 font-bold text-lg shrink-0">
+                                  <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-400 font-bold text-lg shrink-0">
                                     {s.name.charAt(0).toUpperCase()}
                                   </div>
                                   <div className="min-w-0 flex-1">
-                                    <h3 className="font-semibold text-gray-900 truncate text-base">{s.name}</h3>
-                                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mt-0.5">
-                                      <span className="capitalize bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">{s.billing_cycle}</span>
-                                      <span className={`px-1.5 py-0.5 rounded capitalize ${s.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                                    <h3 className="font-semibold text-white truncate text-base">{s.name}</h3>
+                                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 mt-0.5">
+                                      <span className="capitalize bg-gray-100 px-1.5 py-0.5 rounded text-gray-400">{s.billing_cycle}</span>
+                                      <span className={`px-1.5 py-0.5 rounded capitalize ${s.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}>
                                         {s.status}
                                       </span>
                                     </div>
@@ -816,7 +819,7 @@ export default function DashboardPage() {
                                       return (
                                         <div className="mt-2 flex items-center gap-1.5">
                                           <Calendar className="w-3 h-3 text-gray-400" />
-                                          <span className="text-xs text-gray-500">
+                                          <span className="text-xs text-gray-400">
                                             {formatDate(s.next_billing_date)}
                                           </span>
                                           {daysUntil !== null && (
@@ -835,15 +838,15 @@ export default function DashboardPage() {
                               <div className="space-y-4">
                                 <div className="grid gap-4 sm:grid-cols-2">
                                   <div>
-                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Service Name</label>
+                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Service Name</label>
                                     <input
                                       value={editName}
                                       onChange={(e) => setEditName(e.target.value)}
-                                      className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none text-sm"
+                                      className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm"
                                     />
                                   </div>
                                   <div>
-                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Price</label>
+                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Price</label>
                                     <div className="relative mt-1">
                                       <span className="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">$</span>
                                       <input
@@ -852,7 +855,7 @@ export default function DashboardPage() {
                                         step="0.01"
                                         value={editPrice}
                                         onChange={(e) => setEditPrice(e.target.value)}
-                                        className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none text-sm"
+                                        className="w-full pl-10 pr-3 py-2 rounded-lg border border-white/20 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm"
                                       />
                                     </div>
                                   </div>
@@ -861,7 +864,7 @@ export default function DashboardPage() {
                                   <select
                                     value={editCycle}
                                     onChange={(e) => setEditCycle(e.target.value as BillingCycle)}
-                                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                                    className="w-full px-3 py-2 rounded-lg border border-white/20 text-sm"
                                   >
                                     <option value="monthly">Monthly</option>
                                     <option value="yearly">Yearly</option>
@@ -869,18 +872,18 @@ export default function DashboardPage() {
                                   <select
                                     value={editStatus}
                                     onChange={(e) => setEditStatus(e.target.value as Status)}
-                                    className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                                    className="w-full px-3 py-2 rounded-lg border border-white/20 text-sm"
                                   >
                                     <option value="active">Active</option>
                                     <option value="cancelled">Cancelled</option>
                                   </select>
                                 </div>
                                 <div>
-                                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</label>
+                                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Category</label>
                                   <select
                                     value={editCategory}
                                     onChange={(e) => setEditCategory(e.target.value)}
-                                    className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                                    className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 text-sm"
                                   >
                                     {CATEGORIES.map((cat) => (
                                       <option key={cat.value} value={cat.value}>
@@ -890,24 +893,24 @@ export default function DashboardPage() {
                                   </select>
                                 </div>
                                 <div>
-                                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Next Billing Date</label>
+                                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Next Billing Date</label>
                                   <input
                                     type="date"
                                     value={editBillingDate}
                                     onChange={(e) => setEditBillingDate(e.target.value)}
-                                    className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none text-sm"
+                                    className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Split Cost?</label>
+                                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Split Cost?</label>
                                   <div className="flex items-center gap-2 mt-2">
                                     <input
                                       type="checkbox"
                                       checked={editIsSplit}
                                       onChange={(e) => setEditIsSplit(e.target.checked)}
-                                      className="w-4 h-4 text-red-600 rounded focus:ring-red-500 border-gray-300"
+                                      className="w-4 h-4 text-violet-400 rounded focus:ring-red-500 border-white/20"
                                     />
-                                    <span className="text-sm text-gray-700">Yes, split with others</span>
+                                    <span className="text-sm text-gray-300">Yes, split with others</span>
                                   </div>
                                   {editIsSplit && (
                                     <div className="mt-2">
@@ -917,7 +920,7 @@ export default function DashboardPage() {
                                         min="1"
                                         value={editSplitWith}
                                         onChange={(e) => setEditSplitWith(parseInt(e.target.value) || 1)}
-                                        className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-red-500 outline-none text-sm"
+                                        className="w-full px-3 py-2 rounded-lg border border-white/20 focus:border-violet-500 outline-none text-sm"
                                       />
                                     </div>
                                   )}
@@ -929,7 +932,7 @@ export default function DashboardPage() {
                           <div className="flex flex-col items-end gap-1 shrink-0">
                             {isDeleting ? (
                               <div className="flex flex-col items-end gap-2 mt-1">
-                                <span className="text-xs font-bold text-red-600 animate-pulse">Confirm Delete?</span>
+                                <span className="text-xs font-bold text-violet-400 animate-pulse">Confirm Delete?</span>
                                 <div className="flex items-center gap-2">
                                   <button
                                     onClick={() => executeDelete(s.id)}
@@ -939,7 +942,7 @@ export default function DashboardPage() {
                                   </button>
                                   <button
                                     onClick={cancelDelete}
-                                    className="px-3 py-1.5 text-xs font-medium border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition"
+                                    className="px-3 py-1.5 text-xs font-medium border border-white/10 text-gray-400 rounded-lg hover:bg-white/5 transition"
                                   >
                                     No
                                   </button>
@@ -950,15 +953,15 @@ export default function DashboardPage() {
                                 <div className="mb-2">
                                   {(s.split_with && s.split_with > 1) ? (
                                     <div className="flex flex-col items-end">
-                                      <div className="text-lg font-bold text-gray-900 tracking-tight">
+                                      <div className="text-lg font-bold text-white tracking-tight">
                                         {formatMoney(s.price_cents / s.split_with)}
                                       </div>
-                                      <div className="text-xs text-gray-500">
+                                      <div className="text-xs text-gray-400">
                                         My Share (Total: {formatMoney(s.price_cents)})
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="text-lg font-bold text-gray-900 tracking-tight">
+                                    <div className="text-lg font-bold text-white tracking-tight">
                                       {formatMoney(s.price_cents)}
                                     </div>
                                   )}
@@ -980,7 +983,7 @@ export default function DashboardPage() {
                                   </button>
                                   <button
                                     onClick={() => confirmDelete(s.id)}
-                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition"
+                                    className="p-1.5 text-gray-400 hover:text-violet-400 hover:bg-violet-500/10 rounded-md transition"
                                     title="Delete"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -997,7 +1000,7 @@ export default function DashboardPage() {
                                 </button>
                                 <button
                                   onClick={cancelEdit}
-                                  className="flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
+                                  className="flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border border-white/20 text-gray-300 hover:bg-white/5 transition"
                                 >
                                   <X className="w-3 h-3" /> Cancel
                                 </button>
@@ -1016,22 +1019,22 @@ export default function DashboardPage() {
 
           {/* Add Form Side Panel */}
           <div className="space-y-6">
-            <section className="glass-card rounded-2xl p-6 sticky top-24">
-              <h2 className="text-lg font-semibold text-gray-900 mb-5 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-red-600" />
+            <section className="glass-card rounded-2xl p-6 sticky top-24 border-white/10 bg-white/5 backdrop-blur-xl">
+              <h2 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">
+                <Plus className="w-5 h-5 text-fuchsia-500" />
                 Add New
               </h2>
 
               <form className="space-y-4" onSubmit={createSub}>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Service Name</label>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Service Name</label>
                   <div className="relative">
                     <div className="flex gap-2">
                       <input
                         value={name}
                         onChange={(e) => handleNameChange(e.target.value)}
                         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                        className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 outline-none transition text-sm"
                         placeholder="e.g. Spotify"
                         required
                         autoComplete="off"
@@ -1054,13 +1057,13 @@ export default function DashboardPage() {
                             key={service.id}
                             type="button"
                             onClick={() => handleServiceSelect(service)}
-                            className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between group transition border-b border-gray-50 last:border-0"
+                            className="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center justify-between group transition border-b border-gray-50 last:border-0"
                           >
                             <div>
-                              <div className="font-medium text-gray-900 group-hover:text-blue-600 transition">
+                              <div className="font-medium text-white group-hover:text-blue-600 transition">
                                 {service.service_name}
                               </div>
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-gray-400">
                                 {service.category}
                               </div>
                             </div>
@@ -1080,7 +1083,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Cost</label>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Cost</label>
                   <div className="relative">
                     <span className="absolute left-4 top-2.5 text-gray-400 text-sm font-medium">$</span>
                     <input
@@ -1089,25 +1092,25 @@ export default function DashboardPage() {
                       type="number"
                       min="0"
                       step="0.01"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/10 bg-white/5/50 focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Billing Cycle</label>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Billing Cycle</label>
                   <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100/80 rounded-xl">
                     <button
                       type="button"
                       onClick={() => setCycle('monthly')}
-                      className={`text-sm py-2 rounded-lg font-medium transition-all ${cycle === 'monthly' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                      className={`text-sm py-2 rounded-lg font-medium transition-all ${cycle === 'monthly' ? 'bg-white text-violet-400 shadow-sm' : 'text-gray-400 hover:text-gray-300'}`}
                     >
                       Monthly
                     </button>
                     <button
                       type="button"
                       onClick={() => setCycle('yearly')}
-                      className={`text-sm py-2 rounded-lg font-medium transition-all ${cycle === 'yearly' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                      className={`text-sm py-2 rounded-lg font-medium transition-all ${cycle === 'yearly' ? 'bg-white text-violet-400 shadow-sm' : 'text-gray-400 hover:text-gray-300'}`}
                     >
                       Yearly
                     </button>
@@ -1115,11 +1118,11 @@ export default function DashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Category</label>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Category</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
+                    className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5/50 focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
                   >
                     {CATEGORIES.map((cat) => (
                       <option key={cat.value} value={cat.value}>
@@ -1130,37 +1133,37 @@ export default function DashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Next Billing Date</label>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Next Billing Date</label>
                   <input
                     value={billingDate}
                     onChange={(e) => setBillingDate(e.target.value)}
                     type="date"
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
+                    className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5/50 focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
                   />
                   <p className="text-xs text-gray-400 mt-1">Optional - for email reminders</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Split Cost?</label>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Split Cost?</label>
                   <div className="flex items-center gap-2 mb-2">
                     <input
                       type="checkbox"
                       checked={isSplit}
                       onChange={(e) => setIsSplit(e.target.checked)}
-                      className="w-4 h-4 text-red-600 rounded focus:ring-red-500 border-gray-300"
+                      className="w-4 h-4 text-violet-400 rounded focus:ring-red-500 border-white/20"
                     />
-                    <span className="text-sm text-gray-700">Yes, I share this subscription</span>
+                    <span className="text-sm text-gray-300">Yes, I share this subscription</span>
                   </div>
 
                   {isSplit && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Number of People (including you)</label>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Number of People (including you)</label>
                       <input
                         value={splitWith}
                         onChange={(e) => setSplitWith(parseInt(e.target.value) || 1)}
                         type="number"
                         min="1"
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
+                        className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5/50 focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
                       />
                     </div>
                   )}
@@ -1171,7 +1174,7 @@ export default function DashboardPage() {
                   Add Subscription
                 </button>
 
-                {msg && <p className="text-xs text-red-600 text-center bg-red-50 p-2 rounded-lg border border-red-100">{msg}</p>}
+                {msg && <p className="text-xs text-violet-400 text-center bg-violet-500/10 p-2 rounded-lg border border-red-100">{msg}</p>}
               </form>
             </section>
 
@@ -1215,3 +1218,4 @@ export default function DashboardPage() {
     </main>
   );
 }
+

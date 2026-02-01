@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "SubSaver - Track Your Subscriptions",
-  description: "Minimal subscription tracking app",
+  title: "SubSaver | Smart Savings for Students",
+  description: "Manage subscriptions, split costs, and verify student status.",
 };
 
 export default function RootLayout({
