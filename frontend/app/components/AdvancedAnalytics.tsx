@@ -6,8 +6,9 @@ import CategoryBreakdown from './CategoryBreakdown';
 import InsightsPanel from './InsightsPanel';
 import UpcomingRenewals from './UpcomingRenewals';
 import StudentSavingsCard from './StudentSavingsCard';
+import SkeletonLoader, { ChartSkeleton } from './SkeletonLoader';
 
-export default function AdvancedAnalytics({ upcomingRenewals }: { upcomingRenewals: any[] }) {
+export default function AdvancedAnalytics({ upcomingRenewals, widgets }: { upcomingRenewals: any[], widgets: any }) {
     const [trendsData, setTrendsData] = useState<any>(null);
     const [insights, setInsights] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -30,25 +31,40 @@ export default function AdvancedAnalytics({ upcomingRenewals }: { upcomingRenewa
         load();
     }, []);
 
-    if (loading) return <div className="h-96 animate-pulse bg-gray-100 rounded-3xl mt-6"></div>;
+    if (loading) return (
+        <div className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <SkeletonLoader />
+                <ChartSkeleton />
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <ChartSkeleton />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <SkeletonLoader />
+                    <SkeletonLoader />
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div className="space-y-6 mt-6">
             {/* Row 1: Savings & Trends */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <StudentSavingsCard />
-                {trendsData && <SpendingTrendsChart data={trendsData.trends} />}
+                {widgets.savings_card && <StudentSavingsCard />}
+                {widgets.spending_trends && trendsData && <SpendingTrendsChart data={trendsData.trends} />}
             </div>
 
             {/* Row 2: Category & Insights/Renewals */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {trendsData && <CategoryBreakdown data={trendsData.breakdown} />}
+                {widgets.category_breakdown && trendsData && <CategoryBreakdown data={trendsData.breakdown} />}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <InsightsPanel insights={insights} />
-                    <UpcomingRenewals subscriptions={upcomingRenewals} />
+                    {widgets.insights && <InsightsPanel insights={insights} />}
+                    {widgets.renewals && <UpcomingRenewals subscriptions={upcomingRenewals} />}
                 </div>
             </div>
         </div>
     );
 }
+

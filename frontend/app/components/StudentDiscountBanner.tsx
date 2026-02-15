@@ -21,16 +21,16 @@ export default function StudentDiscountBanner({ discount, onLearnMore }: Props) 
     if (discount.already_applied) {
         // Show a subtle "applied" badge instead of the full banner
         return (
-            <div className="mb-3 bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-3">
-                <div className="p-2 bg-green-500/20 rounded-lg">
+            <div className="mb-2 bg-green-500/10 border border-green-500/30 rounded-lg p-2.5 flex items-center gap-2.5">
+                <div className="p-1.5 bg-green-500/20 rounded-lg">
                     <GraduationCap className="w-4 h-4 text-green-400" />
                 </div>
-                <div className="flex-1">
-                    <p className="text-sm font-semibold text-green-400">
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-green-300">
                         ✅ Student Discount Applied
                     </p>
-                    <p className="text-xs text-green-500/80">
-                        Saving ${monthlySavings}/month • ${annualSavings}/year
+                    <p className="text-xs text-green-400/70 mt-0.5">
+                        Saving ${monthlySavings}/mo • ${annualSavings}/yr
                     </p>
                 </div>
             </div>
@@ -38,51 +38,40 @@ export default function StudentDiscountBanner({ discount, onLearnMore }: Props) 
     }
 
     return (
-        <div className="mb-3 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 rounded-xl p-4 shadow-lg hover:shadow-xl transition-shadow cursor-pointer group relative overflow-hidden"
+        <div className="mb-2 bg-gradient-to-r from-violet-500/15 to-fuchsia-500/15 border border-violet-500/30 rounded-lg p-3 hover:border-violet-500/50 transition-all cursor-pointer group relative overflow-hidden backdrop-blur-sm"
             onClick={onLearnMore}>
-            <div className="flex items-center gap-3 relative z-10">
+            <div className="flex items-center gap-2.5 relative z-10">
                 {/* Icon */}
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl group-hover:scale-110 transition-transform shadow-inner border border-white/10">
-                    <GraduationCap className="w-6 h-6 text-white" />
+                <div className="p-1.5 bg-violet-500/20 rounded-lg group-hover:bg-violet-500/30 transition-colors">
+                    <GraduationCap className="w-4 h-4 text-violet-300" />
                 </div>
 
                 {/* Content */}
-                <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-white font-bold text-lg drop-shadow-sm">
-                            STUDENT DEAL FOUND!
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-violet-200 font-semibold text-sm">
+                            Student Deal Available
                         </h3>
-                        <div className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full border border-white/10 shadow-sm">
-                            <span className="text-white text-xs font-bold">
-                                {discount.discount_percentage}% OFF
-                            </span>
+                        <div className="px-1.5 py-0.5 bg-violet-500/25 rounded text-violet-200 text-[10px] font-bold border border-violet-500/30">
+                            {discount.discount_percentage}% OFF
                         </div>
                     </div>
-                    <p className="text-white/90 text-sm font-medium">
-                        Save ${monthlySavings}/month • ${annualSavings}/year
+                    <p className="text-gray-400 text-xs mt-0.5">
+                        Save ${monthlySavings}/mo • ${annualSavings}/yr
                     </p>
                 </div>
 
                 {/* Arrow */}
-                <div className="flex items-center gap-2">
-                    <div className="hidden sm:flex flex-col items-end">
-                        <span className="text-white text-xs font-medium opacity-90">View Deal</span>
-                        <div className="flex items-center gap-1 text-white/80">
-                            <TrendingUp className="w-3 h-3" />
-                            <span className="text-xs">Verify now</span>
-                        </div>
-                    </div>
-                    <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm group-hover:bg-white/30 transition-colors">
-                        <ExternalLink className="w-5 h-5 text-white" />
+                <div className="flex items-center gap-1.5">
+                    <span className="text-violet-300 text-xs font-medium hidden sm:inline">Details</span>
+                    <div className="bg-violet-500/20 p-1.5 rounded group-hover:bg-violet-500/30 transition-colors">
+                        <ExternalLink className="w-3.5 h-3.5 text-violet-300" />
                     </div>
                 </div>
             </div>
 
-            {/* Animated shine effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-
-            {/* Background Texture */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none mix-blend-overlay" />
+            {/* Subtle shine effect on hover */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
         </div>
     );
 }

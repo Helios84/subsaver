@@ -77,6 +77,19 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Demo Mode Disclaimer */}
+                            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                <div>
+                                    <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                                        ⚠️ Demo Mode
+                                    </h4>
+                                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                                        This is a simplified verification for demonstration purposes. Real verification would require email confirmation and institutional verification.
+                                    </p>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     University Email Address

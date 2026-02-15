@@ -37,6 +37,11 @@ import {
   AlertCircle,
   BadgeCheck,
   GraduationCap,
+  Settings,
+  Layout,
+  Bomb,
+  Zap,
+  Mail,
   Search, // Added Search icon
 } from "lucide-react";
 import VerificationModal from "../components/VerificationModal";
@@ -44,6 +49,7 @@ import StudentDiscountBanner from "../components/StudentDiscountBanner";
 import StudentDiscountModal from "../components/StudentDiscountModal";
 import AdvancedAnalytics from "../components/AdvancedAnalytics";
 import ServicePickerModal from "../components/ServicePickerModal"; // Added ServicePickerModal import
+import DashboardEmptyState from "../components/DashboardEmptyState";
 
 type BillingCycle = "monthly" | "yearly";
 type Status = "active" | "cancelled";
@@ -209,6 +215,34 @@ export default function DashboardPage() {
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [showServicePicker, setShowServicePicker] = useState(false); // Added ServicePickerModal import
 
+  // Customization State
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false);
+  const [widgets, setWidgets] = useState({
+    stats: true,
+    spending_trends: true,
+    category_breakdown: true,
+    insights: true,
+    renewals: true,
+    savings_card: true
+  });
+
+  useEffect(() => {
+    const saved = localStorage.getItem("dashboard_widgets");
+    if (saved) {
+      try {
+        setWidgets(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse widget preferences", e);
+      }
+    }
+  }, []);
+
+  const toggleWidget = (key: keyof typeof widgets) => {
+    const newWidgets = { ...widgets, [key]: !widgets[key] };
+    setWidgets(newWidgets);
+    localStorage.setItem("dashboard_widgets", JSON.stringify(newWidgets));
+  };
+
   // Autocomplete State
   const [allServices, setAllServices] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -245,6 +279,27 @@ export default function DashboardPage() {
       setUser(data);
     } catch (err) {
       console.error("Failed to fetch user profile", err);
+    }
+  }
+
+  async function addSampleData() {
+    const sampleSubs = [
+      { name: "Spotify", price_cents: 999, billing_cycle: "monthly", category: "Entertainment", split_with: 2 },
+      { name: "Netflix", price_cents: 1599, billing_cycle: "monthly", category: "Entertainment", split_with: 4 },
+      { name: "Adobe Creative Cloud", price_cents: 5499, billing_cycle: "monthly", category: "Productivity", split_with: 1 },
+      { name: "Xbox Game Pass", price_cents: 999, billing_cycle: "monthly", category: "Gaming", split_with: 1 },
+    ];
+
+    try {
+      for (const sub of sampleSubs) {
+        await apiFetch("/subscriptions", {
+          method: "POST",
+          body: JSON.stringify(sub),
+        });
+      }
+      await fetchSubs(); // Refresh
+    } catch (err) {
+      console.error("Failed to add sample data", err);
     }
   }
 
@@ -639,6 +694,30 @@ export default function DashboardPage() {
     }
   };
 
+  const QuickActions = () => (
+    <div className="flex gap-4 mb-8 overflow-x-auto pb-2">
+      <button
+        onClick={() => document.getElementById('add-new-form')?.scrollIntoView({ behavior: 'smooth' })}
+        className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-violet-500/20 group shrink-0"
+      >
+        <div className="bg-white/20 p-1.5 rounded-lg">
+          <Plus className="w-5 h-5 text-white" />
+        </div>
+        <span className="font-bold text-white">Add Subscription</span>
+      </button>
+
+      <button
+        onClick={() => setShowCustomizeModal(true)}
+        className="flex items-center gap-3 px-5 py-3 bg-gray-800/50 hover:bg-gray-800 border border-white/5 rounded-xl hover:scale-105 active:scale-95 transition-all group shrink-0"
+      >
+        <div className="bg-fuchsia-500/20 p-1.5 rounded-lg text-fuchsia-400 group-hover:bg-fuchsia-500 group-hover:text-white transition-colors">
+          <Layout className="w-5 h-5" />
+        </div>
+        <span className="font-medium text-gray-200">Customize</span>
+      </button>
+    </div>
+  );
+
   return (
     <main className="min-h-screen bg-[#0F172A] text-white pb-20 relative overflow-hidden">
       {/* Background Effects */}
@@ -647,10 +726,8 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="sticky top-0 z-20 glass-panel border-b-0">
         <div className="mx-auto max-w-[1600px] px-6 lg:px-10 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-red-600 rounded-lg p-1.5 shadow-md">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="SubSaver" className="w-8 h-8" />
             <h1 className="text-xl font-bold tracking-tight text-white">
               Sub<span className="text-violet-400">Saver</span>
             </h1>
@@ -694,527 +771,651 @@ export default function DashboardPage() {
 
       <div className="mx-auto max-w-[1600px] px-6 lg:px-10 py-8 space-y-6">
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <div className="glass-card rounded-2xl p-5 sm:p-6 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-400">Total Monthly Spend</h3>
-              <div className="p-2 bg-red-100 rounded-full text-violet-400">
-                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+
+
+        {/* Quick Actions */}
+        <QuickActions />
+
+        {/* Customization Modal */}
+        {showCustomizeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-[#1E293B] rounded-2xl w-full max-w-md border border-white/10 shadow-2xl p-6 relative">
+              <button
+                onClick={() => setShowCustomizeModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-fuchsia-500/20 rounded-lg">
+                  <Layout className="w-6 h-6 text-fuchsia-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Customize Dashboard</h3>
+                  <p className="text-sm text-gray-400">Choose what you want to see</p>
+                </div>
               </div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-white">{totalMonthly}</p>
-            <div className="absolute -right-6 -bottom-6 w-24 h-24 sm:w-32 sm:h-32 bg-violet-500/100/5 rounded-full blur-2xl" />
-          </div>
 
-          <div className="glass-card rounded-2xl p-5 sm:p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-400">Active Subscriptions</h3>
-              <div className="p-2 bg-blue-100 rounded-full text-blue-600">
-                <Activity className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-white">{totalActive}</p>
-          </div>
-
-          <div className="glass-card rounded-2xl p-5 sm:p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-400">Yearly Projection</h3>
-              <div className="p-2 bg-green-100 rounded-full text-green-600">
-                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-white">
-              {formatMoney(Number(totalMonthly.replace('$', '')) * 12 * 100)}
-            </p>
-          </div>
-
-          <div className="glass-card rounded-2xl p-5 sm:p-6 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-400">Avg per Sub</h3>
-              <div className="p-2 bg-purple-100 rounded-full text-purple-600">
-                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-bold text-white">{avgPerSub}</p>
-            <div className="absolute -right-6 -bottom-6 w-24 h-24 sm:w-32 sm:h-32 bg-purple-500/5 rounded-full blur-2xl" />
-          </div>
-        </div>
-
-        {/* Advanced Analytics Section */}
-        {subs.length > 0 && <AdvancedAnalytics upcomingRenewals={upcomingRenewals} />}
-
-        {/* Main Content Grid - SWAPPED ORDER: List first, then Side Panel */}
-        <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
-
-          {/* Subscription List */}
-          <section className="glass-card rounded-2xl p-6 min-h-[400px]">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                Your Subscriptions
-                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">{subs.length}</span>
-              </h2>
-            </div>
-
-            {loading ? (
-              <div className="space-y-4">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="h-24 bg-white/5/80 animate-pulse rounded-xl border border-gray-100" />
+              <div className="space-y-3">
+                {[
+                  { id: 'stats', label: 'Key Statistics', icon: Activity },
+                  { id: 'spending_trends', label: 'Spending Trends', icon: TrendingUp },
+                  { id: 'category_breakdown', label: 'Category Chart', icon: PieChart },
+                  { id: 'insights', label: 'Insights Panel', icon: Zap },
+                  { id: 'renewals', label: 'Upcoming Renewals', icon: Calendar },
+                  { id: 'savings_card', label: 'Savings Card', icon: GraduationCap },
+                ].map((item) => (
+                  <label key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 cursor-pointer transition-colors group">
+                    <div className="flex items-center gap-3">
+                      <item.icon className="w-5 h-5 text-gray-400 group-hover:text-violet-400 transition-colors" />
+                      <span className="font-medium text-gray-200">{item.label}</span>
+                    </div>
+                    <div className={`w-12 h-6 rounded-full relative transition-colors ${widgets[item.id as keyof typeof widgets] ? 'bg-violet-600' : 'bg-gray-700'}`}>
+                      <input
+                        type="checkbox"
+                        className="hidden"
+                        checked={widgets[item.id as keyof typeof widgets]}
+                        onChange={() => toggleWidget(item.id as keyof typeof widgets)}
+                      />
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${widgets[item.id as keyof typeof widgets] ? 'left-7' : 'left-1'}`} />
+                    </div>
+                  </label>
                 ))}
               </div>
-            ) : subs.length === 0 ? (
-              <div className="rounded-xl border-2 border-dashed border-white/10 p-12 text-center text-gray-400">
-                <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                  <Plus className="w-6 h-6 text-gray-400" />
+
+              <button
+                onClick={() => setShowCustomizeModal(false)}
+                className="w-full mt-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Dashboard Content or Empty State */}
+        {!loading && subs.length === 0 ? (
+          <DashboardEmptyState onAddSampleData={addSampleData} />
+        ) : (
+          <>
+            {/* Stats Grid */}
+            {!loading && widgets.stats && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <div className="glass-card rounded-2xl p-5 sm:p-6 relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-gray-400">Total Monthly Spend</h3>
+                    <div className="p-2 bg-red-100 rounded-full text-violet-400">
+                      <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
+                  </div>
+                  <p className="text-2xl sm:text-3xl font-bold text-white">{totalMonthly}</p>
+                  <div className="absolute -right-6 -bottom-6 w-24 h-24 sm:w-32 sm:h-32 bg-violet-500/100/5 rounded-full blur-2xl" />
                 </div>
-                <p className="font-medium">No subscriptions yet</p>
-                <p className="text-sm mt-1">Add your first one to see analytics</p>
+
+                <div className="glass-card rounded-2xl p-5 sm:p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-gray-400">Active Subscriptions</h3>
+                    <div className="p-2 bg-blue-100 rounded-full text-blue-600">
+                      <Activity className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
+                  </div>
+                  <p className="text-2xl sm:text-3xl font-bold text-white">{totalActive}</p>
+                </div>
+
+                <div className="glass-card rounded-2xl p-5 sm:p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-gray-400">Yearly Projection</h3>
+                    <div className="p-2 bg-green-100 rounded-full text-green-600">
+                      <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
+                  </div>
+                  <p className="text-2xl sm:text-3xl font-bold text-white">
+                    {formatMoney(Number(totalMonthly.replace('$', '')) * 12 * 100)}
+                  </p>
+                </div>
+
+                <div className="glass-card rounded-2xl p-5 sm:p-6 relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-gray-400">Avg per Sub</h3>
+                    <div className="p-2 bg-purple-100 rounded-full text-purple-600">
+                      <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
+                  </div>
+                  <p className="text-2xl sm:text-3xl font-bold text-white">{avgPerSub}</p>
+                  <div className="absolute -right-6 -bottom-6 w-24 h-24 sm:w-32 sm:h-32 bg-purple-500/5 rounded-full blur-2xl" />
+                </div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {subs.map((s) => {
-                  const isEditing = editingId === s.id;
-                  const isDeleting = deletingId === s.id;
-                  const discount = studentDiscounts.get(s.id);
+            )}
 
-                  return (
-                    <div key={s.id}>
-                      {/* Student Discount Banner */}
-                      {discount && (
-                        <StudentDiscountBanner
-                          discount={discount}
-                          onLearnMore={() => {
-                            setSelectedDiscount(discount);
-                            setShowDiscountModal(true);
-                          }}
-                        />
-                      )}
+            {/* Advanced Analytics Section */}
+            {subs.length > 0 && <AdvancedAnalytics upcomingRenewals={upcomingRenewals} widgets={widgets} />}
 
-                      {/* Subscription Card */}
-                      <div
-                        className={`group relative rounded-xl border p-4 transition-all duration-300 ${isEditing ? 'border-red-500 ring-4 ring-red-500/10 bg-white' : 'border-gray-100 bg-white hover:border-red-200 hover:shadow-md'}`}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0 flex-1">
-                            {!isEditing ? (
-                              <>
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-400 font-bold text-lg shrink-0">
-                                    {s.name.charAt(0).toUpperCase()}
-                                  </div>
-                                  <div className="min-w-0 flex-1">
-                                    <h3 className="font-semibold text-white truncate text-base">{s.name}</h3>
-                                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 mt-0.5">
-                                      <span className="capitalize bg-gray-100 px-1.5 py-0.5 rounded text-gray-400">{s.billing_cycle}</span>
-                                      <span className={`px-1.5 py-0.5 rounded capitalize ${s.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}>
-                                        {s.status}
-                                      </span>
-                                    </div>
+            {/* Main Content Grid - SWAPPED ORDER: List first, then Side Panel */}
+            <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
 
-                                    {/* Renewal Badge */}
-                                    {(() => {
-                                      const daysUntil = calculateDaysUntilRenewal(s.next_billing_date);
-                                      const badge = getRenewalBadgeColor(daysUntil);
+              {/* Subscription List */}
+              <section className="glass-card rounded-2xl p-6 min-h-[400px]">
+                <div className="mb-8">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 rounded-xl border border-violet-500/30">
+                          <CreditCard className="w-5 h-5 text-violet-300" />
+                        </div>
+                        <h2 className="text-2xl font-bold bg-gradient-to-r from-white via-violet-200 to-fuchsia-200 bg-clip-text text-transparent">
+                          Your Subscriptions
+                        </h2>
+                      </div>
+                      <p className="text-sm text-gray-400 pl-14">Manage and track all your active services</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-white">{subs.length}</div>
+                        <div className="text-xs text-gray-400 uppercase tracking-wider">Total</div>
+                      </div>
+                      <div className="h-12 w-px bg-white/10"></div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-400">{totalActive}</div>
+                        <div className="text-xs text-gray-400 uppercase tracking-wider">Active</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                </div>
 
-                                      return (
-                                        <div className="mt-2 flex items-center gap-1.5">
-                                          <Calendar className="w-3 h-3 text-gray-400" />
-                                          <span className="text-xs text-gray-400">
-                                            {formatDate(s.next_billing_date)}
-                                          </span>
-                                          {daysUntil !== null && (
-                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${badge.bg} ${badge.text} ${badge.border} ${daysUntil <= 3 && daysUntil >= 0 ? 'animate-pulse' : ''}`}>
-                                              {daysUntil <= 3 && daysUntil >= 0 && <AlertCircle className="w-3 h-3" />}
-                                              {badge.label}
-                                            </span>
-                                          )}
-                                        </div>
-                                      );
-                                    })()}
-                                  </div>
-                                </div>
-                              </>
-                            ) : (
-                              <div className="space-y-4">
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                  <div>
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Service Name</label>
-                                    <input
-                                      value={editName}
-                                      onChange={(e) => setEditName(e.target.value)}
-                                      className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Price</label>
-                                    <div className="relative mt-1">
-                                      <span className="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">$</span>
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={editPrice}
-                                        onChange={(e) => setEditPrice(e.target.value)}
-                                        className="w-full pl-10 pr-3 py-2 rounded-lg border border-white/20 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                  <select
-                                    value={editCycle}
-                                    onChange={(e) => setEditCycle(e.target.value as BillingCycle)}
-                                    className="w-full px-3 py-2 rounded-lg border border-white/20 text-sm"
-                                  >
-                                    <option value="monthly">Monthly</option>
-                                    <option value="yearly">Yearly</option>
-                                  </select>
-                                  <select
-                                    value={editStatus}
-                                    onChange={(e) => setEditStatus(e.target.value as Status)}
-                                    className="w-full px-3 py-2 rounded-lg border border-white/20 text-sm"
-                                  >
-                                    <option value="active">Active</option>
-                                    <option value="cancelled">Cancelled</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Category</label>
-                                  <select
-                                    value={editCategory}
-                                    onChange={(e) => setEditCategory(e.target.value)}
-                                    className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 text-sm"
-                                  >
-                                    {CATEGORIES.map((cat) => (
-                                      <option key={cat.value} value={cat.value}>
-                                        {cat.icon} {cat.value}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Next Billing Date</label>
+                {loading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="h-24 bg-white/5/80 animate-pulse rounded-xl border border-gray-100" />
+                    ))}
+                  </div>
+                ) : subs.length === 0 ? (
+                  <div className="rounded-xl border-2 border-dashed border-white/10 p-12 text-center text-gray-400">
+                    <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                      <Plus className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="font-medium">No subscriptions yet</p>
+                    <p className="text-sm mt-1">Add your first one to see analytics</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {subs.map((s) => {
+                      const isEditing = editingId === s.id;
+                      const isDeleting = deletingId === s.id;
+                      const discount = studentDiscounts.get(s.id);
+                      const daysUntil = calculateDaysUntilRenewal(s.next_billing_date);
+                      const badge = getRenewalBadgeColor(daysUntil);
+
+                      if (isEditing) {
+                        // Show full-width editing form
+                        return (
+                          <div key={s.id} className="md:col-span-2 xl:col-span-3 border border-violet-500/30 bg-white/5 backdrop-blur-sm rounded-xl p-6">
+                            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                              <Edit2 className="w-5 h-5 text-violet-400" />
+                              Edit Subscription
+                            </h3>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                              <div>
+                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Service Name</label>
+                                <input
+                                  value={editName}
+                                  onChange={(e) => setEditName(e.target.value)}
+                                  className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Price</label>
+                                <div className="relative mt-1">
+                                  <span className="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">$</span>
                                   <input
-                                    type="date"
-                                    value={editBillingDate}
-                                    onChange={(e) => setEditBillingDate(e.target.value)}
-                                    className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={editPrice}
+                                    onChange={(e) => setEditPrice(e.target.value)}
+                                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm"
                                   />
                                 </div>
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Split Cost?</label>
-                                  <div className="flex items-center gap-2 mt-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={editIsSplit}
-                                      onChange={(e) => setEditIsSplit(e.target.checked)}
-                                      className="w-4 h-4 text-violet-400 rounded focus:ring-red-500 border-white/20"
-                                    />
-                                    <span className="text-sm text-gray-300">Yes, split with others</span>
-                                  </div>
-                                  {editIsSplit && (
-                                    <div className="mt-2">
-                                      <label className="text-xs text-gray-400">Total people (including you)</label>
-                                      <input
-                                        type="number"
-                                        min="1"
-                                        value={editSplitWith}
-                                        onChange={(e) => setEditSplitWith(parseInt(e.target.value) || 1)}
-                                        className="w-full px-3 py-2 rounded-lg border border-white/20 focus:border-violet-500 outline-none text-sm"
-                                      />
-                                    </div>
-                                  )}
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Billing Cycle</label>
+                                <select
+                                  value={editCycle}
+                                  onChange={(e) => setEditCycle(e.target.value as BillingCycle)}
+                                  className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 outline-none text-sm"
+                                >
+                                  <option value="monthly">Monthly</option>
+                                  <option value="yearly">Yearly</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</label>
+                                <select
+                                  value={editStatus}
+                                  onChange={(e) => setEditStatus(e.target.value as Status)}
+                                  className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 outline-none text-sm"
+                                >
+                                  <option value="active">Active</option>
+                                  <option value="cancelled">Cancelled</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Category</label>
+                                <select
+                                  value={editCategory}
+                                  onChange={(e) => setEditCategory(e.target.value)}
+                                  className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 outline-none text-sm"
+                                >
+                                  {CATEGORIES.map((cat) => (
+                                    <option key={cat.value} value={cat.value}>
+                                      {cat.icon} {cat.value}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Next Billing Date</label>
+                                <input
+                                  type="date"
+                                  value={editBillingDate}
+                                  onChange={(e) => setEditBillingDate(e.target.value)}
+                                  className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Split Cost?</label>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={editIsSplit}
+                                    onChange={(e) => setEditIsSplit(e.target.checked)}
+                                    className="w-4 h-4 text-violet-400 rounded focus:ring-violet-500 border-white/20"
+                                  />
+                                  <span className="text-sm text-gray-300">Split with others</span>
+                                </div>
+                                {editIsSplit && (
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={editSplitWith}
+                                    onChange={(e) => setEditSplitWith(parseInt(e.target.value) || 1)}
+                                    placeholder="Number of people"
+                                    className="mt-2 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 outline-none text-sm"
+                                  />
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-3 mt-6">
+                              <button
+                                onClick={() => saveEdit(s.id)}
+                                className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition shadow-sm"
+                              >
+                                <Save className="w-4 h-4" /> Save Changes
+                              </button>
+                              <button
+                                onClick={cancelEdit}
+                                className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg border border-white/20 text-gray-300 hover:bg-white/5 transition"
+                              >
+                                <X className="w-4 h-4" /> Cancel
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Normal card view
+                      return (
+                        <div
+                          key={s.id}
+                          className={`group relative rounded-xl border transition-all duration-300 overflow-hidden ${isDeleting
+                              ? 'border-red-500/50 bg-red-500/5'
+                              : 'border-white/10 bg-white/5 backdrop-blur-sm hover:border-violet-500/30 hover:bg-white/10'
+                            }`}
+                        >
+                          {/* Student Discount Badge */}
+                          {discount && (
+                            <div className="absolute top-2 right-2 z-10">
+                              {discount.already_applied ? (
+                                <div className="px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-lg flex items-center gap-1.5">
+                                  <GraduationCap className="w-3 h-3 text-green-400" />
+                                  <span className="text-[10px] font-bold text-green-300">Applied</span>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setSelectedDiscount(discount);
+                                    setShowDiscountModal(true);
+                                  }}
+                                  className="px-2 py-1 bg-violet-500/20 border border-violet-500/30 rounded-lg flex items-center gap-1.5 hover:bg-violet-500/30 transition-colors"
+                                >
+                                  <GraduationCap className="w-3 h-3 text-violet-300" />
+                                  <span className="text-[10px] font-bold text-violet-200">{discount.discount_percentage}% OFF</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="p-5">
+                            {/* Icon & Name */}
+                            <div className="flex items-start gap-3 mb-4">
+                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 flex items-center justify-center text-violet-300 font-bold text-xl shrink-0">
+                                {s.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-white text-base truncate">
+                                  {s.name}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${s.status === 'active'
+                                      ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                                      : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                                    }`}>
+                                    {s.status}
+                                  </span>
+                                  <span className="text-xs text-gray-400 capitalize">{s.billing_cycle}</span>
                                 </div>
                               </div>
-                            )}
-                          </div>
+                            </div>
 
-                          <div className="flex flex-col items-end gap-1 shrink-0">
-                            {isDeleting ? (
-                              <div className="flex flex-col items-end gap-2 mt-1">
-                                <span className="text-xs font-bold text-violet-400 animate-pulse">Confirm Delete?</span>
-                                <div className="flex items-center gap-2">
+                            {/* Price */}
+                            <div className="mb-4">
+                              {s.split_with && s.split_with > 1 ? (
+                                <>
+                                  <div className="text-2xl font-bold text-white">
+                                    {formatMoney(s.price_cents / s.split_with)}
+                                  </div>
+                                  <div className="text-xs text-gray-400 mt-0.5">
+                                    Split with {s.split_with} • Total: {formatMoney(s.price_cents)}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="text-2xl font-bold text-white">
+                                  {formatMoney(s.price_cents)}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Renewal Info */}
+                            {s.next_billing_date && (
+                              <div className="flex items-center gap-2 mb-4 pb-4 border-b border-white/5">
+                                <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                                <span className="text-xs text-gray-400">
+                                  {formatDate(s.next_billing_date)}
+                                </span>
+                                {daysUntil !== null && (
+                                  <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${daysUntil <= 3 && daysUntil >= 0
+                                      ? 'bg-red-500/20 text-red-300 border border-red-500/30 animate-pulse'
+                                      : daysUntil <= 7
+                                        ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                                        : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                    }`}>
+                                    {badge.label}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Delete Confirmation */}
+                            {isDeleting && (
+                              <div className="flex flex-col gap-2 mb-4">
+                                <span className="text-sm font-bold text-red-400 text-center">Delete this subscription?</span>
+                                <div className="flex gap-2">
                                   <button
                                     onClick={() => executeDelete(s.id)}
-                                    className="px-3 py-1.5 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm"
+                                    className="flex-1 px-3 py-2 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
                                   >
-                                    Yes
+                                    Yes, Delete
                                   </button>
                                   <button
                                     onClick={cancelDelete}
-                                    className="px-3 py-1.5 text-xs font-medium border border-white/10 text-gray-400 rounded-lg hover:bg-white/5 transition"
+                                    className="flex-1 px-3 py-2 text-xs font-medium border border-white/10 text-gray-400 rounded-lg hover:bg-white/5 transition"
                                   >
-                                    No
+                                    Cancel
                                   </button>
                                 </div>
                               </div>
-                            ) : !isEditing ? (
-                              <>
-                                <div className="mb-2">
-                                  {(s.split_with && s.split_with > 1) ? (
-                                    <div className="flex flex-col items-end">
-                                      <div className="text-lg font-bold text-white tracking-tight">
-                                        {formatMoney(s.price_cents / s.split_with)}
-                                      </div>
-                                      <div className="text-xs text-gray-400">
-                                        My Share (Total: {formatMoney(s.price_cents)})
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="text-lg font-bold text-white tracking-tight">
-                                      {formatMoney(s.price_cents)}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                  <button
-                                    onClick={() => startEdit(s)}
-                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition"
-                                    title="Edit"
-                                  >
-                                    <Edit2 className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => toggleStatus(s)}
-                                    className={`p-1.5 rounded-md transition ${s.status === 'active' ? 'text-gray-400 hover:text-orange-600 hover:bg-orange-50' : 'text-green-600 bg-green-50'}`}
-                                    title={s.status === 'active' ? "Cancel Subscription" : "Re-activate"}
-                                  >
-                                    <Activity className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => confirmDelete(s.id)}
-                                    className="p-1.5 text-gray-400 hover:text-violet-400 hover:bg-violet-500/10 rounded-md transition"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </>
-                            ) : (
-                              <div className="flex flex-col gap-2 mt-4">
+                            )}
+
+                            {/* Action Buttons */}
+                            {!isDeleting && (
+                              <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => saveEdit(s.id)}
-                                  className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition shadow-sm"
+                                  onClick={() => startEdit(s)}
+                                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition border border-white/10"
+                                  title="Edit"
                                 >
-                                  <Save className="w-3 h-3" /> Save Changes
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                  <span className="hidden sm:inline">Edit</span>
                                 </button>
                                 <button
-                                  onClick={cancelEdit}
-                                  className="flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border border-white/20 text-gray-300 hover:bg-white/5 transition"
+                                  onClick={() => toggleStatus(s)}
+                                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition border ${s.status === 'active'
+                                      ? 'text-orange-300 hover:text-orange-200 bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/30'
+                                      : 'text-green-300 hover:text-green-200 bg-green-500/10 hover:bg-green-500/20 border-green-500/30'
+                                    }`}
+                                  title={s.status === 'active' ? 'Cancel' : 'Reactivate'}
                                 >
-                                  <X className="w-3 h-3" /> Cancel
+                                  <Activity className="w-3.5 h-3.5" />
+                                  <span className="hidden sm:inline">{s.status === 'active' ? 'Cancel' : 'Activate'}</span>
+                                </button>
+                                <button
+                                  onClick={() => confirmDelete(s.id)}
+                                  className="px-3 py-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition border border-white/10 hover:border-red-500/30"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             )}
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )
-            }
-          </section>
+                      );
+                    })}
+                  </div>
+                )
+                }
+              </section>
 
-          {/* Add Form Side Panel */}
-          <div className="space-y-6">
-            <section className="glass-card rounded-2xl p-6 sticky top-24 border-white/10 bg-white/5 backdrop-blur-xl">
-              <h2 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-fuchsia-500" />
-                Add New
-              </h2>
+              {/* Add Form Side Panel */}
+              <div className="space-y-6">
+                <section className="glass-card rounded-2xl p-6 sticky top-24 border-white/10 bg-white/5 backdrop-blur-xl">
+                  <h2 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">
+                    <Plus className="w-5 h-5 text-fuchsia-500" />
+                    Add New
+                  </h2>
 
-              <form className="space-y-4" onSubmit={createSub}>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Service Name</label>
-                  <div className="relative">
-                    <div className="flex gap-2">
-                      <input
-                        value={name}
-                        onChange={(e) => handleNameChange(e.target.value)}
-                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                        className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 outline-none transition text-sm"
-                        placeholder="e.g. Spotify"
-                        required
-                        autoComplete="off"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowServicePicker(true)}
-                        className="px-3 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition border border-blue-200 flex items-center justify-center shadow-sm"
-                        title="Browse Services"
-                      >
-                        <Search className="w-5 h-5" />
-                      </button>
-                    </div>
-
-                    {/* Autocomplete Dropdown */}
-                    {showSuggestions && (
-                      <div className="absolute top-full left-0 w-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 z-50 max-h-60 overflow-y-auto">
-                        {suggestions.map((service) => (
+                  <form className="space-y-4" onSubmit={createSub}>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Service Name</label>
+                      <div className="relative">
+                        <div className="flex gap-2">
+                          <input
+                            value={name}
+                            onChange={(e) => handleNameChange(e.target.value)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                            className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 outline-none transition text-sm"
+                            placeholder="e.g. Spotify"
+                            required
+                            autoComplete="off"
+                          />
                           <button
-                            key={service.id}
                             type="button"
-                            onClick={() => handleServiceSelect(service)}
-                            className="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center justify-between group transition border-b border-gray-50 last:border-0"
+                            onClick={() => setShowServicePicker(true)}
+                            className="px-3 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition border border-blue-200 flex items-center justify-center shadow-sm"
+                            title="Browse Services"
                           >
-                            <div>
-                              <div className="font-medium text-white group-hover:text-blue-600 transition">
-                                {service.service_name}
-                              </div>
-                              <div className="text-xs text-gray-400">
-                                {service.category}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm font-bold text-green-600">
-                                ${(service.student_price_cents / 100).toFixed(2)}
-                              </div>
-                              <div className="text-[10px] text-gray-400 line-through">
-                                ${(service.regular_price_cents / 100).toFixed(2)}
-                              </div>
-                            </div>
+                            <Search className="w-5 h-5" />
                           </button>
-                        ))}
+                        </div>
+
+                        {/* Autocomplete Dropdown */}
+                        {showSuggestions && (
+                          <div className="absolute top-full left-0 w-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 z-50 max-h-60 overflow-y-auto">
+                            {suggestions.map((service) => (
+                              <button
+                                key={service.id}
+                                type="button"
+                                onClick={() => handleServiceSelect(service)}
+                                className="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center justify-between group transition border-b border-gray-50 last:border-0"
+                              >
+                                <div>
+                                  <div className="font-medium text-white group-hover:text-blue-600 transition">
+                                    {service.service_name}
+                                  </div>
+                                  <div className="text-xs text-gray-400">
+                                    {service.category}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-bold text-green-600">
+                                    ${(service.student_price_cents / 100).toFixed(2)}
+                                  </div>
+                                  <div className="text-[10px] text-gray-400 line-through">
+                                    ${(service.regular_price_cents / 100).toFixed(2)}
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Cost</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-2.5 text-gray-400 text-sm font-medium">$</span>
-                    <input
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/10 bg-white/5/50 focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Billing Cycle</label>
-                  <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100/80 rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => setCycle('monthly')}
-                      className={`text-sm py-2 rounded-lg font-medium transition-all ${cycle === 'monthly' ? 'bg-white text-violet-400 shadow-sm' : 'text-gray-400 hover:text-gray-300'}`}
-                    >
-                      Monthly
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCycle('yearly')}
-                      className={`text-sm py-2 rounded-lg font-medium transition-all ${cycle === 'yearly' ? 'bg-white text-violet-400 shadow-sm' : 'text-gray-400 hover:text-gray-300'}`}
-                    >
-                      Yearly
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Category</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5/50 focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat.value} value={cat.value}>
-                        {cat.icon} {cat.value}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Next Billing Date</label>
-                  <input
-                    value={billingDate}
-                    onChange={(e) => setBillingDate(e.target.value)}
-                    type="date"
-                    className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5/50 focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">Optional - for email reminders</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Split Cost?</label>
-                  <div className="flex items-center gap-2 mb-2">
-                    <input
-                      type="checkbox"
-                      checked={isSplit}
-                      onChange={(e) => setIsSplit(e.target.checked)}
-                      className="w-4 h-4 text-violet-400 rounded focus:ring-red-500 border-white/20"
-                    />
-                    <span className="text-sm text-gray-300">Yes, I share this subscription</span>
-                  </div>
-
-                  {isSplit && (
-                    <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Number of People (including you)</label>
-                      <input
-                        value={splitWith}
-                        onChange={(e) => setSplitWith(parseInt(e.target.value) || 1)}
-                        type="number"
-                        min="1"
-                        className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5/50 focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-red-500/10 outline-none transition text-sm"
-                      />
                     </div>
-                  )}
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Cost</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-2.5 text-gray-400 text-sm font-medium">$</span>
+                        <input
+                          value={price}
+                          onChange={(e) => setPrice(e.target.value)}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Billing Cycle</label>
+                      <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100/80 rounded-xl">
+                        <button
+                          type="button"
+                          onClick={() => setCycle('monthly')}
+                          className={`text-sm py-2 rounded-lg font-medium transition-all ${cycle === 'monthly' ? 'bg-white text-violet-400 shadow-sm' : 'text-gray-400 hover:text-gray-300'}`}
+                        >
+                          Monthly
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCycle('yearly')}
+                          className={`text-sm py-2 rounded-lg font-medium transition-all ${cycle === 'yearly' ? 'bg-white text-violet-400 shadow-sm' : 'text-gray-400 hover:text-gray-300'}`}
+                        >
+                          Yearly
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Category</label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition text-sm"
+                      >
+                        {CATEGORIES.map((cat) => (
+                          <option key={cat.value} value={cat.value}>
+                            {cat.icon} {cat.value}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Next Billing Date</label>
+                      <input
+                        value={billingDate}
+                        onChange={(e) => setBillingDate(e.target.value)}
+                        type="date"
+                        className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition text-sm"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">Optional - for email reminders</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Split Cost?</label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <input
+                          type="checkbox"
+                          checked={isSplit}
+                          onChange={(e) => setIsSplit(e.target.checked)}
+                          className="w-4 h-4 text-violet-400 rounded focus:ring-red-500 border-white/20"
+                        />
+                        <span className="text-sm text-gray-300">Yes, I share this subscription</span>
+                      </div>
+
+                      {isSplit && (
+                        <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Number of People (including you)</label>
+                          <input
+                            value={splitWith}
+                            onChange={(e) => setSplitWith(parseInt(e.target.value) || 1)}
+                            type="number"
+                            min="1"
+                            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition text-sm"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <button className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-sm font-bold py-3 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-violet-600/20 flex items-center justify-center gap-2 mt-2">
+                      <Plus className="w-4 h-4" />
+                      Add Subscription
+                    </button>
+
+                    {msg && <p className="text-xs text-violet-400 text-center bg-violet-500/10 p-2 rounded-lg border border-red-100">{msg}</p>}
+                  </form>
+                </section>
+
+                {/* Pro Tip Card */}
+                <div className="glass-panel rounded-2xl p-6 bg-gradient-to-br from-gray-900 to-gray-800 text-white border-0 hidden lg:block">
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-emerald-400" />
+                    Pro Tip
+                  </h3>
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    Cancelling unused subscriptions can save you over <span className="text-emerald-400 font-bold">$500/year</span> on average.
+                  </p>
                 </div>
-
-                <button className="w-full bg-red-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-red-700 active:scale-[0.98] transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 mt-2">
-                  <Plus className="w-4 h-4" />
-                  Add Subscription
-                </button>
-
-                {msg && <p className="text-xs text-violet-400 text-center bg-violet-500/10 p-2 rounded-lg border border-red-100">{msg}</p>}
-              </form>
-            </section>
-
-            {/* Pro Tip Card */}
-            <div className="glass-panel rounded-2xl p-6 bg-gradient-to-br from-gray-900 to-gray-800 text-white border-0 hidden lg:block">
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-emerald-400" />
-                Pro Tip
-              </h3>
-              <p className="text-sm text-gray-300 leading-relaxed">
-                Cancelling unused subscriptions can save you over <span className="text-emerald-400 font-bold">$500/year</span> on average.
-              </p>
+              </div>
             </div>
-          </div>
-        </div >
-      </div >
+          </>
+        )}
 
-      {/* Student Discount Modal */}
-      {showDiscountModal && selectedDiscount && (
-        <StudentDiscountModal
-          discount={selectedDiscount}
-          onApply={handleApplyDiscount}
-          onClose={() => {
-            setShowDiscountModal(false);
-            setSelectedDiscount(null);
-          }}
+        {/* Student Discount Modal */}
+        {showDiscountModal && selectedDiscount && (
+          <StudentDiscountModal
+            discount={selectedDiscount}
+            onApply={handleApplyDiscount}
+            onClose={() => {
+              setShowDiscountModal(false);
+              setSelectedDiscount(null);
+            }}
+          />
+        )}
+        <VerificationModal
+          isOpen={showVerificationModal}
+          onClose={() => setShowVerificationModal(false)}
+          onSuccess={() => fetchUser()}
         />
-      )}
-
-      <VerificationModal
-        isOpen={showVerificationModal}
-        onClose={() => setShowVerificationModal(false)}
-        onSuccess={() => fetchUser()}
-      />
-      {showServicePicker && (
-        <ServicePickerModal
-          onSelect={handleServiceSelect}
-          onClose={() => setShowServicePicker(false)}
-        />
-      )}
+        {showServicePicker && (
+          <ServicePickerModal
+            onSelect={handleServiceSelect}
+            onClose={() => setShowServicePicker(false)}
+          />
+        )}
+      </div>
     </main>
   );
 }
