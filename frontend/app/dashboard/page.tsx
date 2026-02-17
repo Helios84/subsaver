@@ -44,6 +44,7 @@ import {
   Mail,
   Search, // Added Search icon
 } from "lucide-react";
+import { getServiceIcon } from "./serviceIcons";
 import VerificationModal from "../components/VerificationModal";
 import StudentDiscountBanner from "../components/StudentDiscountBanner";
 import StudentDiscountModal from "../components/StudentDiscountModal";
@@ -985,8 +986,8 @@ export default function DashboardPage() {
                                   onChange={(e) => setEditCycle(e.target.value as BillingCycle)}
                                   className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 outline-none text-sm"
                                 >
-                                  <option value="monthly">Monthly</option>
-                                  <option value="yearly">Yearly</option>
+                                  <option value="monthly" style={{ backgroundColor: '#1E293B', color: 'white' }}>Monthly</option>
+                                  <option value="yearly" style={{ backgroundColor: '#1E293B', color: 'white' }}>Yearly</option>
                                 </select>
                               </div>
                               <div>
@@ -996,8 +997,8 @@ export default function DashboardPage() {
                                   onChange={(e) => setEditStatus(e.target.value as Status)}
                                   className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 outline-none text-sm"
                                 >
-                                  <option value="active">Active</option>
-                                  <option value="cancelled">Cancelled</option>
+                                  <option value="active" style={{ backgroundColor: '#1E293B', color: 'white' }}>Active</option>
+                                  <option value="cancelled" style={{ backgroundColor: '#1E293B', color: 'white' }}>Cancelled</option>
                                 </select>
                               </div>
                               <div>
@@ -1008,7 +1009,7 @@ export default function DashboardPage() {
                                   className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 outline-none text-sm"
                                 >
                                   {CATEGORIES.map((cat) => (
-                                    <option key={cat.value} value={cat.value}>
+                                    <option key={cat.value} value={cat.value} style={{ backgroundColor: '#1E293B', color: 'white' }}>
                                       {cat.icon} {cat.value}
                                     </option>
                                   ))}
@@ -1046,18 +1047,18 @@ export default function DashboardPage() {
                                 )}
                               </div>
                             </div>
-                            <div className="flex gap-3 mt-6">
+                            <div className="flex gap-4 mt-6">
                               <button
                                 onClick={() => saveEdit(s.id)}
-                                className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition shadow-sm"
+                                className="flex items-center justify-center gap-2 px-8 py-4 text-base font-bold rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-700 hover:to-fuchsia-700 transition-all hover:scale-[1.02] shadow-lg hover:shadow-xl hover:shadow-violet-500/40"
                               >
-                                <Save className="w-4 h-4" /> Save Changes
+                                <Save className="w-5 h-5" /> Save Changes
                               </button>
                               <button
                                 onClick={cancelEdit}
-                                className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg border border-white/20 text-gray-300 hover:bg-white/5 transition"
+                                className="flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold rounded-xl border-2 border-white/20 text-gray-300 hover:bg-white/5 hover:border-white/30 transition-all hover:scale-[1.02]"
                               >
-                                <X className="w-4 h-4" /> Cancel
+                                <X className="w-5 h-5" /> Cancel
                               </button>
                             </div>
                           </div>
@@ -1069,8 +1070,8 @@ export default function DashboardPage() {
                         <div
                           key={s.id}
                           className={`group relative rounded-xl border transition-all duration-300 overflow-hidden ${isDeleting
-                              ? 'border-red-500/50 bg-red-500/5'
-                              : 'border-white/10 bg-white/5 backdrop-blur-sm hover:border-violet-500/30 hover:bg-white/10'
+                            ? 'border-red-500/50 bg-red-500/5'
+                            : 'border-white/10 bg-white/5 backdrop-blur-sm hover:border-violet-500/30 hover:bg-white/10'
                             }`}
                         >
                           {/* Student Discount Badge */}
@@ -1099,17 +1100,35 @@ export default function DashboardPage() {
                           <div className="p-5">
                             {/* Icon & Name */}
                             <div className="flex items-start gap-3 mb-4">
-                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 flex items-center justify-center text-violet-300 font-bold text-xl shrink-0">
-                                {s.name.charAt(0).toUpperCase()}
-                              </div>
+                              {(() => {
+                                const ServiceIcon = getServiceIcon(s.name);
+                                return ServiceIcon ? (
+                                  <div className="relative shrink-0">
+                                    {/* Glow layer */}
+                                    <div className="absolute inset-0 bg-violet-500/40 blur-xl rounded-full" />
+                                    {/* Icon container */}
+                                    <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 flex items-center justify-center">
+                                      <ServiceIcon className="w-6 h-6 text-violet-300" />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="relative shrink-0">
+                                    {/* Glow layer for letter */}
+                                    <div className="absolute inset-0 bg-violet-500/30 blur-lg rounded-full" />
+                                    <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 flex items-center justify-center text-violet-300 font-bold text-xl">
+                                      {s.name.charAt(0).toUpperCase()}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold text-white text-base truncate">
                                   {s.name}
                                 </h3>
                                 <div className="flex items-center gap-2 mt-1">
                                   <span className={`text-xs px-2 py-0.5 rounded-full ${s.status === 'active'
-                                      ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                                      : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                                    ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                                    : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
                                     }`}>
                                     {s.status}
                                   </span>
@@ -1118,20 +1137,26 @@ export default function DashboardPage() {
                               </div>
                             </div>
 
-                            {/* Price */}
+                            {/* Price with Neon Glow */}
                             <div className="mb-4">
                               {s.split_with && s.split_with > 1 ? (
                                 <>
-                                  <div className="text-2xl font-bold text-white">
-                                    {formatMoney(s.price_cents / s.split_with)}
+                                  <div className="relative inline-block">
+                                    <div className="absolute inset-0 bg-green-400/30 blur-lg rounded-lg" />
+                                    <div className="relative text-2xl font-bold text-green-400">
+                                      {formatMoney(s.price_cents / s.split_with)}
+                                    </div>
                                   </div>
                                   <div className="text-xs text-gray-400 mt-0.5">
                                     Split with {s.split_with} • Total: {formatMoney(s.price_cents)}
                                   </div>
                                 </>
                               ) : (
-                                <div className="text-2xl font-bold text-white">
-                                  {formatMoney(s.price_cents)}
+                                <div className="relative inline-block">
+                                  <div className="absolute inset-0 bg-green-400/30 blur-lg rounded-lg" />
+                                  <div className="relative text-2xl font-bold text-green-400">
+                                    {formatMoney(s.price_cents)}
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -1145,10 +1170,10 @@ export default function DashboardPage() {
                                 </span>
                                 {daysUntil !== null && (
                                   <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${daysUntil <= 3 && daysUntil >= 0
-                                      ? 'bg-red-500/20 text-red-300 border border-red-500/30 animate-pulse'
-                                      : daysUntil <= 7
-                                        ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
-                                        : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                    ? 'bg-red-500/20 text-red-300 border border-red-500/30 animate-pulse'
+                                    : daysUntil <= 7
+                                      ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                                      : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                                     }`}>
                                     {badge.label}
                                   </span>
@@ -1158,18 +1183,18 @@ export default function DashboardPage() {
 
                             {/* Delete Confirmation */}
                             {isDeleting && (
-                              <div className="flex flex-col gap-2 mb-4">
-                                <span className="text-sm font-bold text-red-400 text-center">Delete this subscription?</span>
-                                <div className="flex gap-2">
+                              <div className="flex flex-col gap-3 mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+                                <span className="text-sm font-bold text-red-300 text-center">Delete this subscription?</span>
+                                <div className="flex gap-3">
                                   <button
                                     onClick={() => executeDelete(s.id)}
-                                    className="flex-1 px-3 py-2 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                                    className="flex-1 px-6 py-3.5 text-sm font-bold bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all hover:scale-[1.02] shadow-md hover:shadow-lg"
                                   >
                                     Yes, Delete
                                   </button>
                                   <button
                                     onClick={cancelDelete}
-                                    className="flex-1 px-3 py-2 text-xs font-medium border border-white/10 text-gray-400 rounded-lg hover:bg-white/5 transition"
+                                    className="flex-1 px-6 py-3.5 text-sm font-semibold border-2 border-white/20 text-gray-300 rounded-xl hover:bg-white/5 hover:border-white/30 transition-all hover:scale-[1.02]"
                                   >
                                     Cancel
                                   </button>
@@ -1182,29 +1207,30 @@ export default function DashboardPage() {
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => startEdit(s)}
-                                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition border border-white/10"
+                                  className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-xl transition-all hover:scale-[1.02] shadow-sm hover:shadow-lg hover:shadow-violet-500/30"
                                   title="Edit"
                                 >
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                  <span className="hidden sm:inline">Edit</span>
+                                  <Edit2 className="w-4.5 h-4.5" />
+                                  <span>Edit</span>
                                 </button>
                                 <button
                                   onClick={() => toggleStatus(s)}
-                                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition border ${s.status === 'active'
-                                      ? 'text-orange-300 hover:text-orange-200 bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/30'
-                                      : 'text-green-300 hover:text-green-200 bg-green-500/10 hover:bg-green-500/20 border-green-500/30'
+                                  className={`flex-1 flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-semibold rounded-xl transition-all hover:scale-[1.02] shadow-sm ${s.status === 'active'
+                                    ? 'text-white bg-orange-600 hover:bg-orange-700 hover:shadow-lg hover:shadow-orange-500/30'
+                                    : 'text-white bg-green-600 hover:bg-green-700 hover:shadow-lg hover:shadow-green-500/30'
                                     }`}
-                                  title={s.status === 'active' ? 'Cancel' : 'Reactivate'}
+                                  title={s.status === 'active' ? 'Pause' : 'Resume'}
                                 >
-                                  <Activity className="w-3.5 h-3.5" />
-                                  <span className="hidden sm:inline">{s.status === 'active' ? 'Cancel' : 'Activate'}</span>
+                                  <Activity className="w-4.5 h-4.5" />
+                                  <span>{s.status === 'active' ? 'Pause' : 'Resume'}</span>
                                 </button>
                                 <button
                                   onClick={() => confirmDelete(s.id)}
-                                  className="px-3 py-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition border border-white/10 hover:border-red-500/30"
+                                  className="flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all hover:scale-[1.02] shadow-sm hover:shadow-lg hover:shadow-red-500/30"
                                   title="Delete"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className="w-4.5 h-4.5" />
+                                  <span className="hidden sm:inline">Delete</span>
                                 </button>
                               </div>
                             )}
@@ -1234,7 +1260,7 @@ export default function DashboardPage() {
                             value={name}
                             onChange={(e) => handleNameChange(e.target.value)}
                             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                            className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 outline-none transition text-sm"
+                            className="flex-1 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition text-sm"
                             placeholder="e.g. Spotify"
                             required
                             autoComplete="off"
@@ -1242,7 +1268,7 @@ export default function DashboardPage() {
                           <button
                             type="button"
                             onClick={() => setShowServicePicker(true)}
-                            className="px-3 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition border border-blue-200 flex items-center justify-center shadow-sm"
+                            className="px-3 py-2 bg-violet-500/10 text-violet-400 rounded-lg hover:bg-violet-500/20 transition border border-violet-500/30 flex items-center justify-center"
                             title="Browse Services"
                           >
                             <Search className="w-5 h-5" />
@@ -1260,7 +1286,7 @@ export default function DashboardPage() {
                                 className="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center justify-between group transition border-b border-gray-50 last:border-0"
                               >
                                 <div>
-                                  <div className="font-medium text-white group-hover:text-blue-600 transition">
+                                  <div className="font-medium text-gray-900 group-hover:text-violet-600 transition">
                                     {service.service_name}
                                   </div>
                                   <div className="text-xs text-gray-400">
@@ -1285,14 +1311,14 @@ export default function DashboardPage() {
                     <div>
                       <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Cost</label>
                       <div className="relative">
-                        <span className="absolute left-4 top-2.5 text-gray-400 text-sm font-medium">$</span>
+                        <span className="absolute left-4 top-3 text-gray-400 text-sm font-medium">$</span>
                         <input
                           value={price}
                           onChange={(e) => setPrice(e.target.value)}
                           type="number"
                           min="0"
                           step="0.01"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition text-sm"
+                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition text-sm"
                         />
                       </div>
                     </div>
@@ -1322,10 +1348,10 @@ export default function DashboardPage() {
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition text-sm"
+                        className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition text-sm"
                       >
                         {CATEGORIES.map((cat) => (
-                          <option key={cat.value} value={cat.value}>
+                          <option key={cat.value} value={cat.value} style={{ backgroundColor: '#1E293B', color: 'white' }}>
                             {cat.icon} {cat.value}
                           </option>
                         ))}
@@ -1338,7 +1364,7 @@ export default function DashboardPage() {
                         value={billingDate}
                         onChange={(e) => setBillingDate(e.target.value)}
                         type="date"
-                        className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition text-sm"
+                        className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition text-sm"
                       />
                       <p className="text-xs text-gray-400 mt-1">Optional - for email reminders</p>
                     </div>
@@ -1363,15 +1389,18 @@ export default function DashboardPage() {
                             onChange={(e) => setSplitWith(parseInt(e.target.value) || 1)}
                             type="number"
                             min="1"
-                            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition text-sm"
+                            className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition text-sm"
                           />
                         </div>
                       )}
                     </div>
 
-                    <button className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-sm font-bold py-3 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-violet-600/20 flex items-center justify-center gap-2 mt-2">
-                      <Plus className="w-4 h-4" />
-                      Add Subscription
+                    <button className="w-full bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 text-white text-lg font-bold py-5 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl hover:shadow-violet-500/50 flex items-center justify-center gap-3 mt-2 relative overflow-hidden group">
+                      <span className="relative z-10 flex items-center gap-3">
+                        <Plus className="w-6 h-6" />
+                        Add Subscription
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                     </button>
 
                     {msg && <p className="text-xs text-violet-400 text-center bg-violet-500/10 p-2 rounded-lg border border-red-100">{msg}</p>}

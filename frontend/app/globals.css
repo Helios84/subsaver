@@ -146,3 +146,60 @@ button:focus-visible {
 .animate-shimmer {
   animation: shimmer 2s infinite;
 }
+
+/* Select dropdown styling - dark theme fix */
+select {
+  color: white !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+select option {
+  background-color: #1E293B !important;
+  /* Dark slate background */
+  color: white !important;
+  padding: 8px 12px;
+}
+
+select option:hover {
+  background-color: #7C3AED !important;
+  /* Violet on hover */
+  color: white !important;
+}
+
+select option:checked,
+select option:focus {
+  background-color: #7C3AED !important;
+  /* Violet when selected */
+  color: white !important;
+}
+/* Premium Animations */
+@keyframes gradient-xy {
+  0%, 100% {
+    background-position: 0% 50%;
+  } n  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-xy {
+  background-size: 400% 400%;
+  animation: gradient-xy 3s ease infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}

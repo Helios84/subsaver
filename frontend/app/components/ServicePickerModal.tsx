@@ -1,6 +1,7 @@
 import { Search, X, Check, DollarSign, Tag, Globe } from "lucide-react";
 import { useState, useEffect } from "react";
 import { apiFetch } from "../lib/api";
+import { getServiceIcon } from "../dashboard/serviceIcons";
 
 type StudentDiscount = {
     id: number;
@@ -56,9 +57,9 @@ export default function ServicePickerModal({ onSelect, onClose }: Props) {
                 {/* Header */}
                 <div className="p-6 border-b border-white/20">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-2xl font-bold text-gray-900">Choose a Service</h2>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
-                            <X className="w-5 h-5 text-gray-500" />
+                        <h2 className="text-2xl font-bold text-white">Choose a Service</h2>
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition">
+                            <X className="w-5 h-5 text-gray-400 hover:text-white" />
                         </button>
                     </div>
 
@@ -68,7 +69,7 @@ export default function ServicePickerModal({ onSelect, onClose }: Props) {
                         <input
                             type="text"
                             placeholder="Search services (e.g. Spotify, Adobe...)"
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+                            className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition outline-none"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             autoFocus
@@ -96,10 +97,18 @@ export default function ServicePickerModal({ onSelect, onClose }: Props) {
                                 className="w-full text-left p-4 rounded-xl hover:bg-blue-50/50 border border-transparent hover:border-blue-200 transition group flex items-center justify-between"
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold shadow-sm ${CATEGORY_COLORS[service.category] || "bg-gray-100 text-gray-600"
-                                        }`}>
-                                        {service.service_name[0]}
-                                    </div>
+                                    {(() => {
+                                        const ServiceIcon = getServiceIcon(service.service_name);
+                                        return ServiceIcon ? (
+                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 flex items-center justify-center shadow-sm">
+                                                <ServiceIcon className="w-6 h-6 text-violet-300" />
+                                            </div>
+                                        ) : (
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold shadow-sm ${CATEGORY_COLORS[service.category] || "bg-gray-100 text-gray-600"}`}>
+                                                {service.service_name[0]}
+                                            </div>
+                                        );
+                                    })()}
                                     <div>
                                         <h3 className="font-semibold text-gray-900 group-hover:text-blue-700 transition">
                                             {service.service_name}
