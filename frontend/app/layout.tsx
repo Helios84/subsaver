@@ -1,15 +1,23 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Syne } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
+  variable: "--font-inter",
+});
+
+const syne = Syne({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-syne",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
   title: "SubSaver | Smart Savings for Students",
-  description: "Manage subscriptions, split costs, and verify student status.",
+  description: "The intelligent subscription manager built for campus life. Find student discounts, split costs with roommates, and stop wasting money.",
 };
 
 export default function RootLayout({
@@ -18,10 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        {children}
-      </body>
+    <html lang="en" className={`${inter.variable} ${syne.variable}`}>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }

@@ -2,25 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../lib/api";
 import {
-    LogOut,
-    Save,
-    Bell,
-    Mail,
-    Calendar,
-    Settings,
-    ArrowLeft,
-    CheckCircle2,
-    Sparkles,
-    Layers,
+    LogOut, Save, Bell, Mail, Calendar,
+    ArrowLeft, CheckCircle2, Settings,
 } from "lucide-react";
-
-type ReminderSettings = {
-    reminder_enabled: boolean;
-    reminder_days_before: number;
-};
 
 export default function SettingsPage() {
     const router = useRouter();
@@ -28,32 +16,22 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false);
     const [msg, setMsg] = useState("");
     const [msgType, setMsgType] = useState<"success" | "error">("success");
-
-    // Settings state
     const [enabled, setEnabled] = useState(true);
     const [days, setDays] = useState(7);
     const [email, setEmail] = useState("");
 
     useEffect(() => {
         const t = localStorage.getItem("subsaver_token");
-        if (!t) {
-            router.push("/login");
-            return;
-        }
-
-        // Decode email from token
+        if (!t) { router.push("/login"); return; }
         try {
             const base64Url = t.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
+            const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(c =>
+                '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+            ).join(''));
             const payload = JSON.parse(jsonPayload);
             if (payload.sub) setEmail(payload.sub);
-        } catch (e) {
-            console.error("Failed to decode token", e);
-        }
-
+        } catch (e) { console.error(e); }
         loadSettings();
     }, [router]);
 
@@ -66,9 +44,7 @@ export default function SettingsPage() {
         } catch (err: any) {
             setMsg(err?.message ?? "Failed to load settings");
             setMsgType("error");
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     }
 
     async function saveSettings(e: React.FormEvent) {
@@ -78,10 +54,7 @@ export default function SettingsPage() {
         try {
             await apiFetch("/reminders/settings", {
                 method: "PUT",
-                body: JSON.stringify({
-                    reminder_enabled: enabled,
-                    reminder_days_before: Number(days),
-                }),
+                body: JSON.stringify({ reminder_enabled: enabled, reminder_days_before: Number(days) }),
             });
             setMsg("Settings saved successfully");
             setMsgType("success");
@@ -89,9 +62,7 @@ export default function SettingsPage() {
         } catch (err: any) {
             setMsg(err?.message ?? "Failed to save settings");
             setMsgType("error");
-        } finally {
-            setSaving(false);
-        }
+        } finally { setSaving(false); }
     }
 
     function logout() {
@@ -100,195 +71,223 @@ export default function SettingsPage() {
     }
 
     return (
-        <main className="min-h-screen pb-20 bg-[#0F172A] text-white overflow-hidden relative">
-            {/* Background Effects */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-fuchsia-600/10 rounded-full blur-[120px] pointer-events-none" />
+        <main className="min-h-screen text-white pb-20 relative overflow-hidden" style={{ background: "#080B14" }}>
+
+            {/* Aurora background */}
+            <div className="aurora-container">
+                <div className="aurora-blob animate-aurora-1" style={{
+                    width: "600px", height: "600px",
+                    background: "radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%)",
+                    top: "-5%", right: "-5%",
+                }} />
+                <div className="aurora-blob animate-aurora-2" style={{
+                    width: "500px", height: "500px",
+                    background: "radial-gradient(circle, rgba(217,70,239,0.1) 0%, transparent 70%)",
+                    bottom: "-5%", left: "-5%",
+                }} />
+            </div>
 
             {/* Header */}
-            <header className="sticky top-0 z-20 glass-panel border-b border-white/5">
-                <div className="mx-auto max-w-full px-6 lg:px-12 py-5 flex items-center justify-between">
+            <header className="glass-header sticky top-0 z-20">
+                <div className="mx-auto max-w-5xl px-6 lg:px-10 py-4 flex items-center justify-between">
                     <Link href="/dashboard" className="flex items-center gap-2 group">
-                        <div className="bg-white/5 border border-white/10 rounded-lg p-1.5 shadow-md group-hover:bg-violet-600 transition-colors">
-                            <ArrowLeft className="w-5 h-5 text-white" />
+                        <div className="liquid-btn-ghost p-2 rounded-xl">
+                            <ArrowLeft className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" />
                         </div>
-                        <span className="font-bold text-gray-300 group-hover:text-white transition-colors">Back to Dashboard</span>
+                        <span className="text-sm font-medium text-white/50 group-hover:text-white transition-colors">
+                            Back to Dashboard
+                        </span>
                     </Link>
 
-                    <button
-                        onClick={logout}
-                        className="group flex items-center gap-2 text-sm text-gray-400 hover:text-white font-medium transition-colors"
-                    >
-                        <LogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <Link href="/" className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
+                        <div className="bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-lg p-1">
+                            <Image src="/logo.png" alt="SubSaver" width={20} height={20} className="w-5 h-5 rounded" />
+                        </div>
+                        <span className="text-base font-bold hidden sm:block" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>
+                            Sub<span className="gradient-text">Saver</span>
+                        </span>
+                    </Link>
+
+                    <button onClick={logout} className="flex items-center gap-2 text-sm text-white/40 hover:text-white transition-colors font-medium group">
+                        <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                         Logout
                     </button>
                 </div>
             </header>
 
-            {/* Main Content */}
-            <div className="relative z-10 flex justify-center px-6 py-16">
-                <div className="w-full max-w-[700px]">
-                    {/* Page Title */}
-                    <div className="text-center mb-16">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-2xl shadow-lg shadow-violet-500/30 mb-6 border border-white/10">
-                            <Settings className="w-8 h-8 text-white" />
-                        </div>
-                        <h1 className="text-3xl font-bold text-white mb-3">Notification Settings</h1>
-                        <p className="text-gray-400">Manage your email reminder preferences</p>
+            {/* Content */}
+            <div className="relative z-10 max-w-2xl mx-auto px-6 py-16">
+
+                {/* Page title */}
+                <div className="text-center mb-12">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl mb-6"
+                        style={{ background: "linear-gradient(135deg, #7C3AED, #D946EF)", boxShadow: "0 8px 32px rgba(124,58,237,0.4)" }}>
+                        <Settings className="w-7 h-7 text-white" />
                     </div>
+                    <h1 className="text-3xl font-black text-white mb-2" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>
+                        Notification Settings
+                    </h1>
+                    <p className="text-white/40">Manage your email reminder preferences</p>
+                </div>
 
-                    {/* Settings Card */}
-                    <div className="glass-card rounded-3xl p-8 sm:p-12 shadow-xl border-white/10 bg-white/5 backdrop-blur-xl">
-                        <form onSubmit={saveSettings}>
+                <form onSubmit={saveSettings} className="space-y-4">
 
-                            {/* Email Section */}
-                            <div className="text-center pb-16 border-b border-white/10">
-                                <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-500/20 rounded-full mb-4 ring-1 ring-blue-500/50">
-                                    <Mail className="w-6 h-6 text-blue-400" />
-                                </div>
-                                <h3 className="text-lg font-semibold text-white mb-2">Email Address</h3>
-                                <p className="text-sm text-gray-400 mb-6">Reminders will be sent to this address</p>
-                                <div className="flex justify-center">
-                                    <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-6 py-3 shadow-sm">
-                                        <span className="text-gray-200 font-medium font-mono text-sm">{email || "Loading..."}</span>
-                                        <span className="flex items-center gap-1.5 text-xs bg-green-500/20 text-green-400 px-2.5 py-1 rounded-full font-semibold border border-green-500/20">
-                                            <CheckCircle2 className="w-3 h-3" />
-                                            Verified
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Notification Toggle */}
-                            <div className="text-center pb-20 border-b border-white/10 mt-32">
-                                <div className="inline-flex items-center justify-center w-12 h-12 bg-fuchsia-500/20 rounded-full mb-4 ring-1 ring-fuchsia-500/50">
-                                    <Bell className="w-6 h-6 text-fuchsia-400" />
-                                </div>
-                                <h3 className="text-lg font-semibold text-white mb-2">Email Reminders</h3>
-                                <p className="text-sm text-gray-400 mb-8">Get notified before your subscriptions renew</p>
-
-                                <div className="flex justify-center">
-                                    <div className="inline-flex items-center gap-4">
-                                        <span className={`text-sm font-medium transition-colors ${!enabled ? 'text-white' : 'text-gray-500'}`}>
-                                            Disabled
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setEnabled(!enabled)}
-                                            className={`relative inline-flex h-8 w-16 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 focus-visible:ring-offset-2 ${enabled ? 'bg-gradient-to-r from-violet-500 to-fuchsia-600 shadow-lg shadow-violet-500/30' : 'bg-gray-700'
-                                                }`}
-                                        >
-                                            <span className="sr-only">Toggle notifications</span>
-                                            <span
-                                                aria-hidden="true"
-                                                className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-lg ring-0 transition duration-300 ease-in-out ${enabled ? 'translate-x-8' : 'translate-x-0'
-                                                    }`}
-                                            />
-                                        </button>
-                                        <span className={`text-sm font-medium transition-colors ${enabled ? 'text-white' : 'text-gray-500'}`}>
-                                            Enabled
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Timing Selection */}
-                            <div className={`text-center pb-20 mt-32 transition-all duration-300 ${enabled ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
-                                <div className="inline-flex items-center justify-center w-12 h-12 bg-orange-500/20 rounded-full mb-4 ring-1 ring-orange-500/50">
-                                    <Calendar className="w-6 h-6 text-orange-400" />
-                                </div>
-                                <h3 className="text-lg font-semibold text-white mb-2">Reminder Timing</h3>
-                                <p className="text-sm text-gray-400 mb-10">Choose when to receive your reminder</p>
-
-                                <div className="flex justify-center">
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
-                                        {[
-                                            { value: 3, label: "3 Days", desc: "Last minute" },
-                                            { value: 7, label: "7 Days", desc: "Recommended" },
-                                            { value: 14, label: "14 Days", desc: "Early bird" }
-                                        ].map((option) => (
-                                            <button
-                                                key={option.value}
-                                                type="button"
-                                                onClick={() => setDays(option.value)}
-                                                className={`relative group flex flex-col items-center p-6 border rounded-2xl text-center transition-all duration-300 hover:scale-105 ${days === option.value
-                                                    ? 'border-violet-500/50 bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 shadow-lg shadow-violet-500/20'
-                                                    : 'border-white/10 bg-white/5 hover:border-violet-500/30 hover:bg-white/10'
-                                                    }`}
-                                            >
-                                                <span className={`text-4xl font-bold mb-2 transition-colors ${days === option.value ? 'text-white' : 'text-gray-400'
-                                                    }`}>
-                                                    {option.value}
-                                                </span>
-                                                <span className={`text-sm font-semibold uppercase tracking-wide mb-1 transition-colors ${days === option.value ? 'text-fuchsia-400' : 'text-gray-500'
-                                                    }`}>
-                                                    {option.label}
-                                                </span>
-                                                <span className="text-xs text-gray-500 group-hover:text-gray-400 transition-colors">{option.desc}</span>
-
-                                                {days === option.value && (
-                                                    <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg border border-white/20">
-                                                        <CheckCircle2 className="w-4 h-4 text-white" />
-                                                    </div>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Save Button & Messages */}
-                            <div className="pt-40 flex flex-col items-center gap-4">
-                                <button
-                                    type="submit"
-                                    disabled={saving || loading}
-                                    className="group relative px-10 py-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-violet-600/30 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-3 min-w-[200px]"
-                                >
-                                    {saving ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            <span>Saving...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                                            <span>Save Changes</span>
-                                        </>
-                                    )}
-                                </button>
-
-                                {msg && (
-                                    <div className={`px-6 py-3 rounded-xl border flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 ${msgType === 'success'
-                                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                                        : 'bg-red-500/10 text-red-400 border-red-500/20'
-                                        }`}>
-                                        {msgType === 'success' ? (
-                                            <CheckCircle2 className="w-5 h-5" />
-                                        ) : (
-                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        )}
-                                        <span className="font-medium">{msg}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                        </form>
-                    </div>
-
-                    {/* Info Card */}
-                    <div className="mt-10 glass-panel rounded-2xl p-6 bg-gradient-to-br from-blue-900/20 to-indigo-900/20 border border-blue-500/20">
-                        <div className="flex items-start gap-4">
-                            <div className="p-2 bg-blue-500/20 rounded-lg shrink-0 text-blue-400">
-                                <Bell className="w-5 h-5" />
+                    {/* Email display */}
+                    <div className="liquid-panel rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.25)" }}>
+                                <Mail className="w-5 h-5 text-blue-400" />
                             </div>
                             <div>
-                                <h4 className="font-semibold text-white mb-1">How it works</h4>
-                                <p className="text-sm text-gray-400 leading-relaxed">
-                                    We'll send you an email reminder before your subscription renews. Make sure to set the <strong>Next Billing Date</strong> when adding subscriptions in your dashboard.
-                                </p>
+                                <h3 className="font-semibold text-white text-sm">Email Address</h3>
+                                <p className="text-xs text-white/40">Reminders will be sent to this address</p>
                             </div>
+                        </div>
+                        <div className="flex items-center gap-3 liquid-card rounded-xl px-4 py-3">
+                            <span className="text-sm text-white/70 font-mono flex-1">{email || "Loading..."}</span>
+                            <span className="flex items-center gap-1.5 text-xs bg-green-500/15 text-green-400 px-2.5 py-1 rounded-full font-semibold border border-green-500/20">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Verified
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Toggle */}
+                    <div className="liquid-panel rounded-2xl p-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                    style={{ background: "rgba(217,70,239,0.15)", border: "1px solid rgba(217,70,239,0.25)" }}>
+                                    <Bell className="w-5 h-5 text-fuchsia-400" />
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-white text-sm">Email Reminders</h3>
+                                    <p className="text-xs text-white/40">Get notified before subscriptions renew</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setEnabled(!enabled)}
+                                className="relative flex-shrink-0"
+                                style={{
+                                    width: "52px", height: "28px",
+                                    borderRadius: "100px",
+                                    background: enabled
+                                        ? "linear-gradient(135deg, #7C3AED, #D946EF)"
+                                        : "rgba(255,255,255,0.1)",
+                                    transition: "all 0.3s cubic-bezier(0.23, 1, 0.32, 1)",
+                                    boxShadow: enabled ? "0 0 20px rgba(124,58,237,0.4)" : "none",
+                                    border: "1px solid rgba(255,255,255,0.1)",
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        position: "absolute",
+                                        top: "2px",
+                                        left: enabled ? "calc(100% - 26px)" : "2px",
+                                        width: "22px", height: "22px",
+                                        borderRadius: "50%",
+                                        background: "white",
+                                        boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                                        transition: "left 0.3s cubic-bezier(0.23, 1, 0.32, 1)",
+                                    }}
+                                />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Timing */}
+                    <div className={`liquid-panel rounded-2xl p-6 transition-all duration-300 ${!enabled ? "opacity-40 pointer-events-none" : ""}`}>
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                style={{ background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.25)" }}>
+                                <Calendar className="w-5 h-5 text-amber-400" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-white text-sm">Reminder Timing</h3>
+                                <p className="text-xs text-white/40">Choose when to receive your reminder</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                            {[
+                                { value: 3, label: "3 Days", desc: "Last minute" },
+                                { value: 7, label: "7 Days", desc: "Recommended" },
+                                { value: 14, label: "14 Days", desc: "Early bird" },
+                            ].map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => setDays(option.value)}
+                                    className="relative flex flex-col items-center py-5 px-3 rounded-2xl transition-all duration-300 hover:scale-105"
+                                    style={{
+                                        background: days === option.value
+                                            ? "linear-gradient(135deg, rgba(124,58,237,0.25), rgba(217,70,239,0.15))"
+                                            : "rgba(255,255,255,0.03)",
+                                        border: days === option.value
+                                            ? "1px solid rgba(124,58,237,0.4)"
+                                            : "1px solid rgba(255,255,255,0.07)",
+                                        boxShadow: days === option.value ? "0 4px 20px rgba(124,58,237,0.2)" : "none",
+                                    }}
+                                >
+                                    {days === option.value && (
+                                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+                                            style={{ background: "linear-gradient(135deg, #7C3AED, #D946EF)" }}>
+                                            <CheckCircle2 className="w-3 h-3 text-white" />
+                                        </div>
+                                    )}
+                                    <span className={`text-3xl font-black mb-1 ${days === option.value ? "text-white" : "text-white/40"}`}
+                                        style={{ fontFamily: "var(--font-syne, sans-serif)" }}>
+                                        {option.value}
+                                    </span>
+                                    <span className={`text-xs font-semibold uppercase tracking-wider mb-0.5 ${days === option.value ? "text-fuchsia-400" : "text-white/30"}`}>
+                                        {option.label}
+                                    </span>
+                                    <span className="text-xs text-white/25">{option.desc}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Save */}
+                    <div className="flex flex-col items-center gap-4 pt-2">
+                        <button
+                            type="submit"
+                            disabled={saving || loading}
+                            className="liquid-btn px-10 py-4 rounded-xl font-bold flex items-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed min-w-[200px] justify-center"
+                        >
+                            {saving ? (
+                                <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Saving...</span></>
+                            ) : (
+                                <><Save className="w-5 h-5" /><span>Save Changes</span></>
+                            )}
+                        </button>
+
+                        {msg && (
+                            <div className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-medium ${msgType === "success"
+                                    ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                                    : "bg-red-500/10 text-red-400 border border-red-500/20"
+                                }`}>
+                                <CheckCircle2 className="w-4 h-4" />
+                                {msg}
+                            </div>
+                        )}
+                    </div>
+                </form>
+
+                {/* Info */}
+                <div className="mt-6 liquid-card rounded-2xl p-5"
+                    style={{ border: "1px solid rgba(59,130,246,0.15)", background: "rgba(59,130,246,0.05)" }}>
+                    <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg shrink-0" style={{ background: "rgba(59,130,246,0.15)" }}>
+                            <Bell className="w-4 h-4 text-blue-400" />
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-white mb-1 text-sm">How it works</h4>
+                            <p className="text-xs text-white/40 leading-relaxed">
+                                We&apos;ll send you an email reminder before your subscription renews.
+                                Set the <strong className="text-white/60">Next Billing Date</strong> when adding subscriptions in your dashboard.
+                            </p>
                         </div>
                     </div>
                 </div>

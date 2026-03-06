@@ -696,81 +696,86 @@ export default function DashboardPage() {
   };
 
   const QuickActions = () => (
-    <div className="flex gap-4 mb-8 overflow-x-auto pb-2">
+    <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
       <button
         onClick={() => document.getElementById('add-new-form')?.scrollIntoView({ behavior: 'smooth' })}
-        className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-violet-500/20 group shrink-0"
+        className="liquid-btn flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
       >
-        <div className="bg-white/20 p-1.5 rounded-lg">
-          <Plus className="w-5 h-5 text-white" />
-        </div>
-        <span className="font-bold text-white">Add Subscription</span>
+        <Plus className="w-5 h-5" />
+        <span className="font-bold">Add Subscription</span>
       </button>
 
       <button
         onClick={() => setShowCustomizeModal(true)}
-        className="flex items-center gap-3 px-5 py-3 bg-gray-800/50 hover:bg-gray-800 border border-white/5 rounded-xl hover:scale-105 active:scale-95 transition-all group shrink-0"
+        className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
       >
-        <div className="bg-fuchsia-500/20 p-1.5 rounded-lg text-fuchsia-400 group-hover:bg-fuchsia-500 group-hover:text-white transition-colors">
-          <Layout className="w-5 h-5" />
-        </div>
-        <span className="font-medium text-gray-200">Customize</span>
+        <Layout className="w-5 h-5 text-fuchsia-400" />
+        <span className="font-medium">Customize</span>
       </button>
     </div>
   );
 
   return (
-    <main className="min-h-screen bg-[#0F172A] text-white pb-20 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-fuchsia-600/10 rounded-full blur-[120px] pointer-events-none" />
+    <main className="min-h-screen text-white pb-20 relative overflow-hidden" style={{ background: '#080B14' }}>
+      {/* Aurora Background */}
+      <div className="aurora-container">
+        <div className="aurora-blob animate-aurora-1" style={{ width: '700px', height: '700px', background: 'radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%)', top: '-5%', right: '-5%' }} />
+        <div className="aurora-blob animate-aurora-2" style={{ width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(217,70,239,0.09) 0%, transparent 70%)', bottom: '-5%', left: '-5%' }} />
+        <div className="aurora-blob animate-aurora-3" style={{ width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(79,70,229,0.08) 0%, transparent 70%)', top: '40%', left: '40%' }} />
+      </div>
       {/* Header */}
-      <header className="sticky top-0 z-20 glass-panel border-b-0">
+      <header className="glass-header sticky top-0 z-20">
         <div className="mx-auto max-w-[1600px] px-6 lg:px-10 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="SubSaver" className="w-8 h-8" />
-            <h1 className="text-xl font-bold tracking-tight text-white">
-              Sub<span className="text-violet-400">Saver</span>
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl blur-md opacity-40" />
+              <div className="relative bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl p-1.5">
+                <img src="/logo.png" alt="SubSaver" className="w-7 h-7 rounded-lg" />
+              </div>
+            </div>
+            <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>
+              Sub<span className="gradient-text">Saver</span>
             </h1>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-5">
             {user && (
               <div className="hidden md:flex items-center">
                 {user.is_verified ? (
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
-                    <BadgeCheck size={16} />
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', color: '#34D399' }}>
+                    <BadgeCheck size={14} />
                     <span>Student Verified</span>
                   </div>
                 ) : (
                   <button
                     onClick={() => setShowVerificationModal(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-full text-sm font-medium border border-blue-200 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all hover:scale-105"
+                    style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.25)', color: '#A78BFA' }}
                   >
-                    <GraduationCap size={16} />
-                    <span>Verify Student Status</span>
+                    <GraduationCap size={14} />
+                    <span>Verify Student</span>
                   </button>
                 )}
               </div>
             )}
-            <Link className="text-sm text-gray-400 hover:text-violet-400 font-medium transition-colors" href="/">
+            <Link className="text-sm text-white/40 hover:text-white font-medium transition-colors" href="/">
               Home
             </Link>
-            <Link className="text-sm text-gray-400 hover:text-violet-400 font-medium transition-colors" href="/settings">
+            <Link className="text-sm text-white/40 hover:text-white font-medium transition-colors" href="/settings">
               Settings
             </Link>
             <button
               onClick={logout}
-              className="group flex items-center gap-2 text-sm text-gray-400 hover:text-violet-400 font-medium transition-colors"
+              className="group flex items-center gap-2 text-sm text-white/40 hover:text-white font-medium transition-colors"
             >
-              <LogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               Logout
             </button>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1600px] px-6 lg:px-10 py-8 space-y-6">
+      <div className="relative z-10 mx-auto max-w-[1600px] px-6 lg:px-10 py-8 space-y-6">
 
 
 
@@ -779,8 +784,8 @@ export default function DashboardPage() {
 
         {/* Customization Modal */}
         {showCustomizeModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-[#1E293B] rounded-2xl w-full max-w-md border border-white/10 shadow-2xl p-6 relative">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(16px)' }}>
+            <div className="liquid-panel rounded-2xl w-full max-w-md shadow-2xl p-6 relative">
               <button
                 onClick={() => setShowCustomizeModal(false)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-white"
@@ -842,87 +847,60 @@ export default function DashboardPage() {
           <>
             {/* Stats Grid */}
             {!loading && widgets.stats && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                <div className="glass-card rounded-2xl p-5 sm:p-6 relative overflow-hidden">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-400">Total Monthly Spend</h3>
-                    <div className="p-2 bg-red-100 rounded-full text-violet-400">
-                      <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { label: 'Monthly Spend', value: totalMonthly, icon: DollarSign, color: '#7C3AED', glow: 'rgba(124,58,237,0.2)' },
+                  { label: 'Active Subs', value: String(totalActive), icon: Activity, color: '#06B6D4', glow: 'rgba(6,182,212,0.2)' },
+                  { label: 'Yearly Projection', value: formatMoney(Number(totalMonthly.replace('$', '')) * 12 * 100), icon: CreditCard, color: '#10B981', glow: 'rgba(16,185,129,0.2)' },
+                  { label: 'Avg per Sub', value: avgPerSub, icon: TrendingUp, color: '#D946EF', glow: 'rgba(217,70,239,0.2)' },
+                ].map(({ label, value, icon: Icon, color, glow }) => (
+                  <div key={label} className="liquid-card rounded-2xl p-5 relative overflow-hidden">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">{label}</span>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
+                        <Icon className="w-4 h-4" style={{ color }} />
+                      </div>
                     </div>
+                    <p className="text-3xl font-black text-white" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>{value}</p>
+                    <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full blur-3xl pointer-events-none" style={{ background: glow }} />
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ background: `linear-gradient(90deg, transparent, ${color}60, transparent)` }} />
                   </div>
-                  <p className="text-2xl sm:text-3xl font-bold text-white">{totalMonthly}</p>
-                  <div className="absolute -right-6 -bottom-6 w-24 h-24 sm:w-32 sm:h-32 bg-violet-500/100/5 rounded-full blur-2xl" />
-                </div>
-
-                <div className="glass-card rounded-2xl p-5 sm:p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-400">Active Subscriptions</h3>
-                    <div className="p-2 bg-blue-100 rounded-full text-blue-600">
-                      <Activity className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </div>
-                  </div>
-                  <p className="text-2xl sm:text-3xl font-bold text-white">{totalActive}</p>
-                </div>
-
-                <div className="glass-card rounded-2xl p-5 sm:p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-400">Yearly Projection</h3>
-                    <div className="p-2 bg-green-100 rounded-full text-green-600">
-                      <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </div>
-                  </div>
-                  <p className="text-2xl sm:text-3xl font-bold text-white">
-                    {formatMoney(Number(totalMonthly.replace('$', '')) * 12 * 100)}
-                  </p>
-                </div>
-
-                <div className="glass-card rounded-2xl p-5 sm:p-6 relative overflow-hidden">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-400">Avg per Sub</h3>
-                    <div className="p-2 bg-purple-100 rounded-full text-purple-600">
-                      <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </div>
-                  </div>
-                  <p className="text-2xl sm:text-3xl font-bold text-white">{avgPerSub}</p>
-                  <div className="absolute -right-6 -bottom-6 w-24 h-24 sm:w-32 sm:h-32 bg-purple-500/5 rounded-full blur-2xl" />
-                </div>
+                ))}
               </div>
             )}
 
             {/* Advanced Analytics Section */}
             {subs.length > 0 && <AdvancedAnalytics upcomingRenewals={upcomingRenewals} widgets={widgets} />}
 
-            {/* Main Content Grid - SWAPPED ORDER: List first, then Side Panel */}
-            <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
+            {/* Main Content Grid */}
+            <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
 
               {/* Subscription List */}
-              <section className="glass-card rounded-2xl p-6 min-h-[400px]">
+              <section className="liquid-panel rounded-2xl p-6 min-h-[400px]">
                 <div className="mb-8">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 rounded-xl border border-violet-500/30">
-                          <CreditCard className="w-5 h-5 text-violet-300" />
-                        </div>
-                        <h2 className="text-2xl font-bold bg-gradient-to-r from-white via-violet-200 to-fuchsia-200 bg-clip-text text-transparent">
-                          Your Subscriptions
-                        </h2>
-                      </div>
-                      <p className="text-sm text-gray-400 pl-14">Manage and track all your active services</p>
-                    </div>
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-white">{subs.length}</div>
-                        <div className="text-xs text-gray-400 uppercase tracking-wider">Total</div>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.25)' }}>
+                        <CreditCard className="w-4 h-4 text-violet-400" />
                       </div>
-                      <div className="h-12 w-px bg-white/10"></div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-green-400">{totalActive}</div>
-                        <div className="text-xs text-gray-400 uppercase tracking-wider">Active</div>
+                      <div>
+                        <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>Your Subscriptions</h2>
+                        <p className="text-xs text-white/35">Manage and track your services</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-center">
+                        <div className="text-xl font-black text-white" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>{subs.length}</div>
+                        <div className="text-[10px] text-white/30 uppercase tracking-wider">Total</div>
+                      </div>
+                      <div className="w-px h-8" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                      <div className="text-center">
+                        <div className="text-xl font-black text-green-400" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>{totalActive}</div>
+                        <div className="text-[10px] text-white/30 uppercase tracking-wider">Active</div>
                       </div>
                     </div>
                   </div>
-                  <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                  <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)' }} />
                 </div>
 
                 {loading ? (
@@ -1069,10 +1047,8 @@ export default function DashboardPage() {
                       return (
                         <div
                           key={s.id}
-                          className={`group relative rounded-xl border transition-all duration-300 overflow-hidden ${isDeleting
-                            ? 'border-red-500/50 bg-red-500/5'
-                            : 'border-white/10 bg-white/5 backdrop-blur-sm hover:border-violet-500/30 hover:bg-white/10'
-                            }`}
+                          className="group relative rounded-xl transition-all duration-300 overflow-hidden liquid-card"
+                          style={isDeleting ? { border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.05)' } : {}}
                         >
                           {/* Student Discount Badge */}
                           {discount && (
@@ -1244,23 +1220,25 @@ export default function DashboardPage() {
               </section>
 
               {/* Add Form Side Panel */}
-              <div className="space-y-6">
-                <section className="glass-card rounded-2xl p-6 sticky top-24 border-white/10 bg-white/5 backdrop-blur-xl">
-                  <h2 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">
-                    <Plus className="w-5 h-5 text-fuchsia-500" />
-                    Add New
-                  </h2>
+              <div className="space-y-4">
+                <section id="add-new-form" className="liquid-panel rounded-2xl p-6 sticky top-24">
+                  <div className="flex items-center gap-2.5 mb-5">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(217,70,239,0.15)', border: '1px solid rgba(217,70,239,0.25)' }}>
+                      <Plus className="w-4 h-4 text-fuchsia-400" />
+                    </div>
+                    <h2 className="text-base font-bold text-white" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>Add New</h2>
+                  </div>
 
                   <form className="space-y-4" onSubmit={createSub}>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Service Name</label>
+                      <label className="block text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1.5">Service Name</label>
                       <div className="relative">
                         <div className="flex gap-2">
                           <input
                             value={name}
                             onChange={(e) => handleNameChange(e.target.value)}
                             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                            className="flex-1 px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition text-sm"
+                            className="liquid-input flex-1 px-4 py-3 rounded-xl text-sm"
                             placeholder="e.g. Spotify"
                             required
                             autoComplete="off"
@@ -1268,38 +1246,32 @@ export default function DashboardPage() {
                           <button
                             type="button"
                             onClick={() => setShowServicePicker(true)}
-                            className="px-3 py-2 bg-violet-500/10 text-violet-400 rounded-lg hover:bg-violet-500/20 transition border border-violet-500/30 flex items-center justify-center"
+                            className="px-3 py-2 rounded-xl flex items-center justify-center transition-all hover:scale-105"
+                            style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.25)', color: '#A78BFA' }}
                             title="Browse Services"
                           >
-                            <Search className="w-5 h-5" />
+                            <Search className="w-4 h-4" />
                           </button>
                         </div>
 
                         {/* Autocomplete Dropdown */}
                         {showSuggestions && (
-                          <div className="absolute top-full left-0 w-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 z-50 max-h-60 overflow-y-auto">
+                          <div className="absolute top-full left-0 w-full mt-1 liquid-panel rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto">
                             {suggestions.map((service) => (
                               <button
                                 key={service.id}
                                 type="button"
                                 onClick={() => handleServiceSelect(service)}
-                                className="w-full text-left px-4 py-3 hover:bg-white/5 flex items-center justify-between group transition border-b border-gray-50 last:border-0"
+                                className="w-full text-left px-4 py-3 flex items-center justify-between transition-all hover:bg-white/5 border-b last:border-0"
+                                style={{ borderColor: 'rgba(255,255,255,0.05)' }}
                               >
                                 <div>
-                                  <div className="font-medium text-gray-900 group-hover:text-violet-600 transition">
-                                    {service.service_name}
-                                  </div>
-                                  <div className="text-xs text-gray-400">
-                                    {service.category}
-                                  </div>
+                                  <div className="text-sm font-medium text-white">{service.service_name}</div>
+                                  <div className="text-xs text-white/35">{service.category}</div>
                                 </div>
                                 <div className="text-right">
-                                  <div className="text-sm font-bold text-green-600">
-                                    ${(service.student_price_cents / 100).toFixed(2)}
-                                  </div>
-                                  <div className="text-[10px] text-gray-400 line-through">
-                                    ${(service.regular_price_cents / 100).toFixed(2)}
-                                  </div>
+                                  <div className="text-sm font-bold text-green-400">${(service.student_price_cents / 100).toFixed(2)}</div>
+                                  <div className="text-[10px] text-white/25 line-through">${(service.regular_price_cents / 100).toFixed(2)}</div>
                                 </div>
                               </button>
                             ))}
@@ -1309,34 +1281,37 @@ export default function DashboardPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Cost</label>
+                      <label className="block text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1.5">Cost</label>
                       <div className="relative">
-                        <span className="absolute left-4 top-3 text-gray-400 text-sm font-medium">$</span>
+                        <span className="absolute left-4 top-3.5 text-white/30 text-sm font-medium z-10">$</span>
                         <input
                           value={price}
                           onChange={(e) => setPrice(e.target.value)}
                           type="number"
                           min="0"
                           step="0.01"
-                          className="w-full pl-10 pr-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition text-sm"
+                          className="liquid-input w-full py-3 rounded-xl text-sm"
+                          style={{ paddingLeft: '2rem', paddingRight: '1rem' }}
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Billing Cycle</label>
-                      <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100/80 rounded-xl">
+                      <label className="block text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1.5">Billing Cycle</label>
+                      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
                         <button
                           type="button"
                           onClick={() => setCycle('monthly')}
-                          className={`text-sm py-2 rounded-lg font-medium transition-all ${cycle === 'monthly' ? 'bg-white text-violet-400 shadow-sm' : 'text-gray-400 hover:text-gray-300'}`}
+                          className="text-sm py-2 rounded-lg font-semibold transition-all"
+                          style={cycle === 'monthly' ? { background: 'linear-gradient(135deg, #7C3AED, #D946EF)', color: 'white' } : { color: 'rgba(255,255,255,0.35)' }}
                         >
                           Monthly
                         </button>
                         <button
                           type="button"
                           onClick={() => setCycle('yearly')}
-                          className={`text-sm py-2 rounded-lg font-medium transition-all ${cycle === 'yearly' ? 'bg-white text-violet-400 shadow-sm' : 'text-gray-400 hover:text-gray-300'}`}
+                          className="text-sm py-2 rounded-lg font-semibold transition-all"
+                          style={cycle === 'yearly' ? { background: 'linear-gradient(135deg, #7C3AED, #D946EF)', color: 'white' } : { color: 'rgba(255,255,255,0.35)' }}
                         >
                           Yearly
                         </button>
@@ -1344,14 +1319,14 @@ export default function DashboardPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Category</label>
+                      <label className="block text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1.5">Category</label>
                       <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition text-sm"
+                        className="liquid-input w-full px-4 py-3 rounded-xl text-sm"
                       >
                         {CATEGORIES.map((cat) => (
-                          <option key={cat.value} value={cat.value} style={{ backgroundColor: '#1E293B', color: 'white' }}>
+                          <option key={cat.value} value={cat.value} style={{ backgroundColor: '#161B27', color: 'white' }}>
                             {cat.icon} {cat.value}
                           </option>
                         ))}
@@ -1359,14 +1334,14 @@ export default function DashboardPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Next Billing Date</label>
+                      <label className="block text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1.5">Next Billing Date</label>
                       <input
                         value={billingDate}
                         onChange={(e) => setBillingDate(e.target.value)}
                         type="date"
-                        className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition text-sm"
+                        className="liquid-input w-full px-4 py-3 rounded-xl text-sm"
                       />
-                      <p className="text-xs text-gray-400 mt-1">Optional - for email reminders</p>
+                      <p className="text-[10px] text-white/25 mt-1">Optional — for email reminders</p>
                     </div>
 
                     <div>
@@ -1395,26 +1370,25 @@ export default function DashboardPage() {
                       )}
                     </div>
 
-                    <button className="w-full bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 text-white text-lg font-bold py-5 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl hover:shadow-violet-500/50 flex items-center justify-center gap-3 mt-2 relative overflow-hidden group">
-                      <span className="relative z-10 flex items-center gap-3">
-                        <Plus className="w-6 h-6" />
-                        Add Subscription
-                      </span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <button className="liquid-btn w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2 mt-2">
+                      <Plus className="w-5 h-5" />
+                      Add Subscription
                     </button>
 
-                    {msg && <p className="text-xs text-violet-400 text-center bg-violet-500/10 p-2 rounded-lg border border-red-100">{msg}</p>}
+                    {msg && <p className="text-xs text-violet-400 text-center p-2 rounded-lg mt-1" style={{ background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)' }}>{msg}</p>}
                   </form>
                 </section>
 
                 {/* Pro Tip Card */}
-                <div className="glass-panel rounded-2xl p-6 bg-gradient-to-br from-gray-900 to-gray-800 text-white border-0 hidden lg:block">
-                  <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-emerald-400" />
-                    Pro Tip
-                  </h3>
-                  <p className="text-sm text-gray-300 leading-relaxed">
-                    Cancelling unused subscriptions can save you over <span className="text-emerald-400 font-bold">$500/year</span> on average.
+                <div className="liquid-card rounded-2xl p-5 hidden lg:block" style={{ border: '1px solid rgba(16,185,129,0.15)', background: 'rgba(16,185,129,0.04)' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.15)' }}>
+                      <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                    </div>
+                    <h3 className="text-sm font-bold text-white">Pro Tip</h3>
+                  </div>
+                  <p className="text-xs text-white/45 leading-relaxed">
+                    Cancelling unused subscriptions can save you over <span className="text-emerald-400 font-semibold">$500/year</span> on average.
                   </p>
                 </div>
               </div>
