@@ -1,40 +1,74 @@
 from datetime import datetime, timedelta
 from typing import Generator, Optional, List
 import os
+import hashlib
+import secrets
+import logging
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
-from passlib.context import CryptContext
-from pydantic import BaseModel, EmailStr
+import bcrypt as _bcrypt
+from pydantic import BaseModel, EmailStr, constr, field_validator
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import sessionmaker, declarative_base, Session, relationship
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from dotenv import load_dotenv
-
-# Import dependencies
-from dependencies import get_db, get_current_email, get_current_user
-
-# --- Load .env ---
 load_dotenv()
 
-# --- Config ---
-# --- Config ---
-# DATABASE_URL moved to database.py
+# ── Config & Settings ────────────────────────────────────────────────────────
+from config import settings
 
-JWT_SECRET = os.getenv("JWT_SECRET")
-if not JWT_SECRET:
-    raise RuntimeError("JWT_SECRET is not set in environment variables")
+# ── Logging ──────────────────────────────────────────────────────────────────
+logger = logging.getLogger(__name__)
 
-JWT_ALG = os.getenv("JWT_ALG", "HS256")
-JWT_EXPIRES_MIN = int(os.getenv("JWT_EXPIRES_MIN", str(60 * 24)))  # 24h
+# ── Rate Limiter ─────────────────────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address)
 
-if not JWT_SECRET:
-    raise RuntimeError("JWT_SECRET is missing. Create backend/.env with JWT_SECRET=... (do NOT commit it)")
+# ── Password hashing (bcrypt direct) ────────────────────────────────────────
 
-# --- DB setup ---
-# --- DB setup ---
+def hash_password(pw: str) -> str:
+    """Hash a password using bcrypt."""
+    return _bcrypt.hashpw(pw.encode("utf-8"), _bcrypt.gensalt(rounds=12)).decode("utf-8")
+
+def verify_password(pw: str, hashed: str) -> bool:
+    """Verify a password against a bcrypt or legacy SHA-256 hash."""
+    # Try bcrypt first
+    try:
+        if hashed.startswith("$2b$") or hashed.startswith("$2a$"):
+            return _bcrypt.checkpw(pw.encode("utf-8"), hashed.encode("utf-8"))
+    except Exception:
+        pass
+
+    # Legacy SHA-256+salt fallback (for users registered before this update)
+    try:
+        if "$" in hashed:
+            parts = hashed.split("$", 1)
+            if len(parts) == 2 and len(parts[0]) == 32:  # 16-byte hex salt
+                salt, stored_hash = parts
+                combined = (pw + salt).encode("utf-8")
+                new_hash = hashlib.sha256(combined).hexdigest()
+                if secrets.compare_digest(new_hash, stored_hash):
+                    return True
+    except Exception:
+        pass
+
+    return False
+
+def needs_rehash(hashed: str) -> bool:
+    """Returns True if the hash is NOT a bcrypt hash (should be migrated)."""
+    return not (hashed.startswith("$2b$") or hashed.startswith("$2a$"))
+
+def create_access_token(email: str) -> str:
+    exp = datetime.utcnow() + timedelta(minutes=settings.jwt_expires_min)
+    payload = {"sub": email, "exp": exp}
+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_alg)
+
+# ── DB setup ──────────────────────────────────────────────────────────────────
 from database import engine, SessionLocal, Base
 
 
@@ -44,10 +78,10 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Reminder settings
     reminder_enabled = Column(Boolean, default=True)
-    reminder_days_before = Column(Integer, default=7)  # 3, 7, or 14 days
+    reminder_days_before = Column(Integer, default=7)
 
     # Student Verification
     is_verified = Column(Boolean, default=False)
@@ -65,68 +99,42 @@ class Subscription(Base):
 
     name = Column(String, nullable=False)
     price_cents = Column(Integer, nullable=False)
-    billing_cycle = Column(String, default="monthly")  # monthly|yearly
-    status = Column(String, default="active")          # active|cancelled
-    category = Column(String, default="Other")         # Entertainment, Productivity, Gaming, etc.
+    billing_cycle = Column(String, default="monthly")
+    status = Column(String, default="active")
+    category = Column(String, default="Other")
     created_at = Column(DateTime, default=datetime.utcnow)
-    
-    # Reminder tracking
-    next_billing_date = Column(DateTime, nullable=True)  # When subscription renews
+
+    next_billing_date = Column(DateTime, nullable=True)
     reminder_sent = Column(Boolean, default=False)
     last_reminder_date = Column(DateTime, nullable=True)
-    
-    # Discount and Sharing tracking
+
     student_discount_applied = Column(Boolean, default=False)
     discount_applied_date = Column(DateTime, nullable=True)
-    split_with = Column(Integer, default=1)  # Number of people splitting the cost
+    split_with = Column(Integer, default=1)
 
     user = relationship("User", back_populates="subscriptions")
 
 
-# Import StudentDiscount model to register it with Base
 from models.student_discount import StudentDiscount
-
 Base.metadata.create_all(bind=engine)
 
+# ── Pydantic Schemas ──────────────────────────────────────────────────────────
 
-# --- Auth helpers ---
-import hashlib
-import secrets
-import logging
-
-logger = logging.getLogger(__name__)
-
-def hash_password(pw: str) -> str:
-    """Hash a password using SHA-256 and a random salt."""
-    salt = secrets.token_hex(16)
-    combined = (pw + salt).encode("utf-8")
-    hashed = hashlib.sha256(combined).hexdigest()
-    return f"{salt}${hashed}"
+BILLING_CYCLES = {"monthly", "yearly"}
+STATUSES = {"active", "cancelled"}
+CATEGORIES = {"Entertainment", "Productivity", "Gaming", "Health", "Education", "Finance", "Other"}
 
 
-def verify_password(pw: str, hashed: str) -> bool:
-    """Verify a password against the salted hash."""
-    try:
-        if "$" not in hashed:
-            return False
-        salt, stored_hash = hashed.split("$", 1)
-        combined = (pw + salt).encode("utf-8")
-        new_hash = hashlib.sha256(combined).hexdigest()
-        return secrets.compare_digest(new_hash, stored_hash)
-    except Exception:
-        return False
-
-
-def create_access_token(email: str) -> str:
-    exp = datetime.utcnow() + timedelta(minutes=JWT_EXPIRES_MIN)
-    payload = {"sub": email, "exp": exp}
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
-
-
-# --- API models ---
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
+
+    @field_validator("password")
+    @classmethod
+    def password_min_length(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
 
 
 class LoginRequest(BaseModel):
@@ -147,6 +155,51 @@ class SubscriptionCreate(BaseModel):
     category: str = "Other"
     next_billing_date: Optional[datetime] = None
     split_with: int = 1
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("name must not be empty")
+        if len(v) > 100:
+            raise ValueError("name must be at most 100 characters")
+        return v
+
+    @field_validator("price_cents")
+    @classmethod
+    def price_non_negative(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("price_cents must be >= 0")
+        return v
+
+    @field_validator("billing_cycle")
+    @classmethod
+    def billing_cycle_valid(cls, v: str) -> str:
+        if v not in BILLING_CYCLES:
+            raise ValueError(f"billing_cycle must be one of {BILLING_CYCLES}")
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def status_valid(cls, v: str) -> str:
+        if v not in STATUSES:
+            raise ValueError(f"status must be one of {STATUSES}")
+        return v
+
+    @field_validator("category")
+    @classmethod
+    def category_valid(cls, v: str) -> str:
+        if v not in CATEGORIES:
+            return "Other"
+        return v
+
+    @field_validator("split_with")
+    @classmethod
+    def split_positive(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("split_with must be >= 1")
+        return v
 
 
 class SubscriptionUpdate(BaseModel):
@@ -179,33 +232,24 @@ class SubscriptionOut(BaseModel):
 class VerificationRequest(BaseModel):
     edu_email: EmailStr
 
+    @field_validator("edu_email")
+    @classmethod
+    def must_be_edu(cls, v: str) -> str:
+        if not v.lower().endswith(".edu"):
+            raise ValueError("Must be a valid .edu email address")
+        return v.lower()
 
-app = FastAPI()
 
-# ... (middleware is here, usually)
+class VerificationConfirmRequest(BaseModel):
+    code: str
 
-@app.post("/auth/verify-edu")
-async def verify_student_status(
-    req: VerificationRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Verify student status via .edu email.
-    """
-    if not req.edu_email.lower().endswith(".edu"):
-         raise HTTPException(status_code=400, detail="Must be a valid .edu email address")
-    
-    # Check if already verified
-    if current_user.is_verified:
-         return {"message": "Already verified", "is_verified": True}
-
-    # Update user
-    current_user.edu_email = req.edu_email
-    current_user.is_verified = True
-    db.commit()
-    
-    return {"message": "Verification successful", "is_verified": True}
+    @field_validator("code")
+    @classmethod
+    def code_format(cls, v: str) -> str:
+        v = v.strip()
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError("Verification code must be exactly 6 digits")
+        return v
 
 
 class UserOut(BaseModel):
@@ -214,24 +258,29 @@ class UserOut(BaseModel):
     is_verified: bool
     edu_email: Optional[str] = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
-@app.get("/users/me", response_model=UserOut)
-async def read_users_me(current_user: User = Depends(get_current_user)):
-    return current_user
+# ── FastAPI App ───────────────────────────────────────────────────────────────
+app = FastAPI(title="SubSaver API")
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
+# ── Dependencies ──────────────────────────────────────────────────────────────
+from dependencies import get_db, get_current_email, get_current_user
+
+# ── Routers ───────────────────────────────────────────────────────────────────
 from routers.reminders import router as reminder_router
 from routers.student_discounts import router as student_discounts_router
 from routers.analytics import router as analytics_router
@@ -239,37 +288,34 @@ app.include_router(reminder_router)
 app.include_router(student_discounts_router)
 app.include_router(analytics_router)
 
-# Initialize scheduler on startup
+# ── Scheduler ────────────────────────────────────────────────────────────────
 from services.scheduler import reminder_scheduler
 
 @app.on_event("startup")
 def startup_event():
-    """Initialize services on app startup."""
     reminder_scheduler.set_db_session_maker(SessionLocal)
     reminder_scheduler.start()
-    print("Reminder scheduler initialized")
+    logger.info("✅ Reminder scheduler started")
 
 @app.on_event("shutdown")
 def shutdown_event():
-    """Cleanup on app shutdown."""
     reminder_scheduler.stop()
-    print("Reminder scheduler stopped")
+    logger.info("Reminder scheduler stopped")
 
 
+# ── Health ────────────────────────────────────────────────────────────────────
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
 
-# --- Auth ---
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
 @app.post("/auth/register")
-@app.post("/auth/register")
-def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+def register(request: Request, payload: RegisterRequest, db: Session = Depends(get_db)):
     try:
         email = payload.email.strip().lower()
-
-        if len(payload.password) < 6:
-            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
 
         exists = db.query(User).filter(User.email == email).first()
         if exists:
@@ -283,22 +329,113 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         logger.error(f"Registration error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Registration failed")
 
 
-# JSON login (для фронта)
 @app.post("/auth/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
+
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # Transparent migration: re-hash legacy SHA-256 passwords to bcrypt
+    if needs_rehash(user.password_hash):
+        user.password_hash = hash_password(payload.password)
+        db.commit()
+        logger.info(f"Password re-hashed to bcrypt for user {email}")
+
     return {"access_token": create_access_token(email), "token_type": "bearer"}
 
 
-# OAuth2 Password Flow (для Swagger Authorize)
+# ── No-auth verification endpoints (used during registration, before login) ──
+
+class VerifyRegistrationRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+    @field_validator("code")
+    @classmethod
+    def code_format(cls, v: str) -> str:
+        v = v.strip()
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError("Verification code must be exactly 6 digits")
+        return v
+
+
+@app.post("/auth/verify-registration")
+@limiter.limit("10/minute")
+def verify_registration(request: Request, payload: VerifyRegistrationRequest, db: Session = Depends(get_db)):
+    """
+    Confirm the .edu verification code during registration (no JWT required).
+    Called from the register page Step 2.
+    """
+    email = payload.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    if user.is_verified:
+        return {"message": "Already verified"}
+
+    if not user.verification_code or not user.verification_code_expires:
+        raise HTTPException(status_code=400, detail="No verification code found. Please register again.")
+
+    if datetime.utcnow() > user.verification_code_expires:
+        user.verification_code = None
+        user.verification_code_expires = None
+        db.commit()
+        raise HTTPException(status_code=400, detail="Verification code expired. Please request a new one.")
+
+    if not secrets.compare_digest(user.verification_code, payload.code):
+        raise HTTPException(status_code=400, detail="Invalid verification code.")
+
+    # Success
+    user.is_verified = True
+    user.verification_code = None
+    user.verification_code_expires = None
+    db.commit()
+
+    return {"message": "Email verified successfully! You can now log in."}
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
+@app.post("/auth/resend-verification")
+@limiter.limit("3/minute")
+def resend_verification(request: Request, payload: ResendVerificationRequest, db: Session = Depends(get_db)):
+    """Resend verification code to the stored edu_email for a pending user."""
+    email = payload.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if user.is_verified:
+        return {"message": "Already verified"}
+    if not user.edu_email:
+        raise HTTPException(status_code=400, detail="No .edu email on file. Please register again.")
+
+    code = str(secrets.randbelow(900000) + 100000)
+    user.verification_code = code
+    user.verification_code_expires = datetime.utcnow() + timedelta(minutes=15)
+    db.commit()
+
+    from services.email_service import email_service
+    sent = email_service.send_verification_code(user.edu_email, code)
+    if not sent:
+        logger.warning(f"SMTP disabled. Resend code for {user.edu_email}: {code}")
+        return {"message": "Code resent", "dev_code": code, "expires_in_minutes": 15}
+
+    return {"message": f"Code resent to {user.edu_email}", "expires_in_minutes": 15}
+
+
 @app.post("/auth/token", response_model=TokenResponse)
-def token(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def token(request: Request, form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """OAuth2 Password Flow (for Swagger Authorize)."""
     email = form.username.strip().lower()
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(form.password, user.password_hash):
@@ -311,7 +448,108 @@ def me(current_email: str = Depends(get_current_email)):
     return {"email": current_email}
 
 
-# --- Subscriptions CRUD (protected) ---
+# ── Student Verification (real 2-step with email code) ────────────────────────
+
+@app.post("/auth/verify-edu")
+async def request_verification_code(
+    req: VerificationRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Step 1: Request student verification.
+    Generates a 6-digit code and sends it to BOTH the .edu email AND the user's main email.
+    This way the user can always receive the code even if .edu is unavailable.
+    """
+    if current_user.is_verified:
+        return {"message": "Already verified", "is_verified": True}
+
+    # Generate 6-digit code
+    code = str(secrets.randbelow(900000) + 100000)  # 100000–999999
+    expires_at = datetime.utcnow() + timedelta(minutes=15)
+
+    current_user.edu_email = req.edu_email
+    current_user.verification_code = code
+    current_user.verification_code_expires = expires_at
+    db.commit()
+
+    # Send code to BOTH emails simultaneously
+    from services.email_service import email_service
+    sent_edu = email_service.send_verification_code(req.edu_email, code)
+
+    # Also send to main account email (helps if .edu is deactivated after graduation)
+    sent_main = False
+    if current_user.email.lower() != req.edu_email.lower():
+        sent_main = email_service.send_verification_code(current_user.email, code)
+
+    actually_sent = sent_edu or sent_main
+
+    if not actually_sent:
+        # SMTP not configured — dev mode: return code in response for testing
+        logger.warning(f"SMTP disabled. Verification code: {code}")
+        return {
+            "message": "SMTP not configured. Use the code from server logs for testing.",
+            "dev_code": code,
+            "expires_in_minutes": 15,
+        }
+
+    return {
+        "message": f"Verification code sent to {req.edu_email} and {current_user.email}. Check both inboxes.",
+        "expires_in_minutes": 15,
+    }
+
+
+@app.post("/auth/verify-edu/confirm")
+async def confirm_verification_code(
+    req: VerificationConfirmRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Step 2: Confirm the verification code received via email.
+    """
+    if current_user.is_verified:
+        return {"message": "Already verified", "is_verified": True}
+
+    # Check code exists
+    if not current_user.verification_code or not current_user.verification_code_expires:
+        raise HTTPException(
+            status_code=400,
+            detail="No verification code found. Please request a new one.",
+        )
+
+    # Check expiry
+    if datetime.utcnow() > current_user.verification_code_expires:
+        current_user.verification_code = None
+        current_user.verification_code_expires = None
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail="Verification code has expired. Please request a new one.",
+        )
+
+    # Check code matches
+    if not secrets.compare_digest(current_user.verification_code, req.code):
+        raise HTTPException(status_code=400, detail="Invalid verification code.")
+
+    # Success!
+    current_user.is_verified = True
+    current_user.verification_code = None
+    current_user.verification_code_expires = None
+    db.commit()
+
+    return {"message": "Student status verified successfully!", "is_verified": True}
+
+
+# ── User Profile ──────────────────────────────────────────────────────────────
+
+@app.get("/users/me", response_model=UserOut)
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+# ── Subscriptions CRUD ────────────────────────────────────────────────────────
+
 @app.get("/subscriptions", response_model=List[SubscriptionOut])
 def list_subscriptions(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return (
@@ -323,24 +561,18 @@ def list_subscriptions(current_user: User = Depends(get_current_user), db: Sessi
 
 
 @app.post("/subscriptions", response_model=SubscriptionOut)
-def create_subscription(payload: SubscriptionCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def create_subscription(
+    payload: SubscriptionCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     import traceback
     try:
-        print(f"DEBUG: Creating subscription: {payload}")
-        if payload.price_cents < 0:
-            raise HTTPException(status_code=400, detail="price_cents must be >= 0")
-        if payload.billing_cycle not in ("monthly", "yearly"):
-            raise HTTPException(status_code=400, detail="billing_cycle must be 'monthly' or 'yearly'")
-        if payload.status not in ("active", "cancelled"):
-            raise HTTPException(status_code=400, detail="status must be 'active' or 'cancelled'")
-
-        # Auto-calculate next_billing_date if not provided
         from services.reminder_service import reminder_service
         next_billing_date = payload.next_billing_date
         if not next_billing_date and payload.status == "active":
             next_billing_date = reminder_service.calculate_next_billing_date(
-                datetime.utcnow(),
-                payload.billing_cycle
+                datetime.utcnow(), payload.billing_cycle
             )
 
         sub = Subscription(
@@ -351,7 +583,7 @@ def create_subscription(payload: SubscriptionCreate, current_user: User = Depend
             status=payload.status,
             category=payload.category,
             next_billing_date=next_billing_date,
-            split_with=payload.split_with
+            split_with=payload.split_with,
         )
         db.add(sub)
         db.commit()
@@ -363,8 +595,15 @@ def create_subscription(payload: SubscriptionCreate, current_user: User = Depend
 
 
 @app.patch("/subscriptions/{sub_id}", response_model=SubscriptionOut)
-def update_subscription(sub_id: int, payload: SubscriptionUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    sub = db.query(Subscription).filter(Subscription.id == sub_id, Subscription.user_id == current_user.id).first()
+def update_subscription(
+    sub_id: int,
+    payload: SubscriptionUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    sub = db.query(Subscription).filter(
+        Subscription.id == sub_id, Subscription.user_id == current_user.id
+    ).first()
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found")
 
@@ -372,13 +611,13 @@ def update_subscription(sub_id: int, payload: SubscriptionUpdate, current_user: 
         raise HTTPException(status_code=400, detail="price_cents must be >= 0")
     if payload.split_with is not None and payload.split_with < 1:
         raise HTTPException(status_code=400, detail="split_with must be >= 1")
-    if payload.billing_cycle is not None and payload.billing_cycle not in ("monthly", "yearly"):
-        raise HTTPException(status_code=400, detail="billing_cycle must be 'monthly' or 'yearly'")
-    if payload.status is not None and payload.status not in ("active", "cancelled"):
-        raise HTTPException(status_code=400, detail="status must be 'active' or 'cancelled'")
+    if payload.billing_cycle is not None and payload.billing_cycle not in BILLING_CYCLES:
+        raise HTTPException(status_code=400, detail=f"billing_cycle must be one of {BILLING_CYCLES}")
+    if payload.status is not None and payload.status not in STATUSES:
+        raise HTTPException(status_code=400, detail=f"status must be one of {STATUSES}")
 
     if payload.name is not None:
-        sub.name = payload.name
+        sub.name = payload.name.strip()
     if payload.price_cents is not None:
         sub.price_cents = payload.price_cents
     if payload.billing_cycle is not None:
@@ -386,7 +625,7 @@ def update_subscription(sub_id: int, payload: SubscriptionUpdate, current_user: 
     if payload.status is not None:
         sub.status = payload.status
     if payload.category is not None:
-        sub.category = payload.category
+        sub.category = payload.category if payload.category in CATEGORIES else "Other"
     if payload.next_billing_date is not None:
         sub.next_billing_date = payload.next_billing_date
     if payload.split_with is not None:
@@ -398,8 +637,14 @@ def update_subscription(sub_id: int, payload: SubscriptionUpdate, current_user: 
 
 
 @app.delete("/subscriptions/{sub_id}")
-def delete_subscription(sub_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    sub = db.query(Subscription).filter(Subscription.id == sub_id, Subscription.user_id == current_user.id).first()
+def delete_subscription(
+    sub_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    sub = db.query(Subscription).filter(
+        Subscription.id == sub_id, Subscription.user_id == current_user.id
+    ).first()
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found")
 

@@ -33,7 +33,18 @@ export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      const msg = data?.detail || data?.message || `Request failed (${res.status})`;
+      // Pydantic v2 returns detail as array of objects [{type, loc, msg, ...}]
+      // We need to always convert to a string
+      const rawDetail = data?.detail ?? data?.message;
+      let msg: string;
+      if (Array.isArray(rawDetail)) {
+        // Pydantic validation error — pick the first meaningful message
+        msg = rawDetail.map((e: any) => e?.msg ?? JSON.stringify(e)).join(", ");
+      } else if (typeof rawDetail === "string") {
+        msg = rawDetail;
+      } else {
+        msg = `Request failed (${res.status})`;
+      }
       throw new Error(msg);
     }
 

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { X, GraduationCap, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, GraduationCap, Loader2, CheckCircle, AlertCircle, Mail, ArrowRight, RotateCcw } from "lucide-react";
 import { apiFetch } from "../lib/api";
+
+type Step = "email" | "code" | "success";
 
 type Props = {
     isOpen: boolean;
@@ -11,129 +13,307 @@ type Props = {
 };
 
 export default function VerificationModal({ isOpen, onClose, onSuccess }: Props) {
-    const [email, setEmail] = useState("");
+    const [step, setStep] = useState<Step>("email");
+    const [eduEmail, setEduEmail] = useState("");
+    const [code, setCode] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
+    const [countdown, setCountdown] = useState(0); // seconds until resend allowed
+    const [devCode, setDevCode] = useState<string | null>(null); // shown when SMTP is off
+
+    // Reset state when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setStep("email");
+            setEduEmail("");
+            setCode("");
+            setError(null);
+            setDevCode(null);
+            setCountdown(0);
+        }
+    }, [isOpen]);
+
+    // Countdown timer for resend
+    useEffect(() => {
+        if (countdown <= 0) return;
+        const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
+        return () => clearTimeout(timer);
+    }, [countdown]);
 
     if (!isOpen) return null;
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    // ── Step 1: Request verification code ────────────────────────────────────
+    const handleRequestCode = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!email.endsWith(".edu")) {
-            setError("Please use a valid .edu email address.");
+        if (!eduEmail.toLowerCase().endsWith(".edu")) {
+            setError("Please enter a valid .edu email address.");
             return;
         }
-
         setLoading(true);
         setError(null);
-
         try {
-            await apiFetch("/auth/verify-edu", {
+            const res = await apiFetch("/auth/verify-edu", {
                 method: "POST",
-                body: JSON.stringify({ edu_email: email }),
+                body: JSON.stringify({ edu_email: eduEmail }),
             });
-            setSuccess(true);
+            // Dev mode: code returned in response (SMTP not configured)
+            if (res.dev_code) {
+                setDevCode(res.dev_code);
+            }
+            setStep("code");
+            setCountdown(60); // allow resend after 60s
+        } catch (err: any) {
+            setError(err.message || "Failed to send code. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ── Step 2: Confirm the code ──────────────────────────────────────────────
+    const handleConfirmCode = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!/^\d{6}$/.test(code)) {
+            setError("Please enter the 6-digit code from your email.");
+            return;
+        }
+        setLoading(true);
+        setError(null);
+        try {
+            await apiFetch("/auth/verify-edu/confirm", {
+                method: "POST",
+                body: JSON.stringify({ code }),
+            });
+            setStep("success");
             setTimeout(() => {
                 onSuccess();
                 onClose();
-            }, 2000); // Close after 2 seconds
+            }, 2500);
         } catch (err: any) {
-            setError(err.message || "Verification failed. Please try again.");
+            setError(err.message || "Invalid or expired code. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ── Resend code ───────────────────────────────────────────────────────────
+    const handleResend = async () => {
+        if (countdown > 0) return;
+        setLoading(true);
+        setError(null);
+        setDevCode(null);
+        try {
+            const res = await apiFetch("/auth/verify-edu", {
+                method: "POST",
+                body: JSON.stringify({ edu_email: eduEmail }),
+            });
+            if (res.dev_code) setDevCode(res.dev_code);
+            setCountdown(60);
+        } catch (err: any) {
+            setError(err.message || "Failed to resend. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div
+                className="relative w-full max-w-md rounded-2xl overflow-hidden"
+                style={{
+                    background: "rgba(13, 10, 30, 0.97)",
+                    border: "1px solid rgba(168,85,247,0.2)",
+                    boxShadow: "0 0 60px rgba(168,85,247,0.15), 0 24px 48px rgba(0,0,0,0.6)",
+                }}
+            >
                 {/* Header */}
-                <div className="relative bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white text-center">
+                <div
+                    className="relative px-6 pt-6 pb-5 text-center"
+                    style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+                >
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/20 transition-colors"
+                        className="absolute top-4 right-4 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all"
                     >
-                        <X size={20} />
+                        <X size={18} />
                     </button>
 
-                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-md">
-                        <GraduationCap size={28} className="text-white" />
+                    <div
+                        className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                        style={{ background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.3)" }}
+                    >
+                        <GraduationCap size={24} className="text-violet-400" />
                     </div>
-                    <h2 className="text-xl font-bold">Student Verification</h2>
-                    <p className="text-blue-100 text-sm mt-1">Unlock exclusive student discounts</p>
+                    <h2 className="text-lg font-bold text-white">Student Verification</h2>
+                    <p className="text-sm text-white/40 mt-0.5">Unlock exclusive student discounts</p>
+
+                    {/* Step indicators */}
+                    {step !== "success" && (
+                        <div className="flex items-center justify-center gap-2 mt-4">
+                            {(["email", "code"] as Step[]).map((s, i) => (
+                                <div key={s} className="flex items-center gap-2">
+                                    <div
+                                        className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+                                        style={{
+                                            background: step === s || (s === "email" && step === "code")
+                                                ? "rgba(168,85,247,0.3)"
+                                                : "rgba(255,255,255,0.05)",
+                                            border: step === s
+                                                ? "1px solid rgba(168,85,247,0.7)"
+                                                : "1px solid rgba(255,255,255,0.1)",
+                                            color: step === s ? "#A855F7" : "rgba(255,255,255,0.3)",
+                                        }}
+                                    >
+                                        {s === "email" && step === "code" ? "✓" : i + 1}
+                                    </div>
+                                    {i === 0 && (
+                                        <div className="w-8 h-px" style={{ background: "rgba(255,255,255,0.1)" }} />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                {/* Content */}
-                <div className="p-6">
-                    {success ? (
-                        <div className="text-center py-6">
-                            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <CheckCircle size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">You're Verified!</h3>
-                            <p className="text-gray-500 dark:text-gray-400">Enjoy your student savings.</p>
-                        </div>
-                    ) : (
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {/* Demo Mode Disclaimer */}
-                            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
-                                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                                <div>
-                                    <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">
-                                        ⚠️ Demo Mode
-                                    </h4>
-                                    <p className="text-xs text-amber-700 dark:text-amber-300">
-                                        This is a simplified verification for demonstration purposes. Real verification would require email confirmation and institutional verification.
-                                    </p>
-                                </div>
-                            </div>
+                {/* Body */}
+                <div className="px-6 py-5">
 
+                    {/* ── STEP 1: Email ─────────────────────────────────── */}
+                    {step === "email" && (
+                        <form onSubmit={handleRequestCode} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    University Email Address
+                                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
+                                    University Email
                                 </label>
                                 <div className="relative">
+                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" style={{ width: 17, height: 17 }} />
                                     <input
                                         type="email"
                                         placeholder="you@university.edu"
-                                        value={email}
-                                        onChange={(e) => {
-                                            setEmail(e.target.value);
-                                            setError(null);
-                                        }}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all placeholder:text-gray-400"
+                                        value={eduEmail}
+                                        onChange={e => { setEduEmail(e.target.value); setError(null); }}
+                                        className="liquid-input w-full rounded-xl text-sm py-3.5"
+                                        style={{ paddingLeft: "2.75rem", paddingRight: "1rem" }}
                                         required
+                                        autoFocus
                                     />
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2">
-                                    We'll verify your status instantly. Use your .edu email.
+                                <p className="text-xs text-white/30 mt-2">
+                                    We'll send a 6-digit verification code to this address.
                                 </p>
                             </div>
 
                             {error && (
-                                <div className="flex items-center gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
-                                    <AlertCircle size={16} />
-                                    <span>{error}</span>
+                                <div className="flex items-center gap-2 p-3 rounded-xl text-sm"
+                                    style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                                    <AlertCircle size={15} className="text-red-400 shrink-0" />
+                                    <span className="text-red-400">{error}</span>
                                 </div>
                             )}
 
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="liquid-btn w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
                             >
-                                {loading ? (
-                                    <>
-                                        <Loader2 size={20} className="animate-spin" />
-                                        Verifying...
-                                    </>
-                                ) : (
-                                    "Verify Status"
-                                )}
+                                {loading
+                                    ? <><Loader2 size={17} className="animate-spin" /> Sending code...</>
+                                    : <>Send Verification Code <ArrowRight size={16} /></>
+                                }
                             </button>
                         </form>
+                    )}
+
+                    {/* ── STEP 2: Code ──────────────────────────────────── */}
+                    {step === "code" && (
+                        <form onSubmit={handleConfirmCode} className="space-y-4">
+                            {/* Dev code hint */}
+                            {devCode && (
+                                <div className="p-3 rounded-xl text-center"
+                                    style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)" }}>
+                                    <p className="text-xs text-yellow-400/80 font-medium">🛠 Dev mode — SMTP not configured</p>
+                                    <p className="text-2xl font-black text-yellow-400 tracking-widest mt-1">{devCode}</p>
+                                    <p className="text-xs text-yellow-400/50 mt-1">Use this code to complete verification</p>
+                                </div>
+                            )}
+
+                            {!devCode && (
+                                <div className="p-3 rounded-xl text-center"
+                                    style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+                                    <p className="text-sm text-white/60">Code sent to</p>
+                                    <p className="text-sm font-semibold text-violet-400 mt-0.5">{eduEmail}</p>
+                                    <p className="text-xs text-white/30 mt-1">Check your inbox & spam folder. Valid for 15 minutes.</p>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
+                                    6-Digit Code
+                                </label>
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={6}
+                                    placeholder="000000"
+                                    value={code}
+                                    onChange={e => { setCode(e.target.value.replace(/\D/g, "")); setError(null); }}
+                                    className="liquid-input w-full rounded-xl text-center text-2xl py-3.5 font-bold tracking-[0.5em]"
+                                    required
+                                    autoFocus
+                                />
+                            </div>
+
+                            {error && (
+                                <div className="flex items-center gap-2 p-3 rounded-xl text-sm"
+                                    style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                                    <AlertCircle size={15} className="text-red-400 shrink-0" />
+                                    <span className="text-red-400">{error}</span>
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={loading || code.length !== 6}
+                                className="liquid-btn w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+                            >
+                                {loading
+                                    ? <><Loader2 size={17} className="animate-spin" /> Verifying...</>
+                                    : <>Verify <ArrowRight size={16} /></>
+                                }
+                            </button>
+
+                            <div className="flex items-center justify-between">
+                                <button
+                                    type="button"
+                                    onClick={() => { setStep("email"); setCode(""); setError(null); setDevCode(null); }}
+                                    className="text-xs text-white/30 hover:text-white/60 transition-colors flex items-center gap-1"
+                                >
+                                    <ArrowRight size={12} className="rotate-180" /> Change email
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleResend}
+                                    disabled={countdown > 0 || loading}
+                                    className="text-xs text-violet-400/70 hover:text-violet-400 disabled:text-white/20 transition-colors flex items-center gap-1"
+                                >
+                                    <RotateCcw size={12} />
+                                    {countdown > 0 ? `Resend in ${countdown}s` : "Resend code"}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
+                    {/* ── STEP 3: Success ───────────────────────────────── */}
+                    {step === "success" && (
+                        <div className="text-center py-6">
+                            <div
+                                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                                style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)" }}
+                            >
+                                <CheckCircle size={32} className="text-green-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">You're Verified! 🎓</h3>
+                            <p className="text-white/50">Student discounts are now unlocked.</p>
+                        </div>
                     )}
                 </div>
             </div>
