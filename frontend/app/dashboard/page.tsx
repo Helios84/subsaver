@@ -585,6 +585,48 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleServiceSelect(service: StudentDiscount) {
+    setShowServicePicker(false);
+
+    // Auto-select student price if user is verified, else regular price
+    const priceToSet = user?.is_verified ? service.student_price_cents : service.regular_price_cents;
+
+    try {
+      const body = {
+        name: service.service_name,
+        price_cents: priceToSet,
+        billing_cycle: "monthly",
+        status: "active",
+        category: service.category || "Other",
+        split_with: 1,
+      };
+
+      await apiFetch("/subscriptions", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      setMsg(`✅ Added ${service.service_name} to your stack!`);
+      // Hide message after 3 seconds
+      setTimeout(() => setMsg(""), 3000);
+
+      // Auto-refresh subscriptions list
+      fetchSubs();
+    } catch (err: any) {
+      console.error("Failed to add service", err);
+      // Fallback: fill the form if API fails, in case the form is visible
+      setName(service.service_name);
+      setPrice((priceToSet / 100).toFixed(2));
+      setCategory(service.category || "Other");
+      setCycle("monthly");
+
+      setMsg(err?.message ?? "Failed to add subscription directly. Please add it manually below.");
+      setTimeout(() => {
+        document.getElementById('add-new-form')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }
+
   function startEdit(s: Sub) {
     setEditingId(s.id);
     setEditName(s.name);
@@ -674,14 +716,6 @@ export default function DashboardPage() {
     }
   }
 
-  const handleServiceSelect = (service: any) => {
-    setName(service.service_name);
-    setPrice((service.student_price_cents / 100).toFixed(2)); // Convert to string with 2 decimal places
-    setCategory(service.category);
-    setShowServicePicker(false);
-    setShowSuggestions(false);
-  };
-
   const handleNameChange = (val: string) => {
     setName(val);
     if (val.length > 1) {
@@ -698,7 +732,7 @@ export default function DashboardPage() {
   const QuickActions = () => (
     <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
       <button
-        onClick={() => document.getElementById('add-new-form')?.scrollIntoView({ behavior: 'smooth' })}
+        onClick={() => setShowServicePicker(true)}
         className="liquid-btn flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
       >
         <Plus className="w-5 h-5" />
@@ -842,7 +876,10 @@ export default function DashboardPage() {
 
         {/* Dashboard Content or Empty State */}
         {!loading && subs.length === 0 ? (
-          <DashboardEmptyState onAddSampleData={addSampleData} />
+          <DashboardEmptyState
+            onAddSampleData={addSampleData}
+            onAddSubscription={() => setShowServicePicker(true)}
+          />
         ) : (
           <>
             {/* Stats Grid */}

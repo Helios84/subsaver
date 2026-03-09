@@ -8,6 +8,7 @@ import {
   GraduationCap, CheckCircle2, Sparkles,
   Users, TrendingDown, Star
 } from "lucide-react";
+import { apiFetch } from "./lib/api";
 
 /* ── Animated Counter ── */
 function AnimatedCounter({ target, prefix = "", suffix = "", duration = 1800 }: {
@@ -114,6 +115,27 @@ function FeatureCard({ icon: Icon, title, desc, color, delay }: {
 
 /* ─── PAGE ─── */
 export default function Home() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("subsaver_token");
+      if (token) {
+        setIsAuthenticated(true);
+        apiFetch("/users/me")
+          .then(data => setUser(data))
+          .catch(err => console.error("Failed to load user info:", err));
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("subsaver_token");
+    setIsAuthenticated(false);
+    setUser(null);
+  };
+
   return (
     <main style={{ minHeight: "100vh", background: "#080B14", color: "white", display: "block", width: "100%" }}>
 
@@ -147,21 +169,44 @@ export default function Home() {
 
             {/* RIGHT: Actions */}
             <div className="flex-1 flex items-center justify-end gap-3 lg:gap-4">
-              <Link
-                href="/login"
-                className="group relative text-sm font-bold px-4 md:px-5 py-2.5 flex items-center justify-center rounded-xl overflow-hidden transition-all duration-300"
-                style={{
-                  color: "rgba(255,255,255,0.8)",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)"
-                }}
-              >
-                <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <span className="relative z-10 group-hover:text-white transition-colors">Log in</span>
-              </Link>
-              <Link href="/register" className="hero-btn-primary text-sm font-bold px-4 md:px-5 py-2.5 flex items-center justify-center">
-                Get Started
-              </Link>
+              {isAuthenticated ? (
+                <div className="flex items-center gap-3">
+                  {user && (
+                    <div className="hidden lg:flex flex-col items-end mr-2">
+                      <span className="text-xs text-white/40 font-medium tracking-wide uppercase">Logged in as</span>
+                      <span className="text-sm text-white/80 font-semibold">{user.email}</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    className="hidden md:flex items-center justify-center text-sm font-semibold px-4 py-2.5 rounded-xl border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    Log out
+                  </button>
+                  <Link href="/dashboard" className="hero-btn-primary text-sm font-bold px-4 md:px-5 py-2.5 flex items-center justify-center group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <span className="relative z-10">Dashboard</span>
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="group relative text-sm font-bold px-4 md:px-5 py-2.5 flex items-center justify-center rounded-xl overflow-hidden transition-all duration-300"
+                    style={{
+                      color: "rgba(255,255,255,0.8)",
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.08)"
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <span className="relative z-10 group-hover:text-white transition-colors">Log in</span>
+                  </Link>
+                  <Link href="/register" className="hero-btn-primary text-sm font-bold px-4 md:px-5 py-2.5 flex items-center justify-center">
+                    Get Started
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -230,14 +275,23 @@ export default function Home() {
           </p>
 
           <div className="flex gap-4 justify-center items-center flex-wrap mb-8">
-            <Link href="/register" className="hero-btn-primary text-base font-bold px-9 py-4 flex items-center gap-2.5">
-              <Zap className="w-5 h-5" style={{ fill: "currentColor" }} />
-              Start Saving Free
-            </Link>
-            <Link href="/dashboard" className="hero-btn-ghost text-base font-semibold px-9 py-4 flex items-center gap-2.5">
-              <BarChart3 className="w-5 h-5" />
-              View Demo
-            </Link>
+            {isAuthenticated ? (
+              <Link href="/dashboard" className="hero-btn-primary text-base font-bold px-9 py-4 flex items-center gap-2.5">
+                <BarChart3 className="w-5 h-5" />
+                Go to Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/register" className="hero-btn-primary text-base font-bold px-9 py-4 flex items-center gap-2.5">
+                  <Zap className="w-5 h-5" style={{ fill: "currentColor" }} />
+                  Start Saving Free
+                </Link>
+                <Link href="/dashboard" className="hero-btn-ghost text-base font-semibold px-9 py-4 flex items-center gap-2.5">
+                  <BarChart3 className="w-5 h-5" />
+                  View Demo
+                </Link>
+              </>
+            )}
           </div>
 
           <div className="flex justify-center gap-8 text-sm text-white/30 font-medium">
@@ -547,24 +601,37 @@ export default function Home() {
                   </div>
 
                   {/* Primary CTA */}
-                  <Link
-                    href="/register"
-                    className="cta-btn-white font-black flex items-center justify-center gap-2"
-                    style={{ padding: "14px 24px", fontSize: "15px", width: "100%" }}
-                  >
-                    <Zap className="w-4 h-4" style={{ fill: "currentColor" }} />
-                    Create Free Account
-                  </Link>
+                  {isAuthenticated ? (
+                    <Link
+                      href="/dashboard"
+                      className="cta-btn-white font-black flex items-center justify-center gap-2"
+                      style={{ padding: "14px 24px", fontSize: "15px", width: "100%" }}
+                    >
+                      <BarChart3 className="w-4 h-4" style={{ fill: "currentColor" }} />
+                      Go to Dashboard
+                    </Link>
+                  ) : (
+                    <>
+                      <Link
+                        href="/register"
+                        className="cta-btn-white font-black flex items-center justify-center gap-2"
+                        style={{ padding: "14px 24px", fontSize: "15px", width: "100%" }}
+                      >
+                        <Zap className="w-4 h-4" style={{ fill: "currentColor" }} />
+                        Create Free Account
+                      </Link>
 
-                  {/* Secondary link */}
-                  <Link
-                    href="/login"
-                    className="text-center transition-colors hover:text-white"
-                    style={{ fontSize: "13px", color: "rgba(255,255,255,0.45)" }}
-                  >
-                    Already have an account?{" "}
-                    <span className="text-violet-300 font-semibold">Log in →</span>
-                  </Link>
+                      {/* Secondary link */}
+                      <Link
+                        href="/login"
+                        className="text-center transition-colors hover:text-white"
+                        style={{ fontSize: "13px", color: "rgba(255,255,255,0.45)" }}
+                      >
+                        Already have an account?{" "}
+                        <span className="text-violet-300 font-semibold">Log in →</span>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

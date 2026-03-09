@@ -4,9 +4,10 @@ import { Sparkles, TrendingUp, Zap } from "lucide-react";
 
 interface EmptyStateProps {
     onAddSampleData: () => void;
+    onAddSubscription: () => void;
 }
 
-export default function DashboardEmptyState({ onAddSampleData }: EmptyStateProps) {
+export default function DashboardEmptyState({ onAddSampleData, onAddSubscription }: EmptyStateProps) {
     return (
         <div className="flex items-center justify-center min-h-[500px] px-6">
             <div className="max-w-md w-full text-center">
@@ -41,7 +42,7 @@ export default function DashboardEmptyState({ onAddSampleData }: EmptyStateProps
                     </button>
 
                     <button
-                        onClick={() => document.getElementById('add-new-form')?.scrollIntoView({ behavior: 'smooth' })}
+                        onClick={onAddSubscription}
                         className="flex items-center justify-center gap-2 px-6 py-3.5 bg-white/5 hover:bg-white/10 text-white font-medium rounded-xl border border-white/10 transition-all"
                     >
                         Add Your First Subscription
