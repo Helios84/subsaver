@@ -116,6 +116,115 @@ class EmailService:
         """
         return self._send_email(to_email, subject, html_content)
 
+
+    def send_password_reset_code(self, to_email: str, code: str) -> bool:
+        """
+        Send a 6-digit password reset code to the given user email.
+        """
+        subject = "🔑 SubSaver — Password Reset Request"
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="margin:0;padding:0;background:#080B14;font-family:Inter,-apple-system,sans-serif;color:#fff;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#080B14;padding:40px 20px;">
+            <tr><td align="center">
+              <table width="520" cellpadding="0" cellspacing="0"
+                style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:40px;">
+                <tr><td>
+                  <!-- Logo -->
+                  <p style="margin:0 0 32px;font-size:20px;font-weight:700;color:#fff;">
+                    Sub<span style="color:#A855F7;">Saver</span>
+                  </p>
+
+                  <!-- Heading -->
+                  <h1 style="margin:0 0 12px;font-size:24px;font-weight:800;color:#fff;">
+                    Reset your password
+                  </h1>
+                  <p style="margin:0 0 28px;font-size:15px;color:rgba(255,255,255,0.5);line-height:1.6;">
+                    Someone (hopefully you) requested a password reset for your SubSaver account.
+                    Enter the code below to set a new password.
+                    This code expires in <strong style="color:#fff;">15 minutes</strong>.
+                  </p>
+
+                  <!-- Code box -->
+                  <div style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);
+                    border-radius:12px;padding:24px;text-align:center;margin-bottom:28px;">
+                     <p style="margin:0;font-size:42px;font-weight:900;letter-spacing:12px;
+                       color:#A855F7;font-family:monospace;">{code}</p>
+                  </div>
+
+                  <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.3);line-height:1.6;">
+                    If you didn't request a password reset, you can safely ignore this email.
+                    Your password will remain unchanged.
+                  </p>
+                </td></tr>
+              </table>
+
+              <!-- Footer -->
+              <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.2);">
+                © 2026 SubSaver. The #1 savings app for students.
+              </p>
+            </td></tr>
+          </table>
+        </body>
+        </html>
+        """
+        return self._send_email(to_email, subject, html_content)
+
+    def send_password_changed_notification(self, to_email: str) -> bool:
+        """
+        Send a notification that the password has been successfully changed.
+        """
+        subject = "✔ SubSaver — Password Changed"
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <body style="margin:0;padding:0;background:#080B14;font-family:Inter,-apple-system,sans-serif;color:#fff;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#080B14;padding:40px 20px;">
+            <tr><td align="center">
+              <table width="520" cellpadding="0" cellspacing="0"
+                style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:40px;">
+                <tr><td>
+                  <!-- Logo -->
+                  <p style="margin:0 0 32px;font-size:20px;font-weight:700;color:#fff;">
+                    Sub<span style="color:#A855F7;">Saver</span>
+                  </p>
+
+                  <!-- Heading -->
+                  <h1 style="margin:0 0 12px;font-size:24px;font-weight:800;color:#fff;">
+                    Password successfully changed
+                  </h1>
+                  <p style="margin:0 0 28px;font-size:15px;color:rgba(255,255,255,0.5);line-height:1.6;">
+                    Hello,<br><br>
+                    This is a confirmation that your password for your SubSaver account was successfully updated.
+                    You can now use your new password to log in to your account.
+                  </p>
+                  
+                  <!-- CTA -->
+                  <div style="text-align:center;margin-bottom:28px;">
+                    <a href="https://subsaver.example/login" style="display:inline-block;background:linear-gradient(135deg, #7C3AED, #D946EF);color:#fff;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:8px;">
+                      Log In Now
+                    </a>
+                  </div>
+
+                  <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.3);line-height:1.6;">
+                    If you did not make this change, please contact support immediately or reset your password again.
+                  </p>
+                </td></tr>
+              </table>
+
+              <!-- Footer -->
+              <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.2);">
+                © 2026 SubSaver. The #1 savings app for students.
+              </p>
+            </td></tr>
+          </table>
+        </body>
+        </html>
+        """
+        return self._send_email(to_email, subject, html_content)
+
+
     def send_reminder_email(
         self,
         to_email: str,

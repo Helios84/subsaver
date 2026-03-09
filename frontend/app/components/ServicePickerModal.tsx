@@ -20,6 +20,7 @@ type StudentDiscount = {
 };
 
 type Props = {
+    isVerified: boolean;
     onSelect: (service: StudentDiscount) => void;
     onClose: () => void;
 };
@@ -35,7 +36,7 @@ const CATEGORY_COLORS: Record<string, { bg: string, text: string, border: string
     "Other": { bg: "rgba(156,163,175,0.15)", text: "text-gray-400", border: "border-gray-500/30" }
 };
 
-export default function ServicePickerModal({ onSelect, onClose }: Props) {
+export default function ServicePickerModal({ isVerified, onSelect, onClose }: Props) {
     const [services, setServices] = useState<StudentDiscount[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
@@ -144,7 +145,7 @@ export default function ServicePickerModal({ onSelect, onClose }: Props) {
                                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border uppercase tracking-wider ${catStyle.text} ${catStyle.border}`} style={{ background: catStyle.bg }}>
                                                     {service.category}
                                                 </span>
-                                                {service.discount_percentage > 0 && (
+                                                {isVerified && service.discount_percentage > 0 && (
                                                     <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                                                         <Tag className="w-3 h-3" />
                                                         {service.discount_percentage}% Student Discount
@@ -156,9 +157,9 @@ export default function ServicePickerModal({ onSelect, onClose }: Props) {
 
                                     <div className="text-right shrink-0 ml-4">
                                         <div className="text-lg font-black text-white" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>
-                                            ${(service.student_price_cents / 100).toFixed(2)}<span className="text-sm font-medium text-white/40">/mo</span>
+                                            ${((isVerified ? service.student_price_cents : service.regular_price_cents) / 100).toFixed(2)}<span className="text-sm font-medium text-white/40">/mo</span>
                                         </div>
-                                        {service.student_price_cents !== service.regular_price_cents && (
+                                        {isVerified && service.student_price_cents !== service.regular_price_cents && (
                                             <div className="text-xs text-white/30 line-through mt-0.5 font-medium">
                                                 ${(service.regular_price_cents / 100).toFixed(2)}/mo
                                             </div>
@@ -170,7 +171,13 @@ export default function ServicePickerModal({ onSelect, onClose }: Props) {
                     )}
                 </div>
 
-                <div className="p-4 border-t border-white/10 bg-black/20 rounded-b-2xl text-center flex items-center justify-center">
+                <div className="p-4 border-t border-white/10 bg-black/20 rounded-b-2xl text-center flex flex-col items-center justify-center gap-2">
+                    {!isVerified && (
+                        <p className="text-xs font-semibold text-violet-400 bg-violet-500/10 px-3 py-1.5 rounded-lg border border-violet-500/20 inline-flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Verify your student email to unlock exclusive discounts!
+                        </p>
+                    )}
                     <p className="text-[11px] text-white/30 font-medium">
                         Can't find a service? You can close this window and enter it manually.
                     </p>

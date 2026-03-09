@@ -88,6 +88,10 @@ class User(Base):
     edu_email = Column(String, nullable=True)
     verification_code = Column(String, nullable=True)
     verification_code_expires = Column(DateTime, nullable=True)
+    
+    # Password Reset
+    reset_code = Column(String, nullable=True)
+    reset_expires = Column(DateTime, nullable=True)
 
     subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
 
@@ -145,6 +149,44 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class VerifyResetCodeRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+    @field_validator("code")
+    @classmethod
+    def code_format(cls, v: str) -> str:
+        v = v.strip()
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError("Reset code must be exactly 6 digits")
+        return v
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_min_length(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        return v
+
+    @field_validator("code")
+    @classmethod
+    def code_format(cls, v: str) -> str:
+        v = v.strip()
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError("Reset code must be exactly 6 digits")
+        return v
 
 
 class SubscriptionCreate(BaseModel):
@@ -210,6 +252,52 @@ class SubscriptionUpdate(BaseModel):
     category: Optional[str] = None
     next_billing_date: Optional[datetime] = None
     split_with: Optional[int] = None
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            v = v.strip()
+            if not v:
+                raise ValueError("name must not be empty")
+            if len(v) > 100:
+                raise ValueError("name must be at most 100 characters")
+        return v
+
+    @field_validator("price_cents")
+    @classmethod
+    def price_non_negative(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 0:
+            raise ValueError("price_cents must be >= 0")
+        return v
+
+    @field_validator("billing_cycle")
+    @classmethod
+    def billing_cycle_valid(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in BILLING_CYCLES:
+            raise ValueError(f"billing_cycle must be one of {BILLING_CYCLES}")
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def status_valid(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in STATUSES:
+            raise ValueError(f"status must be one of {STATUSES}")
+        return v
+
+    @field_validator("category")
+    @classmethod
+    def category_valid(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in CATEGORIES:
+            return "Other"
+        return v
+
+    @field_validator("split_with")
+    @classmethod
+    def split_positive(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 1:
+            raise ValueError("split_with must be >= 1")
+        return v
 
 
 class SubscriptionOut(BaseModel):
@@ -333,7 +421,7 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
 
 
 @app.post("/auth/login", response_model=TokenResponse)
-@limiter.limit("5/minute")
+@limiter.limit("10/minute")
 def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
@@ -441,6 +529,89 @@ def token(request: Request, form: OAuth2PasswordRequestForm = Depends(), db: Ses
     if not user or not verify_password(form.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return {"access_token": create_access_token(email), "token_type": "bearer"}
+
+
+@app.post("/auth/forgot-password")
+@limiter.limit("3/minute")
+def forgot_password(request: Request, payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    
+    if not user:
+        # Prevent email enumeration by always returning the same success message
+        return {"message": "If that email exists, a reset code has been sent."}
+        
+    code = str(secrets.randbelow(900000) + 100000)
+    user.reset_code = code
+    user.reset_expires = datetime.utcnow() + timedelta(minutes=15)
+    db.commit()
+    
+    from services.email_service import email_service
+    sent = email_service.send_password_reset_code(user.email, code)
+        
+    if not sent:
+        logger.warning(f"SMTP disabled. Reset code for {user.email}: {code}")
+        return {"message": "If that email exists, a reset code has been sent.", "dev_code": code}
+
+    return {"message": "If that email exists, a reset code has been sent."}
+
+
+@app.post("/auth/verify-reset-code")
+@limiter.limit("5/minute")
+def verify_reset_code(request: Request, payload: VerifyResetCodeRequest, db: Session = Depends(get_db)):
+    """
+    Step 2 of Forgot Password flow: verifies the 6-digit code before allowing new password input.
+    """
+    email = payload.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid request")
+        
+    if not user.reset_code or not user.reset_expires:
+        raise HTTPException(status_code=400, detail="No pending reset request")
+        
+    if datetime.utcnow() > user.reset_expires:
+        raise HTTPException(status_code=400, detail="Reset code expired")
+        
+    if not secrets.compare_digest(user.reset_code, payload.code):
+        raise HTTPException(status_code=400, detail="Invalid reset code")
+        
+    return {"message": "Code verified"}
+
+
+@app.post("/auth/reset-password")
+@limiter.limit("5/minute")
+def reset_password(request: Request, payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid request")
+        
+    if not user.reset_code or not user.reset_expires:
+        raise HTTPException(status_code=400, detail="No pending reset request")
+        
+    if datetime.utcnow() > user.reset_expires:
+        user.reset_code = None
+        user.reset_expires = None
+        db.commit()
+        raise HTTPException(status_code=400, detail="Reset code expired")
+        
+    if not secrets.compare_digest(user.reset_code, payload.code):
+        raise HTTPException(status_code=400, detail="Invalid reset code")
+        
+    # Apply new password
+    user.password_hash = hash_password(payload.new_password)
+    user.reset_code = None
+    user.reset_expires = None
+    db.commit()
+    
+    from services.email_service import email_service
+    # Send notification of successful password change
+    email_service.send_password_changed_notification(user.email)
+    
+    return {"message": "Password has been successfully reset"}
 
 
 @app.get("/me")

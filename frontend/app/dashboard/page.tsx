@@ -1451,6 +1451,7 @@ export default function DashboardPage() {
         />
         {showServicePicker && (
           <ServicePickerModal
+            isVerified={user?.is_verified ?? false}
             onSelect={handleServiceSelect}
             onClose={() => setShowServicePicker(false)}
           />
