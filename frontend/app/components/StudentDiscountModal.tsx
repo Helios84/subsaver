@@ -49,61 +49,61 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="glass-card rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <div className="liquid-panel rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
                 {/* Header */}
-                <div className="sticky top-0 glass-panel border-b border-white/10 p-6 flex items-start justify-between">
+                <div className="sticky top-0 bg-[#0F1219]/80 backdrop-blur-md border-b border-white/10 p-6 flex items-start justify-between z-10">
                     <div className="flex items-center gap-3">
-                        <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl">
+                        <div className="p-3 bg-gradient-to-br from-violet-500 to-fuchsia-600 rounded-xl shadow-lg shadow-fuchsia-500/20">
                             <GraduationCap className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900">Student Discount Available!</h2>
-                            <p className="text-sm text-gray-600 mt-1">{discount.service_name}</p>
+                            <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>Student Discount Available!</h2>
+                            <p className="text-sm text-white/50 mt-1">{discount.service_name}</p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition"
+                        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                     >
-                        <X className="w-5 h-5 text-gray-500" />
+                        <X className="w-5 h-5 text-white/50 hover:text-white" />
                     </button>
                 </div>
 
                 {/* Content */}
                 <div className="p-6 space-y-6">
                     {/* Savings Highlight */}
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+                    <div className="liquid-card rounded-xl p-6 border border-emerald-500/20" style={{ background: 'rgba(16,185,129,0.05)' }}>
                         <div className="flex items-center gap-2 mb-3">
-                            <DollarSign className="w-5 h-5 text-green-600" />
-                            <h3 className="text-lg font-semibold text-gray-900">Your Savings</h3>
+                            <DollarSign className="w-5 h-5 text-emerald-400" />
+                            <h3 className="text-lg font-bold text-emerald-300">Your Savings</h3>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <p className="text-sm text-gray-600">Per Month</p>
-                                <p className="text-3xl font-bold text-green-600">${monthlySavings}</p>
+                                <p className="text-sm text-white/40">Per Month</p>
+                                <p className="text-3xl font-black text-emerald-400" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>${monthlySavings}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-gray-600">Per Year</p>
-                                <p className="text-3xl font-bold text-green-600">${annualSavings}</p>
+                                <p className="text-sm text-white/40">Per Year</p>
+                                <p className="text-3xl font-black text-emerald-400" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>${annualSavings}</p>
                             </div>
                         </div>
-                        <div className="mt-4 pt-4 border-t border-green-200">
+                        <div className="mt-4 pt-4 border-t border-emerald-500/20">
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600">Regular Price:</span>
-                                <span className="font-semibold text-gray-900 line-through">
+                                <span className="text-white/40">Regular Price:</span>
+                                <span className="font-semibold text-white/30 line-through">
                                     ${(discount.regular_price_cents / 100).toFixed(2)}/mo
                                 </span>
                             </div>
                             <div className="flex items-center justify-between text-sm mt-2">
-                                <span className="text-gray-600">Student Price:</span>
-                                <span className="font-bold text-green-600 text-lg">
+                                <span className="text-white/40">Student Price:</span>
+                                <span className="font-bold text-emerald-400 text-lg">
                                     ${(discount.student_price_cents / 100).toFixed(2)}/mo
                                 </span>
                             </div>
                             <div className="flex items-center justify-between text-sm mt-2">
-                                <span className="text-gray-600">Discount:</span>
-                                <span className="font-bold text-orange-600">
+                                <span className="text-white/40">Discount:</span>
+                                <span className="font-bold text-fuchsia-400">
                                     {discount.discount_percentage}% OFF
                                 </span>
                             </div>
@@ -112,15 +112,15 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
 
                     {/* Requirements */}
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                            <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>
+                            <CheckCircle2 className="w-5 h-5 text-violet-400" />
                             What You Need
                         </h3>
                         <ul className="space-y-2">
                             {requirements.map((req, idx) => (
-                                <li key={idx} className="flex items-start gap-3 text-sm text-gray-700">
-                                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                        <div className="w-2 h-2 rounded-full bg-blue-600" />
+                                <li key={idx} className="flex items-start gap-3 text-sm text-white/70">
+                                    <div className="w-5 h-5 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0 mt-0.5 border border-violet-500/30">
+                                        <div className="w-2 h-2 rounded-full bg-violet-400" />
                                     </div>
                                     {req}
                                 </li>
@@ -130,24 +130,24 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
 
                     {/* How to Get It */}
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3">How to Get It</h3>
-                        <ol className="space-y-3">
-                            <li className="flex items-start gap-3">
-                                <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                        <h3 className="text-lg font-bold text-white mb-3" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>How to Get It</h3>
+                        <ol className="space-y-4">
+                            <li className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                                <div className="w-8 h-8 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 flex items-center justify-center flex-shrink-0 text-sm font-bold">
                                     1
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-900">Visit the student plan page</p>
-                                    <p className="text-xs text-gray-600 mt-1">Click the link below to go directly to {discount.service_name}'s student signup</p>
+                                    <p className="text-sm font-bold text-white">Visit the student plan page</p>
+                                    <p className="text-xs text-white/50 mt-1">Click the link below to go directly to {discount.service_name}&apos;s student signup</p>
                                 </div>
                             </li>
-                            <li className="flex items-start gap-3">
-                                <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                            <li className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                                <div className="w-8 h-8 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 flex items-center justify-center flex-shrink-0 text-sm font-bold">
                                     2
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-900">Verify your student status</p>
-                                    <p className="text-xs text-gray-600 mt-1">
+                                    <p className="text-sm font-bold text-white">Verify your student status</p>
+                                    <p className="text-xs text-white/50 mt-1">
                                         {discount.verification_method === 'edu_email' && 'Enter your .edu email address'}
                                         {discount.verification_method === 'sheerid' && 'Complete SheerID verification'}
                                         {discount.verification_method === 'unidays' && 'Verify through UNiDAYS'}
@@ -155,13 +155,13 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
                                     </p>
                                 </div>
                             </li>
-                            <li className="flex items-start gap-3">
-                                <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                            <li className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                                <div className="w-8 h-8 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 flex items-center justify-center flex-shrink-0 text-sm font-bold">
                                     3
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-900">Enjoy your discount!</p>
-                                    <p className="text-xs text-gray-600 mt-1">Start saving ${monthlySavings} every month</p>
+                                    <p className="text-sm font-bold text-white">Enjoy your discount!</p>
+                                    <p className="text-xs text-white/50 mt-1">Start saving ${monthlySavings} every month</p>
                                 </div>
                             </li>
                         </ol>
@@ -169,21 +169,21 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
 
                     {/* Additional Notes */}
                     {discount.notes && (
-                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                            <p className="text-sm text-blue-900">
-                                <span className="font-semibold">💡 Pro Tip: </span>
+                        <div className="rounded-lg p-4 border border-blue-500/30 bg-blue-500/10">
+                            <p className="text-sm text-blue-300">
+                                <span className="font-bold text-blue-400">💡 Pro Tip: </span>
                                 {discount.notes}
                             </p>
                         </div>
                     )}
 
                     {/* Actions */}
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-3 pt-4 border-t border-white/10">
                         <a
                             href={discount.direct_link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex-1 bg-gradient-to-r from-orange-500 to-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-orange-600 hover:to-red-700 transition flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                            className="flex-1 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white px-6 py-4 rounded-xl font-bold hover:from-violet-700 hover:to-fuchsia-700 transition-all hover:scale-[1.02] flex items-center justify-center gap-2 shadow-lg shadow-fuchsia-500/20"
                         >
                             Get Student Discount
                             <ExternalLink className="w-4 h-4" />
@@ -192,16 +192,16 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
                             <button
                                 onClick={handleMarkAsApplied}
                                 disabled={applying}
-                                className="px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="px-6 py-4 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl font-bold hover:bg-emerald-500/30 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                             >
                                 {applying ? (
                                     <>
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
                                         Saving...
                                     </>
                                 ) : (
                                     <>
-                                        <CheckCircle2 className="w-4 h-4" />
+                                        <CheckCircle2 className="w-5 h-5" />
                                         Mark as Applied
                                     </>
                                 )}
@@ -210,10 +210,10 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
                     </div>
 
                     {discount.already_applied && (
-                        <div className="bg-green-50 rounded-lg p-4 border border-green-200 flex items-center gap-3">
-                            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                            <p className="text-sm text-green-900 font-medium">
-                                ✅ You've already marked this discount as applied!
+                        <div className="rounded-lg p-4 border border-emerald-500/30 bg-emerald-500/10 flex items-center gap-3">
+                            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                            <p className="text-sm text-emerald-300 font-bold">
+                                ✅ You&apos;ve already marked this discount as applied!
                             </p>
                         </div>
                     )}
