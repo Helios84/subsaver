@@ -627,47 +627,43 @@ async def request_verification_code(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Step 1: Request student verification.
-    Generates a 6-digit code and sends it to BOTH the .edu email AND the user's main email.
-    This way the user can always receive the code even if .edu is unavailable.
-    """
-    if current_user.is_verified:
-        return {"message": "Already verified", "is_verified": True}
+    try:
+        if current_user.is_verified:
+            return {"message": "Already verified", "is_verified": True}
 
-    # Generate 6-digit code
-    code = str(secrets.randbelow(900000) + 100000)  # 100000–999999
-    expires_at = datetime.utcnow() + timedelta(minutes=15)
+        code = str(secrets.randbelow(900000) + 100000)
+        expires_at = datetime.utcnow() + timedelta(minutes=15)
 
-    current_user.edu_email = req.edu_email
-    current_user.verification_code = code
-    current_user.verification_code_expires = expires_at
-    db.commit()
+        current_user.edu_email = req.edu_email
+        current_user.verification_code = code
+        current_user.verification_code_expires = expires_at
+        db.commit()
 
-    # Send code to BOTH emails simultaneously
-    from services.email_service import email_service
-    sent_edu = email_service.send_verification_code(req.edu_email, code)
+        from services.email_service import email_service
+        sent_edu = email_service.send_verification_code(req.edu_email, code)
 
-    # Also send to main account email (helps if .edu is deactivated after graduation)
-    sent_main = False
-    if current_user.email.lower() != req.edu_email.lower():
-        sent_main = email_service.send_verification_code(current_user.email, code)
+        sent_main = False
+        if current_user.email.lower() != req.edu_email.lower():
+            sent_main = email_service.send_verification_code(current_user.email, code)
 
-    actually_sent = sent_edu or sent_main
+        actually_sent = sent_edu or sent_main
 
-    if not actually_sent:
-        # SMTP not configured — dev mode: return code in response for testing
-        logger.warning(f"SMTP disabled. Verification code: {code}")
+        if not actually_sent:
+            logger.warning(f"SMTP disabled. Verification code: {code}")
+            return {
+                "message": "SMTP not configured. Use the code from server logs for testing.",
+                "dev_code": code,
+                "expires_in_minutes": 15,
+            }
+
         return {
-            "message": "SMTP not configured. Use the code from server logs for testing.",
-            "dev_code": code,
+            "message": f"Verification code sent to {req.edu_email} and {current_user.email}. Check both inboxes.",
             "expires_in_minutes": 15,
         }
-
-    return {
-        "message": f"Verification code sent to {req.edu_email} and {current_user.email}. Check both inboxes.",
-        "expires_in_minutes": 15,
-    }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/auth/verify-edu/confirm")

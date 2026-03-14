@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Mail, Lock, ArrowRight, CheckCircle2, GraduationCap, Zap, Shield, Sparkles } from "lucide-react";
+import { apiFetch } from "../lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,28 +19,13 @@ export default function RegisterPage() {
     setMsg("");
     setLoading(true);
     try {
-      const res = await fetch("http://127.0.0.1:8000/auth/register", {
+      await apiFetch("/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const rawDetail = data?.detail;
-        let errorMsg: string;
-        if (Array.isArray(rawDetail)) {
-          errorMsg = rawDetail.map((e: any) => e?.msg ?? String(e)).join(". ");
-        } else if (typeof rawDetail === "string") {
-          errorMsg = rawDetail;
-        } else {
-          errorMsg = "Registration failed";
-        }
-        setMsg(errorMsg);
-        return;
-      }
       router.push("/login");
-    } catch {
-      setMsg("Network error. Please try again.");
+    } catch (err: any) {
+      setMsg(err?.message ?? "Network error. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -28,8 +28,8 @@ class EmailService:
         # Graceful degradation: don't crash if SMTP is not configured
         self.enabled = bool(self.smtp_host and self.smtp_user and self.smtp_password)
         if not self.enabled:
-            print("⚠️  Email service: SMTP not configured. Emails will NOT be sent.")
-            print("    Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD in .env to enable.")
+            print("[WARNING] Email service: SMTP not configured. Emails will NOT be sent.")
+            print("          Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD in .env to enable.")
 
     def _send_email(self, to_email: str, subject: str, html_content: str) -> bool:
         """
@@ -37,7 +37,7 @@ class EmailService:
         Returns False (without raising) if SMTP is not configured or fails.
         """
         if not self.enabled:
-            print(f"⚠️  Email not sent (SMTP disabled): to={to_email}, subject={subject}")
+            print(f"[WARNING] Email not sent (SMTP disabled): to={to_email}, subject={subject}")
             return False
 
         try:
@@ -54,11 +54,13 @@ class EmailService:
                 server.login(self.smtp_user, self.smtp_password)
                 server.send_message(msg)
 
-            print(f"✅ Email sent to {to_email}: {subject}")
+            print(f"[SUCCESS] Email sent to {to_email}: {subject}")
             return True
 
         except Exception as e:
-            print(f"❌ Failed to send email to {to_email}: {str(e)}")
+            # Safely log the error without triggering UnicodeEncodeError on Windows console
+            error_msg = str(e).encode('ascii', 'ignore').decode('ascii')
+            print(f"[ERROR] Failed to send email to {to_email}: {error_msg}")
             return False
 
     # ─── Public methods ───────────────────────────────────────────────────────
@@ -67,7 +69,7 @@ class EmailService:
         """
         Send a 6-digit student verification code to the given .edu email.
         """
-        subject = "🎓 SubSaver — Your Verification Code"
+        subject = "SubSaver - Your Verification Code"
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -121,7 +123,7 @@ class EmailService:
         """
         Send a 6-digit password reset code to the given user email.
         """
-        subject = "🔑 SubSaver — Password Reset Request"
+        subject = "SubSaver - Password Reset Request"
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -175,7 +177,7 @@ class EmailService:
         """
         Send a notification that the password has been successfully changed.
         """
-        subject = "✔ SubSaver — Password Changed"
+        subject = "SubSaver - Password Changed"
         html_content = """
         <!DOCTYPE html>
         <html>
@@ -245,7 +247,7 @@ class EmailService:
             renewal_date=formatted_date,
             days_until=days_until_renewal,
         )
-        subject = f"⏰ Reminder: {subscription_name} renews in {days_until_renewal} days"
+        subject = f"Reminder: {subscription_name} renews in {days_until_renewal} days"
         return self._send_email(to_email, subject, html_content)
 
     def _get_reminder_template(
@@ -264,7 +266,7 @@ class EmailService:
             with open(template_path, "r", encoding="utf-8") as f:
                 template_str = f.read()
         except FileNotFoundError:
-            print(f"⚠️  Template not found at {template_path}, using fallback.")
+            print(f"[WARNING] Template not found at {template_path}, using fallback.")
             return (
                 f"<p>Your subscription <strong>{subscription_name}</strong>"
                 f" ({price}) renews on {renewal_date}.</p>"
