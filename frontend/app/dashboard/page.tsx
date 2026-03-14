@@ -465,7 +465,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-[1600px] px-6 lg:px-10 py-8 space-y-6">
+      <div className="relative z-10 mx-auto max-w-[1600px] px-6 lg:px-12 xl:px-16 py-10 space-y-8">
 
         {/* Quick Actions */}
         <div className="flex gap-3 mb-2 overflow-x-auto pb-2">
@@ -516,8 +516,10 @@ export default function DashboardPage() {
               />
             )}
 
-            {/* Advanced Analytics */}
-            {subs.length > 0 && <AdvancedAnalytics upcomingRenewals={upcomingRenewals} widgets={analyticsWidgets} />}
+            {/* Advanced Analytics — only render when at least one analytics widget is enabled */}
+            {subs.length > 0 && (analyticsWidgets.spending_trends || analyticsWidgets.category_breakdown || analyticsWidgets.savings_card || analyticsWidgets.insights || analyticsWidgets.renewals) && (
+              <AdvancedAnalytics upcomingRenewals={upcomingRenewals} widgets={analyticsWidgets} />
+            )}
 
             {/* Main Content Grid */}
             <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
