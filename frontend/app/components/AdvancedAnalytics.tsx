@@ -52,12 +52,12 @@ export default function AdvancedAnalytics({ upcomingRenewals, widgets }: { upcom
             {/* Row 1: Savings & Trends */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {widgets.savings_card && <StudentSavingsCard />}
-                {widgets.spending_trends && trendsData && <SpendingTrendsChart data={trendsData.trends} />}
+                {widgets.spending_trends && trendsData && trendsData.trends && <SpendingTrendsChart data={trendsData.trends} />}
             </div>
 
             {/* Row 2: Category & Insights/Renewals */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {widgets.category_breakdown && trendsData && <CategoryBreakdown data={trendsData.breakdown} />}
+                {widgets.category_breakdown && trendsData && trendsData.breakdown && <CategoryBreakdown data={trendsData.breakdown} />}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {widgets.insights && <InsightsPanel insights={insights} />}

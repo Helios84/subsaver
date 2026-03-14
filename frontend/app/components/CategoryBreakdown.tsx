@@ -22,7 +22,7 @@ const CATEGORIES = [
 
 export default function CategoryBreakdown({ data }: { data: CategoryData[] }) {
 
-    const chartData = data.map(d => {
+    const chartData = (data || []).map(d => {
         const catInfo = CATEGORIES.find(c => c.value === d.category) || CATEGORIES[CATEGORIES.length - 1];
         return {
             name: d.category,
@@ -33,6 +33,8 @@ export default function CategoryBreakdown({ data }: { data: CategoryData[] }) {
         };
     });
 
+    const hasData = chartData.length > 0 && chartData.some(d => d.value > 0);
+
     return (
         <div className="glass-card rounded-2xl p-6 h-[400px] flex flex-col border-white/10 bg-white/5 backdrop-blur-xl">
             <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
@@ -40,47 +42,55 @@ export default function CategoryBreakdown({ data }: { data: CategoryData[] }) {
                 Category Breakdown
             </h3>
 
-            <div className="flex-1 min-h-0 flex items-center justify-center relative">
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie
-                            data={chartData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={5}
-                            dataKey="value"
-                            stroke="none"
-                        >
-                            {chartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                        </Pie>
-                        <Tooltip
-                            contentStyle={{
-                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                                borderRadius: '12px',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)',
-                                color: '#fff'
-                            }}
-                            itemStyle={{ color: '#fff' }}
-                            formatter={(value: any) => `$${value.toFixed(2)}`}
-                        />
-                    </PieChart>
-                </ResponsiveContainer>
+            {!hasData ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 opacity-40">
+                    <Activity className="w-10 h-10 text-white/30" />
+                    <p className="text-sm text-white/50">No category data yet</p>
+                    <p className="text-xs text-white/30">Add subscriptions to see breakdown</p>
+                </div>
+            ) : (
+                <div className="flex-1 min-h-0 flex items-center justify-center relative" style={{ minHeight: 180 }}>
+                    <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                            <Pie
+                                data={chartData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="value"
+                                stroke="none"
+                            >
+                                {chartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                    borderRadius: '12px',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)',
+                                    color: '#fff'
+                                }}
+                                itemStyle={{ color: '#fff' }}
+                                formatter={(value: any) => `$${value.toFixed(2)}`}
+                            />
+                        </PieChart>
+                    </ResponsiveContainer>
 
-                {/* Center Text */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="text-center">
-                        <p className="text-xs text-gray-400 font-medium uppercase">Total</p>
-                        <p className="text-xl font-bold text-white">
-                            ${chartData.reduce((acc, curr) => acc + curr.value, 0).toFixed(0)}
-                        </p>
+                    {/* Center Text */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="text-center">
+                            <p className="text-xs text-gray-400 font-medium uppercase">Total</p>
+                            <p className="text-xl font-bold text-white">
+                                ${chartData.reduce((acc, curr) => acc + curr.value, 0).toFixed(0)}/mo
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             <div className="mt-4 space-y-2 overflow-y-auto pr-2 max-h-[120px] custom-scrollbar">
                 {chartData.slice(0, 5).map((cat, idx) => (

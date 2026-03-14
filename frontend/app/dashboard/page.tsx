@@ -272,34 +272,22 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleServiceSelect(service: StudentDiscount) {
+  function handleServiceSelect(service: StudentDiscount) {
     setShowServicePicker(false);
     const priceToSet = user?.is_verified ? service.student_price_cents : service.regular_price_cents;
-    try {
-      await apiFetch("/subscriptions", {
-        method: "POST",
-        body: JSON.stringify({
-          name: service.service_name,
-          price_cents: priceToSet,
-          billing_cycle: "monthly",
-          status: "active",
-          category: service.category || "Other",
-          split_with: 1,
-        }),
-      });
-      setMsg(`✅ Added ${service.service_name} to your stack!`);
-      setTimeout(() => setMsg(""), 3000);
-      fetchSubs();
-    } catch (err: any) {
-      console.error("Failed to add service", err);
-      setFormState((prev) => ({
-        ...prev,
-        name: service.service_name,
-        price: (priceToSet / 100).toFixed(2),
-        category: service.category || "Other",
-      }));
-      setMsg(err?.message ?? "Failed to add subscription directly.");
-    }
+    // Pre-fill the form so user can review before confirming
+    setFormState((prev) => ({
+      ...prev,
+      name: service.service_name,
+      price: (priceToSet / 100).toFixed(2),
+      category: service.category || "Other",
+      cycle: "monthly",
+    }));
+    setMsg(`✏️ Review ${service.service_name} details below, then click "Add Subscription" to confirm.`);
+    setTimeout(() => setMsg(""), 4000);
+    setTimeout(() => {
+      document.getElementById("add-subscription-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   }
 
   const handleNameChange = (val: string) => {

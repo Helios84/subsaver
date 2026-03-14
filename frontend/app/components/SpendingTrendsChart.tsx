@@ -9,11 +9,20 @@ interface TrendData {
 }
 
 export default function SpendingTrendsChart({ data }: { data: TrendData[] }) {
-    // Ensure data is sorted chronologically if not already
-    const formatted = data.map(d => ({
+    const formatted = (data || []).map(d => ({
         name: d.month,
         value: d.total_cents / 100
     }));
+
+    if (formatted.length === 0) {
+        return (
+            <div className="glass-card rounded-2xl p-6 h-[400px] flex flex-col items-center justify-center border-white/10 bg-white/5 backdrop-blur-xl gap-3 opacity-40">
+                <TrendingUp className="w-10 h-10 text-white/30" />
+                <p className="text-sm text-white/50">No spending data yet</p>
+                <p className="text-xs text-white/30">Trends will appear after adding subscriptions</p>
+            </div>
+        );
+    }
 
     const currentMonth = formatted[formatted.length - 1]?.value || 0;
     const lastMonth = formatted[formatted.length - 2]?.value || 0;
