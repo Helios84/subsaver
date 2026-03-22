@@ -505,7 +505,7 @@ export default function DashboardPage() {
         {!loading && subs.length === 0 ? (
           <DashboardEmptyState onAddSampleData={addSampleData} onAddSubscription={() => setShowServicePicker(true)} />
         ) : (
-          <>
+          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
             {/* Stats Grid */}
             {!loading && isWidgetEnabled("stats") && (
               <StatsGrid
@@ -517,12 +517,12 @@ export default function DashboardPage() {
             )}
 
             {/* Advanced Analytics — only render when at least one analytics widget is enabled */}
-            {subs.length > 0 && (analyticsWidgets.spending_trends || analyticsWidgets.category_breakdown || analyticsWidgets.savings_card || analyticsWidgets.insights || analyticsWidgets.renewals) && (
-              <AdvancedAnalytics upcomingRenewals={upcomingRenewals} widgets={analyticsWidgets} />
+            {subs.length > 0 && (analyticsWidgets.spending_trends || analyticsWidgets.category_breakdown || analyticsWidgets.savings_card || analyticsWidgets.insights || analyticsWidgets.renewals || analyticsWidgets.billing_calendar) && (
+              <AdvancedAnalytics upcomingRenewals={upcomingRenewals} widgets={analyticsWidgets} allSubscriptions={subs} />
             )}
 
             {/* Main Content Grid */}
-            <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+            <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
 
               {/* Subscription List */}
               {isWidgetEnabled("subscriptions") && (
@@ -556,7 +556,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="p-6">
+                  <div style={{ padding: "1.5rem" }}>
                   {loading ? (
                     <div className="space-y-4">
                       {[1, 2, 3, 4].map((i) => <div key={i} className="h-24 bg-white/5 animate-pulse rounded-xl border border-white/5" />)}
@@ -611,7 +611,7 @@ export default function DashboardPage() {
                 onFormChange={(patch) => setFormState((prev) => ({ ...prev, ...patch }))}
               />
             </div>
-          </>
+          </div>
         )}
 
         {/* Modals */}

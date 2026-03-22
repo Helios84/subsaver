@@ -58,7 +58,8 @@ export type WidgetId =
   | "renewals"
   | "savings_card"
   | "top_expenses"
-  | "subscriptions";
+  | "subscriptions"
+  | "billing_calendar";
 
 export type WidgetConfig = {
   id: WidgetId;
@@ -82,6 +83,7 @@ const DEFAULT_WIDGETS: WidgetConfig[] = [
   { id: "insights",           label: "Insights Panel",      description: "Smart tips and alerts based on your data",           icon: Zap,           enabled: true, color: "#F59E0B" },
   { id: "renewals",           label: "Upcoming Renewals",   description: "Subscriptions renewing in the next 30 days",         icon: Calendar,      enabled: true, color: "#10B981" },
   { id: "savings_card",       label: "Student Savings",     description: "Track your student discount savings",                icon: GraduationCap, enabled: true, color: "#EC4899" },
+  { id: "billing_calendar",   label: "Billing Calendar",    description: "Monthly calendar showing billing dates",             icon: Calendar,      enabled: true, color: "#06B6D4" },
   { id: "top_expenses",       label: "Top Expenses",        description: "Bar chart of your most expensive subscriptions",     icon: BarChart2,     enabled: true, color: "#F97316" },
   { id: "subscriptions",      label: "Subscriptions List",  description: "Your full subscription list and management section", icon: CreditCard,    enabled: true, color: "#6366F1" },
 ];
