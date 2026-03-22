@@ -32,14 +32,14 @@ export default function AdvancedAnalytics({ upcomingRenewals, widgets }: { upcom
     }, []);
 
     if (loading) return (
-        <div className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="space-y-10">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                 <SkeletonLoader />
                 <ChartSkeleton />
             </div>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                 <ChartSkeleton />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     <SkeletonLoader />
                     <SkeletonLoader />
                 </div>
@@ -48,18 +48,18 @@ export default function AdvancedAnalytics({ upcomingRenewals, widgets }: { upcom
     );
 
     return (
-        <div className="space-y-6 mt-6">
+        <div className="space-y-10">
             {/* Row 1: Savings & Trends */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                 {widgets.savings_card && <StudentSavingsCard />}
                 {widgets.spending_trends && trendsData && trendsData.trends && <SpendingTrendsChart data={trendsData.trends} />}
             </div>
 
             {/* Row 2: Category & Insights/Renewals */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                 {widgets.category_breakdown && trendsData && trendsData.breakdown && <CategoryBreakdown data={trendsData.breakdown} />}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     {widgets.insights && <InsightsPanel insights={insights} />}
                     {widgets.renewals && <UpcomingRenewals subscriptions={upcomingRenewals} />}
                 </div>

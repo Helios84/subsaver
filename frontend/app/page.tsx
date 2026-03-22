@@ -589,8 +589,8 @@ export default function Home() {
                     }}
                   >
                     <p
-                      className="font-black text-fuchsia-300"
-                      style={{ fontSize: "28px", fontFamily: "var(--font-syne, sans-serif)", lineHeight: 1 }}
+                      className="font-black text-fuchsia-300 font-mono tabular-nums"
+                      style={{ fontSize: "28px", lineHeight: 1 }}
                     >
                       $847
                     </p>

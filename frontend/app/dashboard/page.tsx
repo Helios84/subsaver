@@ -455,9 +455,9 @@ export default function DashboardPage() {
                 )}
               </div>
             )}
-            <Link className="text-sm text-white/40 hover:text-white font-medium transition-colors" href="/">Home</Link>
-            <Link className="text-sm text-white/40 hover:text-white font-medium transition-colors" href="/settings">Settings</Link>
-            <button onClick={logout} className="group flex items-center gap-2 text-sm text-white/40 hover:text-white font-medium transition-colors">
+            <Link className="text-sm text-white/65 hover:text-white font-medium transition-colors" href="/">Home</Link>
+            <Link className="text-sm text-white/65 hover:text-white font-medium transition-colors" href="/settings">Settings</Link>
+            <button onClick={logout} className="group flex items-center gap-2 text-sm text-white/65 hover:text-white font-medium transition-colors">
               <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               Logout
             </button>
@@ -465,7 +465,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-[1600px] px-6 lg:px-12 xl:px-16 py-10 space-y-8">
+      <div className="relative z-10 mx-auto max-w-[1600px] px-6 lg:px-12 xl:px-16 py-10 space-y-16">
 
         {/* Quick Actions */}
         <div className="flex gap-3 mb-2 overflow-x-auto pb-2">
@@ -522,37 +522,41 @@ export default function DashboardPage() {
             )}
 
             {/* Main Content Grid */}
-            <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
+            <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
 
               {/* Subscription List */}
               {isWidgetEnabled("subscriptions") && (
-                <section className="liquid-panel rounded-2xl p-6 min-h-[400px]">
-                  <div className="mb-8">
-                    <div className="flex items-center justify-between mb-4">
+                <section className="rounded-2xl overflow-hidden min-h-[400px]" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  {/* Vibrant header */}
+                  <div className="relative p-6 pb-5 overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(217,70,239,0.12) 50%, rgba(79,70,229,0.08) 100%)", borderBottom: "1px solid rgba(124,58,237,0.2)" }}>
+                    {/* Decorative glow */}
+                    <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(217,70,239,0.15) 0%, transparent 70%)" }} />
+                    <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%)" }} />
+
+                    <div className="relative flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(124,58,237,0.15)", border: "1px solid rgba(124,58,237,0.25)" }}>
-                          <CreditCard className="w-4 h-4 text-violet-400" />
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.35), rgba(217,70,239,0.25))", border: "1px solid rgba(124,58,237,0.4)", boxShadow: "0 0 16px rgba(124,58,237,0.25)" }}>
+                          <CreditCard className="w-4.5 h-4.5 text-violet-300" />
                         </div>
                         <div>
                           <h2 className="text-lg font-bold text-white" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>Your Subscriptions</h2>
-                          <p className="text-xs text-white/35">Manage and track your services</p>
+                          <p className="text-xs text-white/40">Manage and track your services</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-center">
-                          <div className="text-xl font-black text-white" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>{subs.length}</div>
-                          <div className="text-[10px] text-white/30 uppercase tracking-wider">Total</div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col items-center px-3 py-1.5 rounded-xl" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                          <div className="text-xl font-black text-white font-mono tabular-nums leading-none">{subs.length}</div>
+                          <div className="text-[10px] text-white/35 uppercase tracking-wider mt-0.5">Total</div>
                         </div>
-                        <div className="w-px h-8" style={{ background: "rgba(255,255,255,0.08)" }} />
-                        <div className="text-center">
-                          <div className="text-xl font-black text-green-400" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>{totalActive}</div>
-                          <div className="text-[10px] text-white/30 uppercase tracking-wider">Active</div>
+                        <div className="flex flex-col items-center px-3 py-1.5 rounded-xl" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)" }}>
+                          <div className="text-xl font-black text-emerald-400 font-mono tabular-nums leading-none">{totalActive}</div>
+                          <div className="text-[10px] text-emerald-500/60 uppercase tracking-wider mt-0.5">Active</div>
                         </div>
                       </div>
                     </div>
-                    <div className="h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }} />
                   </div>
 
+                  <div className="p-6">
                   {loading ? (
                     <div className="space-y-4">
                       {[1, 2, 3, 4].map((i) => <div key={i} className="h-24 bg-white/5 animate-pulse rounded-xl border border-white/5" />)}
@@ -590,6 +594,7 @@ export default function DashboardPage() {
                       ))}
                     </div>
                   )}
+                  </div>
                 </section>
               )}
 

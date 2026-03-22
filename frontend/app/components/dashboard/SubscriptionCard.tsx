@@ -344,36 +344,34 @@ export default function SubscriptionCard({
           </div>
         </div>
 
-        {/* Price */}
-        <div className="mb-4">
-          {s.split_with && s.split_with > 1 ? (
-            <>
-              <div className="relative inline-block">
-                <div className="absolute inset-0 bg-green-400/30 blur-lg rounded-lg" />
-                <div className="relative text-2xl font-bold text-green-400">{formatMoney(s.price_cents / s.split_with)}</div>
-              </div>
-              <div className="text-xs text-gray-400 mt-0.5">Split with {s.split_with} • Total: {formatMoney(s.price_cents)}</div>
-            </>
-          ) : (
-            <div className="relative inline-block">
-              <div className="absolute inset-0 bg-green-400/30 blur-lg rounded-lg" />
-              <div className="relative text-2xl font-bold text-green-400">{formatMoney(s.price_cents)}</div>
+        {/* Price — always same height */}
+        <div className="mb-4" style={{ minHeight: 60 }}>
+          <div className="relative inline-block">
+            <div className="absolute inset-0 bg-green-400/20 blur-md rounded-lg" />
+            <div className="relative text-2xl font-bold text-green-400 font-mono tabular-nums">
+              {formatMoney(s.split_with && s.split_with > 1 ? s.price_cents / s.split_with : s.price_cents)}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Renewal Info */}
-        {s.next_billing_date && (
-          <div className="flex items-center gap-2 mb-4 pb-4 border-b border-white/5">
-            <Calendar className="w-3.5 h-3.5 text-white/30" />
-            <span className="text-xs font-medium text-white/40">{formatDate(s.next_billing_date)}</span>
-            {daysUntil !== null && (
-              <span className={`ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg border ${renewalBadgeClass}`}>
-                {daysUntil <= 0 ? "Overdue" : `${daysUntil}d`}
-              </span>
-            )}
-          </div>
-        )}
+        {/* Renewal Info — split badge shown inline here */}
+        <div className="flex items-center gap-2 mb-4 pb-4 border-b border-white/5">
+          <Calendar className="w-3.5 h-3.5 text-white/30" />
+          <span className="text-xs font-medium text-white/40">
+            {s.next_billing_date ? formatDate(s.next_billing_date) : "No date set"}
+          </span>
+          {/* Split badge — inline next to date */}
+          {s.split_with && s.split_with > 1 && (
+            <span className="text-[10px] font-semibold text-violet-300 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">
+              Split ×{s.split_with} · Total: {formatMoney(s.price_cents)}
+            </span>
+          )}
+          {s.next_billing_date && daysUntil !== null && (
+            <span className={`ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg border shrink-0 ${renewalBadgeClass}`}>
+              {daysUntil <= 0 ? "Overdue" : `${daysUntil}d`}
+            </span>
+          )}
+        </div>
 
         {/* Delete Confirmation */}
         {isDeleting && (
@@ -386,17 +384,34 @@ export default function SubscriptionCard({
           </div>
         )}
 
-        {/* Action Buttons */}
+        {/* Action Buttons — minimal icon row, reveals text on hover */}
         {!isDeleting && (
-          <div className="flex items-center gap-2 mt-2">
-            <button onClick={() => onStartEdit(s)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all text-white/50 hover:text-white hover:bg-white/10" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }} title="Edit">
-              <Edit2 className="w-3.5 h-3.5" /><span>Edit</span>
+          <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-white/[0.05]">
+            <button
+              onClick={() => onStartEdit(s)}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl transition-all text-white/40 hover:text-white hover:bg-white/[0.07]"
+              title="Edit"
+            >
+              <Edit2 className="w-3.5 h-3.5" /> <span>Edit</span>
             </button>
-            <button onClick={() => onToggleStatus(s)} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all border ${s.status === "active" ? "text-white/50 hover:text-white bg-white/5 border-white/10 hover:bg-white/10" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20"}`} title={s.status === "active" ? "Pause" : "Resume"}>
-              <Activity className="w-3.5 h-3.5" /><span>{s.status === "active" ? "Pause" : "Resume"}</span>
+            <button
+              onClick={() => onToggleStatus(s)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl transition-all border ${
+                s.status === "active"
+                  ? "text-white/40 hover:text-amber-300 hover:bg-amber-500/[0.08] border-transparent"
+                  : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20"
+              }`}
+              title={s.status === "active" ? "Pause" : "Resume"}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>{s.status === "active" ? "Pause" : "Resume"}</span>
             </button>
-            <button onClick={() => onConfirmDelete(s.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all text-red-500/60 hover:text-red-400 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/20" title="Delete">
-              <Trash2 className="w-3.5 h-3.5" /><span className="hidden sm:inline">Delete</span>
+            <button
+              onClick={() => onConfirmDelete(s.id)}
+              className="ml-auto p-2 text-xs font-bold rounded-xl transition-all text-red-500/40 hover:text-red-400 hover:bg-red-500/[0.08]"
+              title="Delete"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         )}

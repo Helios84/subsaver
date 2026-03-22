@@ -30,7 +30,7 @@ export default function StatsGrid({ totalMonthly, totalActive, totalYearly, avgP
               <Icon className="w-4 h-4" style={{ color }} />
             </div>
           </div>
-          <p className="text-3xl font-black text-white" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>
+          <p className="text-3xl font-black text-white font-mono tabular-nums">
             {value}
           </p>
           <div
