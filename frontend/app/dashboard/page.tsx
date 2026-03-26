@@ -21,7 +21,7 @@ import DashboardEmptyState from "../components/DashboardEmptyState";
 import StatsGrid from "../components/dashboard/StatsGrid";
 import SubscriptionCard from "../components/dashboard/SubscriptionCard";
 import AddSubscriptionPanel from "../components/dashboard/AddSubscriptionPanel";
-import { loadDashboardSettings, type DashboardSettings } from "../customize/page";
+import { loadDashboardSettings, type DashboardSettings, ACCENT_THEMES, CURRENCY_SYMBOLS } from "../customize/page";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type BillingCycle = "monthly" | "yearly";
@@ -78,8 +78,8 @@ const CATEGORIES = [
   { value: "Other", icon: "🎨", color: "#6B7280" },
 ];
 
-function formatMoney(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
+function formatMoney(cents: number, symbol = "$") {
+  return `${symbol}${(cents / 100).toFixed(2)}`;
 }
 
 function calculateDaysUntilRenewal(next_billing_date?: string): number | null {
@@ -109,7 +109,7 @@ export default function DashboardPage() {
   const [showServicePicker, setShowServicePicker] = useState(false);
 
   // ── Dashboard settings (from /customize)
-  const [dashSettings, setDashSettings] = useState<DashboardSettings>({ widgets: [], layout: "grid" });
+  const [dashSettings, setDashSettings] = useState<DashboardSettings>(loadDashboardSettings);
 
   useEffect(() => {
     setDashSettings(loadDashboardSettings());
@@ -381,7 +381,9 @@ export default function DashboardPage() {
   const {
     totalMonthly, totalActive, totalYearly, avgPerSub,
     upcomingRenewals, widgets: analyticsWidgets,
+    totalSavings, cancelledCount, mostExpensive, nextRenewalDays,
   } = useMemo(() => {
+    const sym = CURRENCY_SYMBOLS[dashSettings.currency ?? "USD"] ?? "$";
     const activeSubs = subs.filter((s) => s.status === "active");
     const sumMonthly = activeSubs.reduce((acc, s) => {
       return acc + (s.billing_cycle === "monthly" ? s.price_cents : Math.round(s.price_cents / 12));
@@ -395,21 +397,47 @@ export default function DashboardPage() {
       .filter((s) => s.daysUntil !== null && s.daysUntil >= 0 && s.daysUntil <= 30)
       .sort((a, b) => (a.daysUntil || 0) - (b.daysUntil || 0));
 
-    // Build legacy widgets object for AdvancedAnalytics
+    // Build widgets map for AdvancedAnalytics
     const w: Record<string, boolean> = {};
     dashSettings.widgets.forEach((widget) => { w[widget.id] = widget.enabled; });
 
+    // Extra metrics
+    const savings = activeSubs.filter(s => s.student_discount_applied).length * 500;
+    const cancelled = subs.filter(s => s.status === "cancelled").length;
+    const sorted = [...activeSubs].sort((a, b) => b.price_cents - a.price_cents);
+    const topSub = sorted[0];
+    const nextDays = upcoming[0]?.daysUntil ?? null;
+
     return {
-      totalMonthly: formatMoney(sumMonthly),
-      totalYearly: formatMoney(sumMonthly * 12),
+      totalMonthly: formatMoney(sumMonthly, sym),
+      totalYearly: formatMoney(sumMonthly * 12, sym),
       totalActive: activeSubs.length,
-      avgPerSub: formatMoney(avgPerSubscription),
+      avgPerSub: formatMoney(avgPerSubscription, sym),
       upcomingRenewals: upcoming,
       widgets: w,
+      totalSavings: formatMoney(savings, sym),
+      cancelledCount: String(cancelled),
+      mostExpensive: topSub ? `${topSub.name.length > 10 ? topSub.name.slice(0,9)+'…' : topSub.name}` : "N/A",
+      nextRenewalDays: nextDays !== null ? `${nextDays}d` : "N/A",
     };
-  }, [subs, dashSettings.widgets]);
+  }, [subs, dashSettings]);
 
-  const layoutCompact = dashSettings.layout === "compact";
+  const layoutCompact = dashSettings.density === "compact" || dashSettings.layout === "compact";
+
+
+  const statsCardValues: Record<string, string> = {
+    monthly_spend:     totalMonthly,
+    active_count:      String(totalActive),
+    yearly_projection: totalYearly,
+    avg_per_sub:       avgPerSub,
+    total_savings:     totalSavings,
+    cancelled_count:   cancelledCount,
+    most_expensive:    mostExpensive,
+    next_renewal_days: nextRenewalDays,
+  };
+  const statsCards = (dashSettings.statsCards ?? ["monthly_spend","active_count","yearly_projection","avg_per_sub"])
+    .slice(0, 4)
+    .map(id => ({ id: id as any, value: statsCardValues[id] ?? "—" }));
 
   return (
     <main className="min-h-screen text-white pb-20 relative overflow-hidden" style={{ background: "#080B14" }}>
@@ -468,22 +496,24 @@ export default function DashboardPage() {
       <div className="relative z-10 mx-auto max-w-[1600px] px-6 lg:px-12 xl:px-16 py-10 space-y-16">
 
         {/* Quick Actions */}
-        <div className="flex gap-3 mb-2 overflow-x-auto pb-2">
-          <button
-            onClick={() => setShowServicePicker(true)}
-            className="liquid-btn flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="font-bold">Add Subscription</span>
-          </button>
-          <Link
-            href="/customize"
-            className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
-          >
-            <Layout className="w-5 h-5 text-fuchsia-400" />
-            <span className="font-medium">Customize</span>
-          </Link>
-        </div>
+        {(dashSettings.showQuickActions ?? true) && (
+          <div className="flex gap-3 mb-2 overflow-x-auto pb-2">
+            <button
+              onClick={() => setShowServicePicker(true)}
+              className="liquid-btn flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="font-bold">Add Subscription</span>
+            </button>
+            <Link
+              href="/customize"
+              className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
+            >
+              <Layout className="w-5 h-5 text-fuchsia-400" />
+              <span className="font-medium">Customize</span>
+            </Link>
+          </div>
+        )}
 
         {/* Verify Student prompt for unverified users */}
         {user && !user.is_verified && (
@@ -509,6 +539,7 @@ export default function DashboardPage() {
             {/* Stats Grid */}
             {!loading && isWidgetEnabled("stats") && (
               <StatsGrid
+                cards={statsCards}
                 totalMonthly={totalMonthly}
                 totalActive={totalActive}
                 totalYearly={totalYearly}
@@ -518,7 +549,13 @@ export default function DashboardPage() {
 
             {/* Advanced Analytics — only render when at least one analytics widget is enabled */}
             {subs.length > 0 && (analyticsWidgets.spending_trends || analyticsWidgets.category_breakdown || analyticsWidgets.savings_card || analyticsWidgets.insights || analyticsWidgets.renewals || analyticsWidgets.billing_calendar) && (
-              <AdvancedAnalytics upcomingRenewals={upcomingRenewals} widgets={analyticsWidgets} allSubscriptions={subs} />
+              <AdvancedAnalytics
+                upcomingRenewals={upcomingRenewals}
+                widgets={analyticsWidgets}
+                allSubscriptions={subs}
+                widgetOrder={dashSettings.widgets.map(w => w.id as any)}
+                widgetSizes={dashSettings.widgetSizes ?? {}}
+              />
             )}
 
             {/* Main Content Grid */}

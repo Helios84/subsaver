@@ -39,7 +39,7 @@ export default function StudentSavingsCard() {
         : 0;
 
     return (
-        <div className="glass-card rounded-2xl p-6 relative overflow-hidden bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border-white/10 flex flex-col justify-between min-h-[300px] backdrop-blur-xl">
+        <div className="glass-card rounded-2xl p-6 relative overflow-hidden bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border-white/10 flex flex-col justify-between h-[400px] backdrop-blur-xl">
             <div>
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
