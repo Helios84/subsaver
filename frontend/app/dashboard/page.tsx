@@ -211,6 +211,7 @@ export default function DashboardPage() {
   }
 
   async function addSampleData() {
+    setMsg("⏳ Adding demo subscriptions...");
     const sampleSubs = [
       { name: "Spotify", price_cents: 999, billing_cycle: "monthly", category: "Entertainment", split_with: 2 },
       { name: "Netflix", price_cents: 1599, billing_cycle: "monthly", category: "Entertainment", split_with: 4 },
@@ -222,8 +223,12 @@ export default function DashboardPage() {
         await apiFetch("/subscriptions", { method: "POST", body: JSON.stringify(sub) });
       }
       await fetchSubs();
+      setMsg("✅ Demo data added! Explore your dashboard.");
+      setTimeout(() => setMsg(""), 4000);
     } catch (err) {
       console.error("Failed to add sample data", err);
+      setMsg("❌ Failed to add demo data. Please try again.");
+      setTimeout(() => setMsg(""), 3000);
     }
   }
 
@@ -272,22 +277,29 @@ export default function DashboardPage() {
     }
   }
 
-  function handleServiceSelect(service: StudentDiscount) {
+  async function handleServiceSelect(service: StudentDiscount) {
     setShowServicePicker(false);
     const priceToSet = user?.is_verified ? service.student_price_cents : service.regular_price_cents;
-    // Pre-fill the form so user can review before confirming
-    setFormState((prev) => ({
-      ...prev,
-      name: service.service_name,
-      price: (priceToSet / 100).toFixed(2),
-      category: service.category || "Other",
-      cycle: "monthly",
-    }));
-    setMsg(`✏️ Review ${service.service_name} details below, then click "Add Subscription" to confirm.`);
-    setTimeout(() => setMsg(""), 4000);
-    setTimeout(() => {
-      document.getElementById("add-subscription-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
+    setMsg("⏳ Adding subscription...");
+    try {
+      await apiFetch("/subscriptions", {
+        method: "POST",
+        body: JSON.stringify({
+          name: service.service_name,
+          price_cents: priceToSet,
+          billing_cycle: "monthly",
+          status: "active",
+          category: service.category || "Other",
+          split_with: 1,
+        }),
+      });
+      await fetchSubs();
+      setMsg(`✅ ${service.service_name} added!`);
+      setTimeout(() => setMsg(""), 3000);
+    } catch (err: any) {
+      setMsg(err?.message ?? "Failed to add subscription");
+      setTimeout(() => setMsg(""), 3000);
+    }
   }
 
   const handleNameChange = (val: string) => {
@@ -495,25 +507,23 @@ export default function DashboardPage() {
 
       <div className="relative z-10 mx-auto max-w-[1600px] px-6 lg:px-12 xl:px-16 py-10 space-y-16">
 
-        {/* Quick Actions */}
-        {(dashSettings.showQuickActions ?? true) && (
-          <div className="flex gap-3 mb-2 overflow-x-auto pb-2">
-            <button
-              onClick={() => setShowServicePicker(true)}
-              className="liquid-btn flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="font-bold">Add Subscription</span>
-            </button>
-            <Link
-              href="/customize"
-              className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
-            >
-              <Layout className="w-5 h-5 text-fuchsia-400" />
-              <span className="font-medium">Customize</span>
-            </Link>
-          </div>
-        )}
+        {/* Quick Actions — always visible */}
+        <div className="flex gap-3 mb-2 overflow-x-auto pb-2">
+          <button
+            onClick={() => setShowServicePicker(true)}
+            className="liquid-btn flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="font-bold">Add Subscription</span>
+          </button>
+          <Link
+            href="/customize"
+            className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
+          >
+            <Layout className="w-5 h-5 text-fuchsia-400" />
+            <span className="font-medium">Customize</span>
+          </Link>
+        </div>
 
         {/* Verify Student prompt for unverified users */}
         {user && !user.is_verified && (

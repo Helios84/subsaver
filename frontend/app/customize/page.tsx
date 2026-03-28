@@ -776,32 +776,6 @@ export default function CustomizePage() {
               </DndContext>
             </div>
 
-            <div className="border-t border-white/[0.05]" />
-
-            {/* ── 6. Interface Options ── */}
-            <div>
-              <SectionLabel>Interface</SectionLabel>
-              <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-white/6 bg-white/[0.02]">
-                <ToggleLeft className="w-4 h-4 text-white/30 shrink-0" />
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-white/70">Quick Actions Bar</p>
-                  <p className="text-[9px] text-white/25">Show Add & Customize buttons</p>
-                </div>
-                <button
-                  onClick={() => mark(p => ({ ...p, showQuickActions: !p.showQuickActions }))}
-                  className="relative w-10 h-5.5 rounded-full flex-shrink-0 transition-all duration-300"
-                  style={{
-                    width: 40, height: 22,
-                    background: settings.showQuickActions ? `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` : "rgba(255,255,255,0.08)",
-                    boxShadow: settings.showQuickActions ? `0 0 12px ${theme.primary}50` : "none",
-                  }}
-                >
-                  <span className="absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white shadow-md transition-all duration-300"
-                    style={{ left: settings.showQuickActions ? "calc(100% - 20px)" : "2px" }} />
-                </button>
-              </div>
-            </div>
-
           </div>
 
           {/* Sidebar footer */}
