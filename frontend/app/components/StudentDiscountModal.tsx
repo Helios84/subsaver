@@ -1,4 +1,4 @@
-import { X, ExternalLink, CheckCircle2, GraduationCap, DollarSign } from "lucide-react";
+import { X, ExternalLink, CheckCircle2, GraduationCap } from "lucide-react";
 import { useState } from "react";
 
 type StudentDiscount = {
@@ -25,197 +25,220 @@ type Props = {
     onClose: () => void;
 };
 
+const VERIFY_LABELS: Record<string, string> = {
+    edu_email: "Enter your .edu email",
+    sheerid:   "Complete SheerID verification",
+    unidays:   "Verify via UNiDAYS",
+    manual:    "Upload student ID",
+};
+
 export default function StudentDiscountModal({ discount, onApply, onClose }: Props) {
     const [applying, setApplying] = useState(false);
+    const [applied, setApplied] = useState(false);
 
-    const requirements = JSON.parse(discount.requirements) as string[];
-    const monthlySavings = (discount.monthly_savings_cents / 100).toFixed(2);
-    const annualSavings = (discount.annual_savings_cents / 100).toFixed(2);
+    const requirements = (() => {
+        try { return JSON.parse(discount.requirements) as string[]; } catch { return []; }
+    })();
 
-    const handleMarkAsApplied = async () => {
+    const monthly  = (discount.monthly_savings_cents / 100).toFixed(2);
+    const annual   = (discount.annual_savings_cents / 100).toFixed(2);
+    const regular  = (discount.regular_price_cents / 100).toFixed(2);
+    const student  = (discount.student_price_cents / 100).toFixed(2);
+    const verify   = VERIFY_LABELS[discount.verification_method] ?? discount.verification_method;
+    const isApplied = discount.already_applied || applied;
+
+    const handleApply = async () => {
         if (!discount.subscription_id) return;
-
         setApplying(true);
         try {
             await onApply(discount.subscription_id);
-            setTimeout(() => {
-                onClose();
-            }, 1000);
-        } catch (error) {
-            console.error("Failed to mark discount as applied:", error);
-        } finally {
-            setApplying(false);
-        }
+            setApplied(true);
+            setTimeout(() => onClose(), 1200);
+        } catch { } finally { setApplying(false); }
     };
 
+    const divider = { borderBottom: "1px solid rgba(255,255,255,0.07)" };
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-            <div className="liquid-panel rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-                {/* Header */}
-                <div className="sticky top-0 bg-[#0F1219]/80 backdrop-blur-md border-b border-white/10 p-6 flex items-start justify-between z-10">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 bg-gradient-to-br from-violet-500 to-fuchsia-600 rounded-xl shadow-lg shadow-fuchsia-500/20">
-                            <GraduationCap className="w-6 h-6 text-white" />
+        <div
+            onClick={onClose}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6"
+            style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(14px)" }}
+        >
+            <div
+                onClick={e => e.stopPropagation()}
+                className="w-full flex flex-col"
+                style={{
+                    maxWidth: 620,
+                    background: "linear-gradient(150deg, #0E1020 0%, #100D22 100%)",
+                    border: "1px solid rgba(139,92,246,0.28)",
+                    borderRadius: 28,
+                    boxShadow: "0 0 80px rgba(124,58,237,0.2), 0 40px 100px rgba(0,0,0,0.7)",
+                    overflow: "hidden",
+                }}
+            >
+                {/* ── HEADER ── */}
+                <div
+                    className="flex items-center justify-between px-8 py-5"
+                    style={{
+                        background: "linear-gradient(135deg, rgba(124,58,237,0.22), rgba(217,70,239,0.13))",
+                        ...divider,
+                    }}
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="relative flex-shrink-0">
+                            <div className="absolute inset-0 rounded-2xl blur-lg opacity-50"
+                                style={{ background: "linear-gradient(135deg,#7C3AED,#D946EF)" }} />
+                            <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center"
+                                style={{ background: "linear-gradient(135deg,#7C3AED,#D946EF)" }}>
+                                <GraduationCap className="w-6 h-6 text-white" />
+                            </div>
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>Student Discount Available!</h2>
-                            <p className="text-sm text-white/50 mt-1">{discount.service_name}</p>
+                            <div className="flex items-center gap-2.5">
+                                <span className="text-lg font-bold text-white">Student Discount</span>
+                                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full"
+                                    style={{ background: "rgba(217,70,239,0.2)", color: "#E879F9", border: "1px solid rgba(217,70,239,0.32)" }}>
+                                    Available ✦
+                                </span>
+                            </div>
+                            <p className="text-sm text-white/40 mt-0.5">{discount.service_name}</p>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                    >
-                        <X className="w-5 h-5 text-white/50 hover:text-white" />
+                    <button onClick={onClose}
+                        className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors hover:bg-white/10"
+                        style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
+                        <X className="w-4 h-4 text-white/40" />
                     </button>
                 </div>
 
-                {/* Content */}
-                <div className="p-6 space-y-6">
-                    {/* Savings Highlight */}
-                    <div className="liquid-card rounded-xl p-6 border border-emerald-500/20" style={{ background: 'rgba(16,185,129,0.05)' }}>
-                        <div className="flex items-center gap-2 mb-3">
-                            <DollarSign className="w-5 h-5 text-emerald-400" />
-                            <h3 className="text-lg font-bold text-emerald-300">Your Savings</h3>
+                {/* ── SAVINGS ── */}
+                <div className="px-8 py-6" style={divider}>
+                    <p className="text-[11px] font-bold uppercase tracking-widest mb-4"
+                        style={{ color: "rgba(232,121,249,0.65)" }}>Your Savings</p>
+
+                    <div className="flex items-end gap-10 mb-5">
+                        <div>
+                            <p className="text-xs text-white/30 uppercase tracking-wide mb-1">Per Month</p>
+                            <p className="text-4xl font-black leading-none text-transparent bg-clip-text"
+                                style={{ backgroundImage: "linear-gradient(135deg, #C084FC, #E879F9)" }}>
+                                ${monthly}
+                            </p>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <p className="text-sm text-white/40">Per Month</p>
-                                <p className="text-3xl font-black text-emerald-400" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>${monthlySavings}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-white/40">Per Year</p>
-                                <p className="text-3xl font-black text-emerald-400" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>${annualSavings}</p>
-                            </div>
-                        </div>
-                        <div className="mt-4 pt-4 border-t border-emerald-500/20">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-white/40">Regular Price:</span>
-                                <span className="font-semibold text-white/30 line-through">
-                                    ${(discount.regular_price_cents / 100).toFixed(2)}/mo
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm mt-2">
-                                <span className="text-white/40">Student Price:</span>
-                                <span className="font-bold text-emerald-400 text-lg">
-                                    ${(discount.student_price_cents / 100).toFixed(2)}/mo
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm mt-2">
-                                <span className="text-white/40">Discount:</span>
-                                <span className="font-bold text-fuchsia-400">
-                                    {discount.discount_percentage}% OFF
-                                </span>
-                            </div>
+                        <div className="w-px self-stretch" style={{ background: "rgba(255,255,255,0.07)" }} />
+                        <div>
+                            <p className="text-xs text-white/30 uppercase tracking-wide mb-1">Per Year</p>
+                            <p className="text-4xl font-black leading-none text-transparent bg-clip-text"
+                                style={{ backgroundImage: "linear-gradient(135deg, #C084FC, #E879F9)" }}>
+                                ${annual}
+                            </p>
                         </div>
                     </div>
 
-                    {/* Requirements */}
-                    <div>
-                        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>
-                            <CheckCircle2 className="w-5 h-5 text-violet-400" />
-                            What You Need
-                        </h3>
-                        <ul className="space-y-2">
-                            {requirements.map((req, idx) => (
-                                <li key={idx} className="flex items-start gap-3 text-sm text-white/70">
-                                    <div className="w-5 h-5 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0 mt-0.5 border border-violet-500/30">
-                                        <div className="w-2 h-2 rounded-full bg-violet-400" />
-                                    </div>
-                                    {req}
-                                </li>
+                    {/* Price comparison */}
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm text-white/30 line-through">${regular}/mo</span>
+                        <span className="text-sm text-white/20">→</span>
+                        <span className="text-sm font-semibold text-violet-300">${student}/mo</span>
+                        <span className="ml-auto text-xs font-black px-3 py-1 rounded-full"
+                            style={{ background: "rgba(217,70,239,0.15)", color: "#E879F9", border: "1px solid rgba(217,70,239,0.3)" }}>
+                            {discount.discount_percentage}% OFF
+                        </span>
+                    </div>
+                </div>
+
+                {/* ── REQUIREMENTS ── */}
+                {requirements.length > 0 && (
+                    <div className="px-8 py-5" style={divider}>
+                        <p className="text-[11px] font-bold text-white/30 uppercase tracking-widest mb-3">Requirements</p>
+                        <div className="flex flex-wrap gap-2.5">
+                            {requirements.map((req, i) => (
+                                <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-full"
+                                    style={{ background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.22)" }}>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0" />
+                                    <span className="text-sm text-white/65">{req}</span>
+                                </div>
                             ))}
-                        </ul>
-                    </div>
-
-                    {/* How to Get It */}
-                    <div>
-                        <h3 className="text-lg font-bold text-white mb-3" style={{ fontFamily: 'var(--font-syne, sans-serif)' }}>How to Get It</h3>
-                        <ol className="space-y-4">
-                            <li className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                                <div className="w-8 h-8 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 flex items-center justify-center flex-shrink-0 text-sm font-bold">
-                                    1
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-bold text-white">Visit the student plan page</p>
-                                    <p className="text-xs text-white/50 mt-1">Click the link below to go directly to {discount.service_name}&apos;s student signup</p>
-                                </div>
-                            </li>
-                            <li className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                                <div className="w-8 h-8 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 flex items-center justify-center flex-shrink-0 text-sm font-bold">
-                                    2
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-bold text-white">Verify your student status</p>
-                                    <p className="text-xs text-white/50 mt-1">
-                                        {discount.verification_method === 'edu_email' && 'Enter your .edu email address'}
-                                        {discount.verification_method === 'sheerid' && 'Complete SheerID verification'}
-                                        {discount.verification_method === 'unidays' && 'Verify through UNiDAYS'}
-                                        {discount.verification_method === 'manual' && 'Upload your student ID or documentation'}
-                                    </p>
-                                </div>
-                            </li>
-                            <li className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                                <div className="w-8 h-8 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 flex items-center justify-center flex-shrink-0 text-sm font-bold">
-                                    3
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-bold text-white">Enjoy your discount!</p>
-                                    <p className="text-xs text-white/50 mt-1">Start saving ${monthlySavings} every month</p>
-                                </div>
-                            </li>
-                        </ol>
-                    </div>
-
-                    {/* Additional Notes */}
-                    {discount.notes && (
-                        <div className="rounded-lg p-4 border border-blue-500/30 bg-blue-500/10">
-                            <p className="text-sm text-blue-300">
-                                <span className="font-bold text-blue-400">💡 Pro Tip: </span>
-                                {discount.notes}
-                            </p>
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {/* Actions */}
-                    <div className="flex gap-3 pt-4 border-t border-white/10">
-                        <a
-                            href={discount.direct_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white px-6 py-4 rounded-xl font-bold hover:from-violet-700 hover:to-fuchsia-700 transition-all hover:scale-[1.02] flex items-center justify-center gap-2 shadow-lg shadow-fuchsia-500/20"
+                {/* ── STEPS ── */}
+                <div className="px-8 py-5" style={divider}>
+                    <p className="text-[11px] font-bold text-white/30 uppercase tracking-widest mb-4">How to Get It</p>
+                    <div className="flex flex-col gap-3.5">
+                        {[
+                            { n: 1, title: "Visit the student plan page", sub: `Go to ${discount.service_name}'s student signup` },
+                            { n: 2, title: "Verify your student status", sub: verify },
+                            { n: 3, title: "Start saving!", sub: `$${monthly}/month saved immediately` },
+                        ].map(({ n, title, sub }) => (
+                            <div key={n} className="flex items-center gap-4">
+                                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-black"
+                                    style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.45), rgba(217,70,239,0.3))", border: "1px solid rgba(139,92,246,0.45)", color: "#C084FC" }}>
+                                    {n}
+                                </div>
+                                <div className="min-w-0">
+                                    <span className="text-sm font-semibold text-white/85">{title}</span>
+                                    <span className="text-sm text-white/30"> — {sub}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* ── PRO TIP ── */}
+                {discount.notes && (
+                    <div className="px-8 py-4 flex items-start gap-3"
+                        style={{ background: "rgba(250,204,21,0.05)", ...divider }}>
+                        <span className="text-lg leading-none flex-shrink-0 mt-0.5">💡</span>
+                        <p className="text-sm text-yellow-200/60 leading-relaxed">
+                            <span className="font-semibold text-yellow-300/80">Pro Tip: </span>
+                            {discount.notes}
+                        </p>
+                    </div>
+                )}
+
+                {/* ── ALREADY APPLIED ── */}
+                {isApplied && (
+                    <div className="px-8 py-3.5 flex items-center gap-2.5"
+                        style={{ background: "rgba(16,185,129,0.08)", ...divider }}>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                        <p className="text-sm font-semibold text-emerald-300">Discount already applied ✓</p>
+                    </div>
+                )}
+
+                {/* ── ACTIONS ── */}
+                <div className="px-8 py-5 flex items-center gap-3">
+                    <a
+                        href={discount.direct_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                        style={{
+                            background: "linear-gradient(135deg, #7C3AED, #D946EF)",
+                            boxShadow: "0 4px 20px rgba(124,58,237,0.38)",
+                        }}
+                    >
+                        Get Student Discount
+                        <ExternalLink className="w-4 h-4" />
+                    </a>
+
+                    {discount.subscription_id && !isApplied && (
+                        <button
+                            onClick={handleApply}
+                            disabled={applying}
+                            className="flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-2xl font-semibold text-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50 shrink-0"
+                            style={{
+                                background: "rgba(16,185,129,0.12)",
+                                border: "1px solid rgba(16,185,129,0.3)",
+                                color: "#34D399",
+                            }}
                         >
-                            Get Student Discount
-                            <ExternalLink className="w-4 h-4" />
-                        </a>
-                        {discount.subscription_id && !discount.already_applied && (
-                            <button
-                                onClick={handleMarkAsApplied}
-                                disabled={applying}
-                                className="px-6 py-4 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl font-bold hover:bg-emerald-500/30 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
-                            >
-                                {applying ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                                        Saving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle2 className="w-5 h-5" />
-                                        Mark as Applied
-                                    </>
-                                )}
-                            </button>
-                        )}
-                    </div>
-
-                    {discount.already_applied && (
-                        <div className="rounded-lg p-4 border border-emerald-500/30 bg-emerald-500/10 flex items-center gap-3">
-                            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                            <p className="text-sm text-emerald-300 font-bold">
-                                ✅ You&apos;ve already marked this discount as applied!
-                            </p>
-                        </div>
+                            {applying
+                                ? <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                                : <><CheckCircle2 className="w-4 h-4" /> Applied</>
+                            }
+                        </button>
                     )}
                 </div>
             </div>

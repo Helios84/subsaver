@@ -412,7 +412,7 @@ function RealDashboardPreview({ settings, subs, user }: {
         {/* Analytics */}
         {subs.length > 0 && analyticsVisible && (
           <div style={{ marginBottom: densityGap }}>
-            <AdvancedAnalytics upcomingRenewals={upcomingRenewals} widgets={widgetMap} widgetSizes={settings.widgetSizes} />
+            <AdvancedAnalytics upcomingRenewals={upcomingRenewals} widgets={widgetMap} widgetSizes={settings.widgetSizes} widgetOrder={settings.widgets.map(w => w.id)} />
           </div>
         )}
 

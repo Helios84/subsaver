@@ -1,5 +1,5 @@
 "use client";
-import { Lightbulb, AlertTriangle, CheckCircle, ArrowRight } from 'lucide-react';
+import { Lightbulb, AlertTriangle, CheckCircle, TrendingDown, Star } from 'lucide-react';
 import type { WidgetSpan } from "./AdvancedAnalytics";
 import { WIDGET_H } from "./AdvancedAnalytics";
 
@@ -11,13 +11,21 @@ interface Insight {
 }
 
 const TYPE_STYLES = {
-    warning: { bg: 'bg-red-500/10', border: 'border-red-500/20', title: 'text-red-200', body: 'text-red-300/70', dot: 'bg-red-400', iconBg: 'bg-red-500/20 text-red-400' },
-    success: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', title: 'text-emerald-200', body: 'text-emerald-300/70', dot: 'bg-emerald-400', iconBg: 'bg-emerald-500/20 text-emerald-400' },
-    info:    { bg: 'bg-violet-500/10', border: 'border-violet-500/20', title: 'text-violet-200', body: 'text-violet-300/70', dot: 'bg-violet-400', iconBg: 'bg-violet-500/20 text-violet-400' },
+    warning: { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)',  title: '#FCA5A5', body: 'rgba(252,165,165,0.6)', dot: '#F87171', iconColor: '#EF4444' },
+    success: { bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)', title: '#6EE7B7', body: 'rgba(110,231,183,0.6)', dot: '#34D399', iconColor: '#10B981' },
+    info:    { bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.2)', title: '#C4B5FD', body: 'rgba(196,181,253,0.6)', dot: '#A78BFA', iconColor: '#7C3AED' },
 } as const;
+
+// Tip cards shown when there is spare space at the bottom
+const SPACE_TIPS = [
+    { icon: <TrendingDown className="w-3.5 h-3.5" />, text: "Switch annual plans to save up to 40% on most services." },
+    { icon: <Star className="w-3.5 h-3.5" />, text: "Bundle streaming apps with student bundles for extra savings." },
+];
 
 export default function InsightsPanel({ insights, span = 1 }: { insights: Insight[], span?: WidgetSpan }) {
     const compact = span === 1;
+    const showTips = compact && insights.length <= 2;
+    const showFullTips = !compact && insights.length <= 1;
 
     return (
         <div
@@ -25,50 +33,71 @@ export default function InsightsPanel({ insights, span = 1 }: { insights: Insigh
             style={{ height: WIDGET_H }}
         >
             {/* Header */}
-            <div className="flex items-center gap-2 px-4 pt-4 pb-2 shrink-0">
-                <Lightbulb className="w-4 h-4 text-yellow-400 shrink-0" />
-                <h3 className="text-sm font-semibold text-white">
-                    {compact ? 'Insights' : 'Insights & Recommendations'}
-                </h3>
+            <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0">
+                <div className="flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-yellow-400 shrink-0" />
+                    <h3 className="text-sm font-semibold text-white">
+                        {compact ? 'Insights' : 'Insights & Recommendations'}
+                    </h3>
+                </div>
+                {insights.length > 0 && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={{ background: 'rgba(250,204,21,0.15)', color: '#FDE68A', border: '1px solid rgba(250,204,21,0.2)' }}>
+                        {insights.length}
+                    </span>
+                )}
             </div>
 
-            {/* Content */}
-            {insights.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-2 px-4">
-                    <CheckCircle className="w-7 h-7 text-emerald-400/60" />
-                    <p className="text-xs text-white/40 text-center">All clear — no urgent recommendations</p>
-                </div>
-            ) : (
-                <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-3 space-y-2 min-h-0">
-                    {insights.map((insight, idx) => {
-                        const s = TYPE_STYLES[insight.type];
-                        if (compact) {
-                            // Compact: just a colored dot + title
+            {/* Insights list */}
+            <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar px-3 pb-3 gap-2 min-h-0">
+                {insights.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-1.5">
+                        <CheckCircle className="w-6 h-6 text-emerald-400/60" />
+                        <p className="text-xs text-white/40 text-center">All clear — no urgent tips</p>
+                    </div>
+                ) : (
+                    <>
+                        {insights.map((insight, idx) => {
+                            const s = TYPE_STYLES[insight.type];
+                            if (compact) {
+                                return (
+                                    <div key={idx} className="flex items-start gap-2 p-2.5 rounded-xl"
+                                        style={{ background: s.bg, border: `1px solid ${s.border}` }}>
+                                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: s.dot }} />
+                                        <p className="text-xs font-semibold leading-snug" style={{ color: s.title }}>{insight.title}</p>
+                                    </div>
+                                );
+                            }
                             return (
-                                <div key={idx} className={`flex items-start gap-2.5 p-2.5 rounded-xl border ${s.bg} ${s.border}`}>
-                                    <div className={`w-1.5 h-1.5 rounded-full mt-1 shrink-0 ${s.dot}`} />
-                                    <p className={`text-xs font-semibold leading-snug ${s.title}`}>{insight.title}</p>
+                                <div key={idx} className="p-3 rounded-xl"
+                                    style={{ background: s.bg, border: `1px solid ${s.border}` }}>
+                                    <div className="flex items-start gap-2.5">
+                                        <div className="p-1 rounded-full shrink-0 mt-0.5"
+                                            style={{ background: `${s.iconColor}20`, color: s.iconColor }}>
+                                            {insight.type === 'warning' ? <AlertTriangle className="w-3 h-3" /> :
+                                             insight.type === 'success' ? <CheckCircle className="w-3 h-3" /> :
+                                             <Lightbulb className="w-3 h-3" />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-xs font-bold" style={{ color: s.title }}>{insight.title}</h4>
+                                            <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: s.body }}>{insight.message}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             );
-                        }
-                        return (
-                            <div key={idx} className={`p-3 rounded-xl border ${s.bg} ${s.border}`}>
-                                <div className="flex items-start gap-2.5">
-                                    <div className={`mt-0.5 p-1 rounded-full shrink-0 ${s.iconBg}`}>
-                                        {insight.type === 'warning' ? <AlertTriangle className="w-3 h-3" /> :
-                                         insight.type === 'success' ? <CheckCircle className="w-3 h-3" /> :
-                                         <Lightbulb className="w-3 h-3" />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className={`text-xs font-bold ${s.title}`}>{insight.title}</h4>
-                                        <p className={`text-[11px] mt-0.5 leading-relaxed ${s.body}`}>{insight.message}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
+                        })}
+                    </>
+                )}
+
+                {/* ── FILL: savings tips when spare space ── */}
+                {(showTips || showFullTips) && SPACE_TIPS.slice(0, showTips ? 2 : 1).map((tip, i) => (
+                    <div key={`tip-${i}`} className="flex items-start gap-2 p-2.5 rounded-xl"
+                        style={{ background: 'rgba(250,204,21,0.05)', border: '1px solid rgba(250,204,21,0.1)' }}>
+                        <span className="text-yellow-400/60 shrink-0 mt-0.5">{tip.icon}</span>
+                        <p className="text-[11px] text-white/35 leading-relaxed">{tip.text}</p>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }
