@@ -86,12 +86,12 @@ const ANALYTICS_WIDGET_IDS: WidgetId[] = [
 ];
 
 const DEFAULT_WIDGET_SIZES: Partial<Record<WidgetId, WidgetSpan>> = {
-  savings_card:       2,
+  savings_card:       1,
   spending_trends:    2,
   category_breakdown: 2,
   insights:           1,
   renewals:           1,
-  billing_calendar:   3,
+  billing_calendar:   4,
 };
 
 const DEFAULT_WIDGETS: WidgetConfig[] = [
@@ -106,7 +106,7 @@ const DEFAULT_WIDGETS: WidgetConfig[] = [
   { id: "subscriptions",      label: "Subscriptions List", description: "Your full subscription list and management section", icon: CreditCard,    enabled: true, color: "#6366F1" },
 ];
 
-const STORAGE_KEY = "dashboard_settings_v3";
+const STORAGE_KEY = "dashboard_settings_v4";
 
 type SavedSettings = {
   widgets: { id: WidgetId; enabled: boolean }[];
@@ -217,14 +217,14 @@ function SortableWidgetRow({ widget, onToggle, onSpanChange, widgetSizes, index 
       <div className="flex-1 min-w-0">
         <p className={`text-xs font-semibold leading-tight truncate ${widget.enabled ? "text-white" : "text-white/25"}`}>{widget.label}</p>
       </div>
-      {/* Span selector: [1] [2] [3] */}
+      {/* Span selector: [1] [2] [3] [4] */}
       {widget.enabled && (
         <div className="flex gap-0.5 shrink-0">
-          {([1, 2, 3] as WidgetSpan[]).map(n => (
+          {([1, 2, 3, 4] as WidgetSpan[]).map(n => (
             <button
               key={n}
               onClick={() => onSpanChange(widget.id, n)}
-              title={n === 1 ? "1/3 width" : n === 2 ? "2/3 width" : "Full width"}
+              title={n === 1 ? "1/4 width" : n === 2 ? "2/4 width" : n === 3 ? "3/4 width" : "Full width"}
               className={`w-5 h-4 rounded flex items-center justify-center text-[9px] font-bold transition-all ${
                 span === n
                   ? "bg-violet-500/30 border border-violet-500/50 text-violet-300"

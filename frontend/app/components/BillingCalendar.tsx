@@ -1,6 +1,8 @@
 "use client";
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import type { WidgetSpan } from "./AdvancedAnalytics";
+import { WIDGET_H } from "./AdvancedAnalytics";
 
 type Sub = {
   id: number;
@@ -14,16 +16,16 @@ type Sub = {
 };
 
 const CAT_COLORS: Record<string, string> = {
-  Entertainment: "#7C3AED",
-  Productivity: "#F59E0B",
-  Gaming: "#8B5CF6",
-  Utilities: "#3B82F6",
-  Other: "#6B7280",
+  Entertainment: "#8B5CF6",
+  Productivity:  "#D946EF",
+  Gaming:        "#06B6D4",
+  Utilities:     "#6366F1",
+  Other:         "#64748B",
 };
 
 function subColor(name: string, category?: string) {
   if (category && CAT_COLORS[category]) return CAT_COLORS[category];
-  const palette = ["#7C3AED", "#D946EF", "#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
+  const palette = ["#8B5CF6", "#D946EF", "#06B6D4", "#10B981", "#A78BFA", "#34D399", "#F472B6"];
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return palette[Math.abs(hash) % palette.length];
@@ -34,7 +36,7 @@ function fmt(cents: number, split?: number) {
   return `$${(effective / 100).toFixed(2)}`;
 }
 
-export default function BillingCalendar({ subscriptions }: { subscriptions: Sub[] }) {
+export default function BillingCalendar({ subscriptions, span = 4 }: { subscriptions: Sub[], span?: WidgetSpan }) {
   const today = new Date();
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selected, setSelected] = useState<number | null>(null);
@@ -43,7 +45,6 @@ export default function BillingCalendar({ subscriptions }: { subscriptions: Sub[
   const month = viewDate.getMonth();
   const monthLabel = viewDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-  // Build map: day → list of subs billing that day
   const dayMap = useMemo(() => {
     const map: Record<number, Sub[]> = {};
     const activeSubs = subscriptions.filter((s) => s.status === "active" && s.next_billing_date);
@@ -58,149 +59,192 @@ export default function BillingCalendar({ subscriptions }: { subscriptions: Sub[
     return map;
   }, [subscriptions, year, month]);
 
-  // Calendar grid
-  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
-  // Pad to full weeks
-  while (cells.length % 7 !== 0) cells.push(null);
+  const totalThisMonth = Object.values(dayMap).flat().reduce((acc, s) => {
+    return acc + (s.split_with && s.split_with > 1 ? s.price_cents / s.split_with : s.price_cents);
+  }, 0);
 
   const isToday = (day: number | null) =>
     day !== null && today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
 
-  const totalBillingThisMonth = Object.values(dayMap).flat().reduce((acc, s) => {
-    const price = s.split_with && s.split_with > 1 ? s.price_cents / s.split_with : s.price_cents;
-    return acc + price;
-  }, 0);
+  // ── SPAN 1: Upcoming list (next 3 billing dates) ──────────────────────────
+  if (span === 1) {
+    const upcoming = Object.entries(dayMap)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .slice(0, 4);
 
+    return (
+      <div className="glass-card rounded-2xl overflow-hidden border border-white/10 bg-white/[0.02] flex flex-col" style={{ height: WIDGET_H }}>
+        <div className="flex items-center gap-2 px-4 pt-4 pb-2 shrink-0">
+          <Calendar className="w-4 h-4 text-cyan-400 shrink-0" />
+          <h3 className="text-sm font-semibold text-white">Billing</h3>
+          <span className="ml-auto text-xs font-bold text-cyan-300 font-mono">${(totalThisMonth / 100).toFixed(0)}</span>
+        </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-3 space-y-1.5 min-h-0">
+          {upcoming.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-xs text-white/30 py-6">No bills this month</div>
+          ) : upcoming.map(([day, subs]) => (
+            <div key={day} className="flex items-center justify-between gap-2 p-2 rounded-lg" style={{ background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.12)' }}>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-black text-cyan-300 tabular-nums w-5 shrink-0">{day}</span>
+                <div className="flex gap-1 min-w-0">
+                  {subs.slice(0, 2).map(s => (
+                    <div key={s.id} className="w-4 h-4 rounded text-[8px] font-bold flex items-center justify-center shrink-0"
+                      style={{ background: `${subColor(s.name, s.category)}25`, color: subColor(s.name, s.category) }}>
+                      {s.name[0]}
+                    </div>
+                  ))}
+                  {subs.length > 2 && <span className="text-[10px] text-white/30">+{subs.length - 2}</span>}
+                </div>
+              </div>
+              <span className="text-xs font-bold text-white/80 font-mono shrink-0">{fmt(subs.reduce((a, s) => a + s.price_cents, 0), undefined)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── SPAN 2: Current week view ────────────────────────────────────────────
+  if (span === 2) {
+    // Show only current week (Mon–Sun around today)
+    const todayDay = today.getDate();
+    const todayDow = today.getDay(); // 0=Sun
+    const weekStart = todayDay - todayDow;
+    const weekDays = Array.from({ length: 7 }, (_, i) => {
+      const d = weekStart + i;
+      return d >= 1 && d <= new Date(year, month + 1, 0).getDate() ? d : null;
+    });
+
+    return (
+      <div className="glass-card rounded-2xl overflow-hidden border border-white/10 bg-white/[0.02] flex flex-col" style={{ height: WIDGET_H }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pt-3 pb-2 shrink-0" style={{ borderBottom: '1px solid rgba(6,182,212,0.12)', background: 'linear-gradient(135deg, rgba(6,182,212,0.1) 0%, rgba(124,58,237,0.06) 100%)' }}>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-sm font-semibold text-white">This Week</h3>
+          </div>
+          <span className="text-xs font-bold text-cyan-300 font-mono">${(totalThisMonth / 100).toFixed(2)} <span className="text-white/30 font-normal">this month</span></span>
+        </div>
+        {/* Week grid */}
+        <div className="flex-1 px-3 py-2 min-h-0">
+          <div className="grid grid-cols-7 gap-1 h-full">
+            {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
+              <div key={d} className="text-[9px] text-white/25 text-center font-bold uppercase pb-1">{d}</div>
+            ))}
+            {weekDays.map((day, i) => {
+              const has = day !== null && (dayMap[day]?.length ?? 0) > 0;
+              const tod = isToday(day);
+              return (
+                <div key={i} className="flex flex-col items-center gap-0.5 rounded-lg py-1 transition-all cursor-pointer"
+                  style={{ background: tod ? 'rgba(124,58,237,0.15)' : has ? 'rgba(6,182,212,0.08)' : 'transparent', border: `1px solid ${tod ? 'rgba(124,58,237,0.3)' : has ? 'rgba(6,182,212,0.2)' : 'transparent'}` }}
+                  onClick={() => day && setSelected(selected === day ? null : day)}>
+                  <span className="text-xs font-semibold" style={{ color: tod ? '#A78BFA' : has ? '#67E8F9' : 'rgba(255,255,255,0.4)' }}>{day ?? ''}</span>
+                  {has && <div className="w-1 h-1 rounded-full mt-0.5" style={{ background: '#67E8F9' }} />}
+                </div>
+              );
+            })}
+          </div>
+          {/* Selected subs */}
+          {selected !== null && (dayMap[selected]?.length ?? 0) > 0 && (
+            <div className="mt-2 pt-2 border-t border-white/5 space-y-1 overflow-y-auto max-h-[60px]">
+              {dayMap[selected].map(s => (
+                <div key={s.id} className="flex items-center justify-between text-xs">
+                  <span className="text-white/70 truncate">{s.name}</span>
+                  <span className="text-emerald-400 font-bold font-mono shrink-0 ml-2">{fmt(s.price_cents, s.split_with)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── SPAN 3/4: Full calendar ───────────────────────────────────────────────
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+  while (cells.length % 7 !== 0) cells.push(null);
   const selectedSubs = selected !== null ? (dayMap[selected] ?? []) : [];
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden flex flex-col"
-      style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}
-    >
+    <div className="glass-card rounded-2xl overflow-hidden border border-white/10 bg-white/[0.02] flex flex-col" style={{ height: WIDGET_H }}>
       {/* Header */}
-      <div
-        className="relative px-5 py-4 flex items-center justify-between overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, rgba(6,182,212,0.18) 0%, rgba(124,58,237,0.12) 50%, rgba(16,185,129,0.08) 100%)",
-          borderBottom: "1px solid rgba(6,182,212,0.2)",
-        }}
-      >
-        <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(6,182,212,0.15) 0%, transparent 70%)" }} />
-
-        <div className="flex items-center gap-3 relative">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.3), rgba(124,58,237,0.2))", border: "1px solid rgba(6,182,212,0.35)", boxShadow: "0 0 14px rgba(6,182,212,0.2)" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#67E8F9" }}>
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
+      <div className="relative px-4 py-3 flex items-center justify-between shrink-0"
+        style={{ background: 'linear-gradient(135deg, rgba(6,182,212,0.12) 0%, rgba(124,58,237,0.08) 100%)', borderBottom: '1px solid rgba(6,182,212,0.15)' }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(6,182,212,0.2)', border: '1px solid rgba(6,182,212,0.3)' }}>
+            <Calendar className="w-3.5 h-3.5 text-cyan-300" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">Billing Calendar</h3>
-            <p className="text-[11px] text-white/40">Upcoming charges this month</p>
+            <h3 className="text-xs font-bold text-white">Billing Calendar</h3>
+            <p className="text-[10px] text-white/35">{monthLabel}</p>
           </div>
         </div>
-
-        {/* Month total pill */}
-        <div className="relative flex items-center gap-3">
+        <div className="flex items-center gap-3">
           <div className="text-right">
-            <div className="text-xs text-white/35 leading-none">This month</div>
-            <div className="text-base font-black text-cyan-300 font-mono tabular-nums leading-tight mt-0.5">
-              {`$${(totalBillingThisMonth / 100).toFixed(2)}`}
-            </div>
+            <p className="text-[10px] text-white/35 leading-none">This month</p>
+            <p className="text-sm font-black text-cyan-300 font-mono">${(totalThisMonth/100).toFixed(2)}</p>
           </div>
-          {/* Nav arrows */}
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => setViewDate(new Date(year, month - 1, 1))}
-              className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-            ><ChevronLeft className="w-3.5 h-3.5 text-white/50" /></button>
-            <button
-              onClick={() => setViewDate(new Date(year, month + 1, 1))}
-              className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-            ><ChevronRight className="w-3.5 h-3.5 text-white/50" /></button>
+          <div className="flex gap-1">
+            <button onClick={() => setViewDate(new Date(year, month - 1, 1))}
+              className="w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-white/10"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <ChevronLeft className="w-3 h-3 text-white/50" />
+            </button>
+            <button onClick={() => setViewDate(new Date(year, month + 1, 1))}
+              className="w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-white/10"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <ChevronRight className="w-3 h-3 text-white/50" />
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="p-4 flex flex-col gap-3">
-        {/* Month label */}
-        <div className="text-center text-xs font-semibold text-white/40 tracking-wide uppercase">{monthLabel}</div>
-
-        {/* Day-of-week headers */}
-        <div className="grid grid-cols-7 text-center">
-          {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-            <div key={d} className="text-[10px] font-bold text-white/20 uppercase py-1">{d}</div>
+      {/* Calendar body — scrollable */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-2 min-h-0">
+        {/* DOW headers */}
+        <div className="grid grid-cols-7 mb-1">
+          {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
+            <div key={d} className="text-[9px] font-bold text-white/20 uppercase text-center py-0.5">{d}</div>
           ))}
         </div>
-
-        {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-1">
+        {/* Day cells */}
+        <div className="grid grid-cols-7 gap-0.5">
           {cells.map((day, i) => {
             const billingSubs = day !== null ? (dayMap[day] ?? []) : [];
             const hasBilling = billingSubs.length > 0;
             const isSelected = selected === day;
             const isTodayDay = isToday(day);
-
             return (
-              <div
-                key={i}
-                onClick={() => {
-                  if (day === null) return;
-                  setSelected(isSelected ? null : day);
-                }}
-                className="relative flex flex-col items-center justify-start rounded-xl transition-all duration-150"
+              <div key={i}
+                onClick={() => { if (day === null) return; setSelected(isSelected ? null : day); }}
+                className="relative flex flex-col items-center justify-start rounded-md transition-all duration-100"
                 style={{
-                  minHeight: "44px",
-                  cursor: day !== null ? "pointer" : "default",
+                  minHeight: 34,
+                  cursor: day !== null ? 'pointer' : 'default',
                   background: isSelected
-                    ? "linear-gradient(135deg, rgba(6,182,212,0.2), rgba(124,58,237,0.15))"
-                    : hasBilling
-                    ? "rgba(6,182,212,0.07)"
-                    : isTodayDay
-                    ? "rgba(124,58,237,0.1)"
-                    : "transparent",
-                  border: isSelected
-                    ? "1px solid rgba(6,182,212,0.4)"
-                    : hasBilling
-                    ? "1px solid rgba(6,182,212,0.15)"
-                    : isTodayDay
-                    ? "1px solid rgba(124,58,237,0.3)"
-                    : "1px solid transparent",
-                }}
-              >
+                    ? 'linear-gradient(135deg, rgba(6,182,212,0.2), rgba(124,58,237,0.15))'
+                    : hasBilling ? 'rgba(6,182,212,0.07)'
+                    : isTodayDay ? 'rgba(124,58,237,0.1)'
+                    : 'transparent',
+                  border: isSelected ? '1px solid rgba(6,182,212,0.4)'
+                    : hasBilling ? '1px solid rgba(6,182,212,0.15)'
+                    : isTodayDay ? '1px solid rgba(124,58,237,0.3)'
+                    : '1px solid transparent',
+                }}>
                 {day !== null && (
                   <>
-                    <span
-                      className="text-xs font-semibold mt-1.5 leading-none"
-                      style={{
-                        color: isTodayDay
-                          ? "#A78BFA"
-                          : hasBilling
-                          ? "#67E8F9"
-                          : "rgba(255,255,255,0.45)",
-                        fontWeight: isTodayDay || hasBilling ? 700 : 500,
-                      }}
-                    >{day}</span>
-
-                    {/* Billing dot indicators */}
+                    <span className="text-[10px] font-semibold mt-1 leading-none"
+                      style={{ color: isTodayDay ? '#A78BFA' : hasBilling ? '#67E8F9' : 'rgba(255,255,255,0.4)', fontWeight: isTodayDay || hasBilling ? 700 : 500 }}>
+                      {day}
+                    </span>
                     {hasBilling && (
-                      <div className="flex gap-0.5 mt-1 flex-wrap justify-center px-1">
-                        {billingSubs.slice(0, 3).map((s) => (
-                          <div
-                            key={s.id}
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ background: subColor(s.name, s.category as any) }}
-                          />
+                      <div className="flex gap-0.5 mt-0.5 flex-wrap justify-center px-0.5">
+                        {billingSubs.slice(0, 2).map((s) => (
+                          <div key={s.id} className="w-1 h-1 rounded-full" style={{ background: subColor(s.name, s.category) }} />
                         ))}
-                        {billingSubs.length > 3 && (
-                          <div className="text-[8px] text-white/30 leading-none">+{billingSubs.length - 3}</div>
-                        )}
+                        {billingSubs.length > 2 && <div className="text-[7px] text-white/30">+{billingSubs.length-2}</div>}
                       </div>
                     )}
                   </>
@@ -210,42 +254,35 @@ export default function BillingCalendar({ subscriptions }: { subscriptions: Sub[
           })}
         </div>
 
-        {/* Selected day detail */}
+        {/* Selected day details */}
         {selected !== null && selectedSubs.length > 0 && (
-          <div
-            className="rounded-xl overflow-hidden"
-            style={{ border: "1px solid rgba(6,182,212,0.2)", background: "rgba(6,182,212,0.04)" }}
-          >
-            <div className="px-3 py-2 border-b" style={{ borderColor: "rgba(6,182,212,0.12)" }}>
-              <span className="text-[11px] font-bold text-cyan-400">
+          <div className="mt-2 rounded-lg overflow-hidden" style={{ border: '1px solid rgba(6,182,212,0.2)', background: 'rgba(6,182,212,0.04)' }}>
+            <div className="px-2.5 py-1.5 border-b" style={{ borderColor: 'rgba(6,182,212,0.12)' }}>
+              <span className="text-[10px] font-bold text-cyan-400">
                 {new Date(year, month, selected).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
               </span>
             </div>
-            <div className="divide-y" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
+            <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
               {selectedSubs.map((s) => {
-                const col = subColor(s.name, s.category as any);
+                const col = subColor(s.name, s.category);
                 return (
-                  <div key={s.id} className="px-3 py-2 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0"
+                  <div key={s.id} className="px-2.5 py-1.5 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-4 h-4 rounded text-[8px] font-bold flex items-center justify-center shrink-0"
                         style={{ background: `${col}20`, border: `1px solid ${col}30`, color: col }}>
                         {s.name.charAt(0)}
                       </div>
-                      <span className="text-xs font-medium text-white/80 truncate">{s.name}</span>
+                      <span className="text-xs text-white/80 truncate">{s.name}</span>
                     </div>
-                    <span className="text-xs font-bold text-emerald-400 font-mono tabular-nums shrink-0">
-                      {fmt(s.price_cents, s.split_with)}
-                    </span>
+                    <span className="text-xs font-bold text-emerald-400 font-mono shrink-0">{fmt(s.price_cents, s.split_with)}</span>
                   </div>
                 );
               })}
             </div>
           </div>
         )}
-
-        {/* Empty month message */}
         {Object.keys(dayMap).length === 0 && (
-          <div className="text-center py-4 text-white/20 text-xs">No billing dates this month</div>
+          <div className="text-center py-2 text-white/20 text-xs">No billing dates this month</div>
         )}
       </div>
     </div>

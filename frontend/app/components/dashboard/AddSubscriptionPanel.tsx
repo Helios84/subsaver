@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Plus, Search, Activity } from "lucide-react";
 
 type BillingCycle = "monthly" | "yearly";
@@ -37,31 +36,73 @@ type Props = {
   onFormChange: (patch: Partial<Props["formState"]>) => void;
 };
 
+const inputStyle: React.CSSProperties = {
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.09)",
+  borderRadius: 12,
+  color: "white",
+  fontSize: 14,
+  padding: "10px 14px",
+  width: "100%",
+  boxSizing: "border-box",
+  outline: "none",
+  transition: "border-color 0.2s, background 0.2s",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: 10,
+  fontWeight: 700,
+  color: "rgba(255,255,255,0.55)",
+  textTransform: "uppercase",
+  letterSpacing: "0.1em",
+  marginBottom: 7,
+};
+
+const fieldStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+};
+
 export default function AddSubscriptionPanel({
   msg, onSubmit, onOpenPicker, suggestions, showSuggestions,
   onNameChange, onSuggestionSelect, formState, onFormChange,
 }: Props) {
   return (
-    <div className="space-y-4">
-      <section id="add-new-form" className="liquid-panel rounded-2xl p-6 sticky top-24">
-        <div className="flex items-center gap-2.5 mb-5">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(217,70,239,0.15)", border: "1px solid rgba(217,70,239,0.25)" }}>
-            <Plus className="w-4 h-4 text-fuchsia-400" />
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+      {/* ── Main form card ── */}
+      <section
+        id="add-new-form"
+        style={{
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: 20,
+          padding: "20px",
+          position: "sticky",
+          top: 96,
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(217,70,239,0.15)", border: "1px solid rgba(217,70,239,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Plus style={{ width: 15, height: 15, color: "#E879F9" }} />
           </div>
-          <h2 className="text-base font-bold text-white" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>Add New</h2>
+          <span style={{ color: "white", fontWeight: 700, fontSize: 16, fontFamily: "var(--font-syne, sans-serif)" }}>Add New</span>
         </div>
 
-        <form className="space-y-4" onSubmit={onSubmit}>
+        <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
           {/* Service Name */}
-          <div>
-            <label className="block text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1.5">Service Name</label>
-            <div className="relative">
-              <div className="flex gap-2">
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Service Name</label>
+            <div style={{ position: "relative" }}>
+              <div style={{ display: "flex", gap: 8 }}>
                 <input
                   value={formState.name}
                   onChange={(e) => onNameChange(e.target.value)}
                   onBlur={() => setTimeout(() => onFormChange({ name: formState.name }), 200)}
-                  className="liquid-input flex-1 px-4 py-3 rounded-xl text-sm"
+                  style={{ ...inputStyle, flex: 1, minWidth: 0, paddingRight: "40px" }}
                   placeholder="e.g. Spotify"
                   required
                   autoComplete="off"
@@ -69,31 +110,43 @@ export default function AddSubscriptionPanel({
                 <button
                   type="button"
                   onClick={onOpenPicker}
-                  className="px-3 py-2 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-                  style={{ background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.25)", color: "#A78BFA" }}
                   title="Browse Services"
+                  style={{
+                    width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                    background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.25)",
+                    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                  }}
                 >
-                  <Search className="w-4 h-4" />
+                  <Search style={{ width: 15, height: 15, color: "#A78BFA" }} />
                 </button>
               </div>
 
               {showSuggestions && (
-                <div className="absolute top-full left-0 w-full mt-1 liquid-panel rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto">
+                <div style={{
+                  position: "absolute", top: "calc(100% + 4px)", left: 0, right: 48,
+                  background: "#161B27", border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.5)", zIndex: 50,
+                  maxHeight: 200, overflowY: "auto",
+                }}>
                   {suggestions.map((service) => (
                     <button
                       key={service.id}
                       type="button"
                       onClick={() => onSuggestionSelect(service)}
-                      className="w-full text-left px-4 py-3 flex items-center justify-between transition-all hover:bg-white/5 border-b last:border-0"
-                      style={{ borderColor: "rgba(255,255,255,0.05)" }}
+                      style={{
+                        width: "100%", textAlign: "left", padding: "10px 14px",
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        borderBottom: "1px solid rgba(255,255,255,0.05)", background: "none", cursor: "pointer",
+                        color: "white",
+                      }}
                     >
                       <div>
-                        <div className="text-sm font-medium text-white">{service.service_name}</div>
-                        <div className="text-xs text-white/35">{service.category}</div>
+                        <div style={{ fontSize: 13, fontWeight: 500 }}>{service.service_name}</div>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>{service.category}</div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-green-400">${(service.student_price_cents / 100).toFixed(2)}</div>
-                        <div className="text-[10px] text-white/25 line-through">${(service.regular_price_cents / 100).toFixed(2)}</div>
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#34D399" }}>${(service.student_price_cents / 100).toFixed(2)}</div>
+                        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", textDecoration: "line-through" }}>${(service.regular_price_cents / 100).toFixed(2)}</div>
                       </div>
                     </button>
                   ))}
@@ -103,28 +156,31 @@ export default function AddSubscriptionPanel({
           </div>
 
           {/* Cost */}
-          <div>
-            <label className="block text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1.5">Cost</label>
-            <div className="relative">
-              <span className="absolute left-4 top-3.5 text-white/30 text-sm font-medium z-10">$</span>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Cost</label>
+            <div style={{ position: "relative" }}>
+              <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", fontSize: 14, fontWeight: 500, pointerEvents: "none", zIndex: 1 }}>$</span>
               <input
                 value={formState.price}
                 onChange={(e) => onFormChange({ price: e.target.value })}
                 type="number" min="0" step="0.01"
-                className="liquid-input w-full py-3 rounded-xl text-sm"
-                style={{ paddingLeft: "2rem", paddingRight: "1rem" }}
+                style={{ ...inputStyle, paddingLeft: "28px" }}
               />
             </div>
           </div>
 
           {/* Billing Cycle */}
-          <div>
-            <label className="block text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1.5">Billing Cycle</label>
-            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Billing Cycle</label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: 4 }}>
               {(["monthly", "yearly"] as BillingCycle[]).map((c) => (
                 <button key={c} type="button" onClick={() => onFormChange({ cycle: c })}
-                  className="text-sm py-2 rounded-lg font-semibold transition-all capitalize"
-                  style={formState.cycle === c ? { background: "linear-gradient(135deg, #7C3AED, #D946EF)", color: "white" } : { color: "rgba(255,255,255,0.35)" }}>
+                  style={{
+                    padding: "8px", borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                    textTransform: "capitalize", transition: "all 0.2s", border: "none",
+                    background: formState.cycle === c ? "linear-gradient(135deg, #7C3AED, #D946EF)" : "transparent",
+                    color: formState.cycle === c ? "white" : "rgba(255,255,255,0.35)",
+                  }}>
                   {c}
                 </button>
               ))}
@@ -132,9 +188,13 @@ export default function AddSubscriptionPanel({
           </div>
 
           {/* Category */}
-          <div>
-            <label className="block text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1.5">Category</label>
-            <select value={formState.category} onChange={(e) => onFormChange({ category: e.target.value })} className="liquid-input w-full px-4 py-3 rounded-xl text-sm">
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Category</label>
+            <select
+              value={formState.category}
+              onChange={(e) => onFormChange({ category: e.target.value })}
+              style={{ ...inputStyle, cursor: "pointer" }}
+            >
               {CATEGORIES.map((cat) => (
                 <option key={cat.value} value={cat.value} style={{ backgroundColor: "#161B27", color: "white" }}>{cat.icon} {cat.value}</option>
               ))}
@@ -142,52 +202,92 @@ export default function AddSubscriptionPanel({
           </div>
 
           {/* Billing Date */}
-          <div>
-            <label className="block text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1.5">Next Billing Date</label>
-            <input value={formState.billingDate} onChange={(e) => onFormChange({ billingDate: e.target.value })} type="date" className="liquid-input w-full px-4 py-3 rounded-xl text-sm" />
-            <p className="text-[10px] text-white/25 mt-1">Optional — for email reminders</p>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Next Billing Date</label>
+            <input
+              value={formState.billingDate}
+              onChange={(e) => onFormChange({ billingDate: e.target.value })}
+              type="date"
+              style={{ ...inputStyle, colorScheme: "dark" }}
+            />
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.38)", marginTop: 5 }}>Optional — enables email reminders</span>
           </div>
 
           {/* Split Cost */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Split Cost?</label>
-            <div className="flex items-center gap-2 mb-2">
-              <input type="checkbox" checked={formState.isSplit} onChange={(e) => onFormChange({ isSplit: e.target.checked })} className="w-4 h-4 text-violet-400 rounded border-white/20" />
-              <span className="text-sm text-gray-300">Yes, I share this subscription</span>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Split Cost</label>
+            <div
+              style={{
+                display: "flex", alignItems: "center", gap: 12, padding: "11px 14px",
+                background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: 12, cursor: "pointer", userSelect: "none",
+              }}
+              onClick={() => onFormChange({ isSplit: !formState.isSplit })}
+            >
+              {/* Toggle pill */}
+              <div style={{
+                position: "relative", width: 36, height: 20, borderRadius: 100, flexShrink: 0,
+                background: formState.isSplit ? "linear-gradient(135deg,#7C3AED,#D946EF)" : "rgba(255,255,255,0.1)",
+                border: formState.isSplit ? "1px solid rgba(124,58,237,0.5)" : "1px solid rgba(255,255,255,0.15)",
+                transition: "all 0.2s cubic-bezier(0.23,1,0.32,1)",
+              }}>
+                <span style={{
+                  position: "absolute", top: 2, borderRadius: "50%", width: 14, height: 14, background: "white",
+                  left: formState.isSplit ? 18 : 2, transition: "left 0.2s cubic-bezier(0.23,1,0.32,1)",
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
+                }} />
+              </div>
+              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>I share this subscription</span>
             </div>
             {formState.isSplit && (
-              <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Number of People (including you)</label>
-                <input value={formState.splitWith} onChange={(e) => onFormChange({ splitWith: parseInt(e.target.value) || 1 })} type="number" min="1" className="w-full px-4 py-3 rounded-lg border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-violet-500 outline-none transition text-sm" />
+              <div style={{ marginTop: 10 }}>
+                <label style={{ ...labelStyle, marginBottom: 6 }}>Number of People (including you)</label>
+                <input
+                  value={formState.splitWith}
+                  onChange={(e) => onFormChange({ splitWith: parseInt(e.target.value) || 1 })}
+                  type="number" min="1"
+                  style={inputStyle}
+                />
               </div>
             )}
           </div>
 
-          <button className="liquid-btn w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2 mt-2">
-            <Plus className="w-5 h-5" />
+          {/* Submit */}
+          <button
+            type="submit"
+            style={{
+              width: "100%", padding: "13px", borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: "pointer",
+              background: "linear-gradient(135deg, #7C3AED, #D946EF)",
+              boxShadow: "0 4px 20px rgba(124,58,237,0.35)", color: "white", border: "none",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 4,
+              transition: "opacity 0.2s",
+            }}
+          >
+            <Plus style={{ width: 18, height: 18 }} />
             Add Subscription
           </button>
 
           {msg && (
-            <p className="text-xs text-violet-400 text-center p-2 rounded-lg mt-1" style={{ background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)" }}>
+            <p style={{ fontSize: 12, color: "#A78BFA", textAlign: "center", padding: "8px 12px", background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 10, margin: 0 }}>
               {msg}
             </p>
           )}
         </form>
       </section>
 
-      {/* Pro Tip */}
-      <div className="liquid-card rounded-2xl p-5 hidden lg:block" style={{ border: "1px solid rgba(16,185,129,0.15)", background: "rgba(16,185,129,0.04)" }}>
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(16,185,129,0.15)" }}>
-            <Activity className="w-3.5 h-3.5 text-emerald-400" />
+      {/* ── Pro Tip ── */}
+      <div style={{ background: "rgba(16,185,129,0.04)", border: "1px solid rgba(16,185,129,0.15)", borderRadius: 16, padding: "16px 18px" }} className="hidden lg:block">
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <div style={{ width: 26, height: 26, borderRadius: 8, background: "rgba(16,185,129,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Activity style={{ width: 13, height: 13, color: "#34D399" }} />
           </div>
-          <h3 className="text-sm font-bold text-white">Pro Tip</h3>
+          <span style={{ color: "white", fontWeight: 700, fontSize: 13 }}>Pro Tip</span>
         </div>
-        <p className="text-xs text-white/45 leading-relaxed">
-          Cancelling unused subscriptions can save you over <span className="text-emerald-400 font-semibold">$500/year</span> on average.
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, margin: 0 }}>
+          Cancelling unused subscriptions can save you over <span style={{ color: "#34D399", fontWeight: 600 }}>$500/year</span> on average.
         </p>
       </div>
+
     </div>
   );
 }

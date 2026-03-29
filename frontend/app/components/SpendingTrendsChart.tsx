@@ -1,6 +1,8 @@
 "use client";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
+import type { WidgetSpan } from "./AdvancedAnalytics";
+import { WIDGET_H } from "./AdvancedAnalytics";
 
 interface TrendData {
     month: string;
@@ -8,82 +10,104 @@ interface TrendData {
     total_cents: number;
 }
 
-export default function SpendingTrendsChart({ data }: { data: TrendData[] }) {
-    const formatted = (data || []).map(d => ({
+export default function SpendingTrendsChart({ data, span = 2 }: { data: TrendData[], span?: WidgetSpan }) {
+    // Filter out months with $0 to avoid "wall of zeros"
+    const allFormatted = (data || []).map(d => ({
         name: d.month,
-        value: d.total_cents / 100
+        value: d.total_cents / 100,
+        hasData: d.total_cents > 0,
     }));
 
-    if (formatted.length === 0) {
+    // Only show up to the last meaningful point + 1 month before it
+    const lastNonZeroIndex = [...allFormatted].reverse().findIndex(d => d.value > 0);
+    const trimmed = lastNonZeroIndex >= 0
+        ? allFormatted.slice(Math.max(0, allFormatted.length - lastNonZeroIndex - 1 - (span >= 3 ? 5 : 3)))
+        : allFormatted;
+
+    const formatted = trimmed.length > 0 ? trimmed : allFormatted;
+
+    const currentMonth = formatted[formatted.length - 1]?.value || 0;
+    const lastMonth = formatted[formatted.length - 2]?.value || 0;
+    const hasComparison = lastMonth > 0;
+    const growth = hasComparison ? ((currentMonth - lastMonth) / lastMonth) * 100 : null;
+
+    // Empty state
+    if (formatted.length === 0 || !formatted.some(d => d.value > 0)) {
         return (
-            <div className="glass-card rounded-2xl p-6 h-[400px] flex flex-col items-center justify-center border-white/10 bg-white/5 backdrop-blur-xl gap-3 opacity-40">
-                <TrendingUp className="w-10 h-10 text-white/30" />
-                <p className="text-sm text-white/50">No spending data yet</p>
-                <p className="text-xs text-white/30">Trends will appear after adding subscriptions</p>
+            <div
+                className="glass-card rounded-2xl flex flex-col items-center justify-center border border-white/10 bg-white/5 backdrop-blur-xl gap-2"
+                style={{ height: WIDGET_H }}
+            >
+                <TrendingUp className="w-8 h-8 text-white/20" />
+                <p className="text-sm font-medium text-white/40">No spending data yet</p>
+                <p className="text-xs text-white/25">Trends appear after your first billing cycle</p>
             </div>
         );
     }
 
-    const currentMonth = formatted[formatted.length - 1]?.value || 0;
-    const lastMonth = formatted[formatted.length - 2]?.value || 0;
-    const growth = lastMonth > 0 ? ((currentMonth - lastMonth) / lastMonth) * 100 : 0;
-
     return (
-        <div className="glass-card rounded-2xl p-6 h-[400px] flex flex-col border-white/10 bg-white/5 backdrop-blur-xl">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-violet-500" />
+        <div
+            className="glass-card rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-xl flex flex-col"
+            style={{ height: WIDGET_H }}
+        >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-violet-400" />
                     Spending Trends
                 </h3>
-                <div className={`text-sm font-medium px-2 py-1 rounded-full ${growth > 0 ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
-                    {growth > 0 ? '+' : ''}{growth.toFixed(1)}% vs last month
-                </div>
+                {hasComparison && growth !== null && (
+                    <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${growth > 0 ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
+                        {growth > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {growth > 0 ? '+' : ''}{growth.toFixed(1)}%
+                    </div>
+                )}
             </div>
 
-            <div className="flex-1 w-full min-h-0">
+            {/* Chart */}
+            <div className="flex-1 w-full min-h-0 pb-2">
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={formatted} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <AreaChart data={formatted} margin={{ top: 4, right: 12, left: -24, bottom: 0 }}>
                         <defs>
-                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
+                            <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.35} />
                                 <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.04)" />
                         <XAxis
                             dataKey="name"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#94A3B8', fontSize: 12 }}
-                            dy={10}
+                            tick={{ fill: '#64748B', fontSize: 10 }}
+                            dy={6}
                         />
-                        <YAxis
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: '#94A3B8', fontSize: 12 }}
-                            tickFormatter={(val) => `$${val}`}
-                        />
+                        {span >= 2 && (
+                            <YAxis
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#64748B', fontSize: 10 }}
+                                tickFormatter={(v) => `$${v}`}
+                            />
+                        )}
                         <Tooltip
-                            cursor={{ stroke: '#8B5CF6', strokeWidth: 1, strokeDasharray: '4 4' }}
                             contentStyle={{
-                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                                borderRadius: '12px',
-                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                padding: '12px',
-                                color: '#fff'
+                                backgroundColor: 'rgba(15,23,42,0.95)',
+                                borderRadius: '10px',
+                                border: '1px solid rgba(139,92,246,0.3)',
+                                color: '#fff',
+                                fontSize: 12,
                             }}
-                            itemStyle={{ color: '#fff' }}
-                            formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Spending']}
+                            formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Spend']}
                         />
                         <Area
                             type="monotone"
                             dataKey="value"
                             stroke="#8B5CF6"
-                            strokeWidth={3}
-                            fillOpacity={1}
-                            fill="url(#colorValue)"
-                            activeDot={{ r: 6, strokeWidth: 0, fill: '#8B5CF6', stroke: '#fff' }}
+                            strokeWidth={2}
+                            fill="url(#colorSpend)"
+                            dot={false}
+                            activeDot={{ r: 4, fill: '#8B5CF6', stroke: '#fff', strokeWidth: 1.5 }}
                         />
                     </AreaChart>
                 </ResponsiveContainer>

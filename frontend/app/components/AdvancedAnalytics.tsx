@@ -10,14 +10,27 @@ import SkeletonLoader, { ChartSkeleton } from './SkeletonLoader';
 import BillingCalendar from './BillingCalendar';
 import type { WidgetId } from '../customize/page';
 
-// Widget span: 1 = 1/3 width, 2 = 2/3 width, 3 = full width
-export type WidgetSpan = 1 | 2 | 3;
+// Widget span: 1 = 1/4, 2 = 2/4, 3 = 3/4, 4 = full width
+export type WidgetSpan = 1 | 2 | 3 | 4;
+
+// Universal widget height — ALL widgets share this height
+export const WIDGET_H = 260;
 
 // Ordered list of analytics-zone widget IDs (excludes stats, subscriptions, top_expenses)
 export const ANALYTICS_WIDGET_IDS: WidgetId[] = [
   'savings_card', 'spending_trends', 'category_breakdown',
   'insights', 'renewals', 'billing_calendar',
 ];
+
+// Default spans in the new 4-col grid
+export const DEFAULT_SPANS: Partial<Record<WidgetId, WidgetSpan>> = {
+  savings_card: 1,
+  spending_trends: 2,
+  category_breakdown: 2,
+  insights: 1,
+  renewals: 1,
+  billing_calendar: 4,
+};
 
 export default function AdvancedAnalytics({
   upcomingRenewals,
@@ -59,24 +72,28 @@ export default function AdvancedAnalytics({
     ? widgetOrder.filter(id => ANALYTICS_WIDGET_IDS.includes(id))
     : ANALYTICS_WIDGET_IDS;
 
-  function renderWidget(id: WidgetId): React.ReactNode {
+  function getSpan(id: WidgetId): WidgetSpan {
+    return widgetSizes[id] ?? DEFAULT_SPANS[id] ?? 2;
+  }
+
+  function renderWidget(id: WidgetId, span: WidgetSpan): React.ReactNode {
     switch (id) {
       case 'savings_card':
-        return <StudentSavingsCard />;
+        return <StudentSavingsCard span={span} />;
       case 'spending_trends':
         return trendsData?.trends
-          ? <SpendingTrendsChart data={trendsData.trends} />
+          ? <SpendingTrendsChart data={trendsData.trends} span={span} />
           : <ChartSkeleton />;
       case 'category_breakdown':
         return trendsData?.breakdown
-          ? <CategoryBreakdown data={trendsData.breakdown} />
+          ? <CategoryBreakdown data={trendsData.breakdown} span={span} />
           : <ChartSkeleton />;
       case 'insights':
-        return <InsightsPanel insights={insights} />;
+        return <InsightsPanel insights={insights} span={span} />;
       case 'renewals':
-        return <UpcomingRenewals subscriptions={upcomingRenewals} />;
+        return <UpcomingRenewals subscriptions={upcomingRenewals} span={span} />;
       case 'billing_calendar':
-        return <BillingCalendar subscriptions={allSubscriptions ?? upcomingRenewals} />;
+        return <BillingCalendar subscriptions={allSubscriptions ?? upcomingRenewals} span={span} />;
       default:
         return null;
     }
@@ -86,15 +103,14 @@ export default function AdvancedAnalytics({
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
+        gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '1.25rem',
       }}
     >
-      <div style={{ gridColumn: 'span 2' }}><SkeletonLoader /></div>
       <div style={{ gridColumn: 'span 1' }}><SkeletonLoader /></div>
       <div style={{ gridColumn: 'span 2' }}><ChartSkeleton /></div>
-      <div style={{ gridColumn: 'span 1' }}><ChartSkeleton /></div>
-      <div style={{ gridColumn: 'span 3' }}><SkeletonLoader /></div>
+      <div style={{ gridColumn: 'span 1' }}><SkeletonLoader /></div>
+      <div style={{ gridColumn: 'span 4' }}><ChartSkeleton /></div>
     </div>
   );
 
@@ -102,13 +118,13 @@ export default function AdvancedAnalytics({
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
+        gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '1.25rem',
       }}
     >
       {orderedIds.map(id => {
         if (!widgets[id]) return null;
-        const span: WidgetSpan = widgetSizes[id] ?? (id === 'billing_calendar' ? 3 : id === 'insights' || id === 'renewals' ? 1 : 2);
+        const span = getSpan(id);
         return (
           <div
             key={id}
@@ -117,7 +133,7 @@ export default function AdvancedAnalytics({
               transition: 'all 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
             }}
           >
-            {renderWidget(id)}
+            {renderWidget(id, span)}
           </div>
         );
       })}

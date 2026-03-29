@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "../lib/api";
-import { GraduationCap, ArrowRight } from "lucide-react";
+import { GraduationCap, ArrowRight, TrendingUp } from "lucide-react";
+import type { WidgetSpan } from "./AdvancedAnalytics";
+import { WIDGET_H } from "./AdvancedAnalytics";
 
 interface SavingsData {
     total_saved_monthly: number;
@@ -13,7 +15,7 @@ interface SavingsData {
     discounts_available: number;
 }
 
-export default function StudentSavingsCard() {
+export default function StudentSavingsCard({ span = 2 }: { span?: WidgetSpan }) {
     const [data, setData] = useState<SavingsData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -31,70 +33,116 @@ export default function StudentSavingsCard() {
         load();
     }, []);
 
-    if (loading) return <div className="glass-card rounded-2xl p-6 h-[300px] animate-pulse bg-white/5"></div>;
+    if (loading) return (
+        <div className="glass-card rounded-2xl animate-pulse bg-white/5" style={{ height: WIDGET_H }} />
+    );
     if (!data) return null;
 
     const progress = data.discounts_available > 0
         ? (data.discounts_applied / data.discounts_available) * 100
         : 0;
 
-    return (
-        <div className="glass-card rounded-2xl p-6 relative overflow-hidden bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border-white/10 flex flex-col justify-between h-[400px] backdrop-blur-xl">
-            <div>
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <GraduationCap className="w-5 h-5 text-fuchsia-400" />
-                        Student Savings
-                    </h3>
-                    <span className="text-xs font-medium bg-fuchsia-500/20 text-fuchsia-300 px-2 py-1 rounded-full border border-fuchsia-500/20">
-                        Beta
-                    </span>
+    // span=1: ultra-compact, just the key number + progress
+    if (span === 1) {
+        return (
+            <div className="glass-card rounded-2xl p-4 relative overflow-hidden bg-gradient-to-br from-violet-600/15 to-fuchsia-600/15 border border-white/10 flex flex-col justify-between backdrop-blur-xl" style={{ height: WIDGET_H }}>
+                <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                        <GraduationCap className="w-4 h-4 text-fuchsia-400" />
+                        <span className="text-xs font-semibold text-white/70">Student Savings</span>
+                    </div>
                 </div>
 
-                <div className="space-y-4 mb-6">
-                    <div className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-sm relative z-10">
-                        <p className="text-sm text-gray-400 mb-1">Total Saved</p>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
-                                ${(data.total_saved_yearly / 100).toFixed(0)}
-                            </span>
-                            <span className="text-xs text-gray-500 font-medium">/year</span>
-                        </div>
+                <div className="flex-1 flex flex-col justify-center">
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">Saved / year</p>
+                    <div className="flex items-baseline gap-1 mt-0.5">
+                        <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
+                            ${(data.total_saved_yearly / 100).toFixed(0)}
+                        </span>
                     </div>
+                    <p className="text-xs text-gray-400 mt-1">${(data.total_saved_monthly / 100).toFixed(0)}<span className="text-white/30">/mo</span></p>
+                </div>
 
-                    <div className="flex items-center justify-between px-2">
-                        <div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Potential</p>
-                            <p className="text-lg font-semibold text-gray-200">${(data.potential_yearly / 100).toFixed(0)}<span className="text-xs text-gray-500 font-normal">/yr</span></p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Monthly</p>
-                            <p className="text-lg font-semibold text-gray-200">${(data.total_saved_monthly / 100).toFixed(0)}<span className="text-xs text-gray-500 font-normal">/mo</span></p>
-                        </div>
+                <div className="space-y-1.5">
+                    <div className="flex justify-between text-[10px] text-white/40">
+                        <span>Discounts applied</span>
+                        <span className="text-white/60 font-semibold">{data.discounts_applied}/{data.discounts_available}</span>
                     </div>
+                    <div className="h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-1000"
+                            style={{ width: `${Math.max(5, progress)}%` }} />
+                    </div>
+                </div>
+
+                <div className="absolute -top-8 -right-8 w-28 h-28 bg-violet-600/20 rounded-full blur-2xl pointer-events-none" />
+            </div>
+        );
+    }
+
+    // span=2,3,4: full layout
+    return (
+        <div className="glass-card rounded-2xl p-5 relative overflow-hidden bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-white/10 flex flex-col backdrop-blur-xl" style={{ height: WIDGET_H }}>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4 shrink-0">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-fuchsia-400" />
+                    Student Savings
+                </h3>
+                {span >= 3 && (
+                    <div className="flex items-center gap-1 text-emerald-400 text-xs font-semibold">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        Saving actively
+                    </div>
+                )}
+            </div>
+
+            {/* Main metric row */}
+            <div className={`flex ${span >= 3 ? 'gap-6' : 'gap-4'} flex-1 min-h-0`}>
+                {/* Primary: total saved */}
+                <div className="flex-1 bg-white/5 px-4 py-3 rounded-xl border border-white/10 flex flex-col justify-center">
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Total Saved</p>
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
+                            ${(data.total_saved_yearly / 100).toFixed(0)}
+                        </span>
+                        <span className="text-xs text-gray-500">/yr</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5">${(data.total_saved_monthly / 100).toFixed(0)}<span className="text-white/30">/mo</span></p>
+                </div>
+
+                {/* Secondary metrics */}
+                <div className="flex flex-col gap-2 justify-center min-w-[90px]">
+                    <div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wide">Potential</p>
+                        <p className="text-sm font-bold text-gray-200">${(data.potential_yearly / 100).toFixed(0)}<span className="text-xs text-gray-500 font-normal">/yr</span></p>
+                    </div>
+                    {span >= 3 && (
+                        <div>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wide">Monthly</p>
+                            <p className="text-sm font-bold text-gray-200">${(data.total_saved_monthly / 100).toFixed(0)}<span className="text-xs text-gray-500 font-normal">/mo</span></p>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            <div className="space-y-3 z-10">
-                <div className="flex justify-between text-sm items-end">
-                    <span className="text-gray-400 font-medium">Discounts Applied</span>
-                    <span className="font-bold text-white">{data.discounts_applied} <span className="text-gray-500 font-normal">/ {data.discounts_available} services</span></span>
+            {/* Progress + CTA */}
+            <div className="shrink-0 mt-3 space-y-2">
+                <div className="flex justify-between text-xs items-center">
+                    <span className="text-gray-400">Discounts Applied</span>
+                    <span className="font-bold text-white text-xs">{data.discounts_applied} <span className="text-gray-500 font-normal">/ {data.discounts_available}</span></span>
                 </div>
-                <div className="h-2.5 bg-gray-700/50 rounded-full overflow-hidden">
-                    <div
-                        className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(168,85,247,0.5)]"
-                        style={{ width: `${Math.max(5, progress)}%` }}
-                    />
+                <div className="h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(168,85,247,0.5)]"
+                        style={{ width: `${Math.max(5, progress)}%` }} />
                 </div>
-
-                <button className="w-full mt-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium text-sm transition-all border border-white/10 flex items-center justify-center gap-2">
+                <button className="w-full py-2 bg-gradient-to-r from-violet-600/30 to-fuchsia-600/30 hover:from-violet-600/50 hover:to-fuchsia-600/50 text-white rounded-lg font-medium text-xs transition-all border border-violet-500/20 flex items-center justify-center gap-1.5">
                     View All Discounts
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                 </button>
             </div>
 
-            <div className="absolute -top-12 -right-12 w-48 h-48 bg-violet-600/30 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-fuchsia-600/30 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-violet-600/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-fuchsia-600/20 rounded-full blur-3xl pointer-events-none" />
         </div>
     );
 }
