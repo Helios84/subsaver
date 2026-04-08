@@ -22,6 +22,7 @@ import type { WidgetSpan } from "../components/AdvancedAnalytics";
 import { apiFetch } from "../lib/api";
 import StatsGrid from "../components/dashboard/StatsGrid";
 import AdvancedAnalytics from "../components/AdvancedAnalytics";
+import DraggableAnalyticsGrid from "../components/DraggableAnalyticsGrid";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type WidgetId =
@@ -185,12 +186,13 @@ function formatMoney(cents: number, currency: Currency = "USD") {
 }
 
 // ─── Sortable Widget Row (Analytics Only) ────────────────────────────────────
-function SortableWidgetRow({ widget, onToggle, onSpanChange, widgetSizes, index }: {
+function SortableWidgetRow({ widget, onToggle, onSpanChange, widgetSizes, index, hasUnsavedChange }: {
   widget: WidgetConfig;
   onToggle: (id: WidgetId) => void;
   onSpanChange: (id: WidgetId, span: WidgetSpan) => void;
   widgetSizes: Partial<Record<WidgetId, WidgetSpan>>;
   index: number;
+  hasUnsavedChange?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: widget.id });
   const Icon = widget.icon;
@@ -214,8 +216,11 @@ function SortableWidgetRow({ widget, onToggle, onSpanChange, widgetSizes, index 
         style={{ background: widget.enabled ? `${widget.color}18` : "rgba(255,255,255,0.03)", border: `1px solid ${widget.enabled ? `${widget.color}28` : "rgba(255,255,255,0.06)"}` }}>
         <Icon className="w-3 h-3" style={{ color: widget.enabled ? widget.color : "rgba(255,255,255,0.18)" }} />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 flex items-center gap-1.5">
         <p className={`text-xs font-semibold leading-tight truncate ${widget.enabled ? "text-white" : "text-white/25"}`}>{widget.label}</p>
+        {hasUnsavedChange && (
+          <span title="Modified this session" style={{ width: 5, height: 5, borderRadius: "50%", background: "#F59E0B", flexShrink: 0, display: "inline-block" }} />
+        )}
       </div>
       {/* Span selector: [1] [2] [3] [4] */}
       {widget.enabled && (
@@ -288,11 +293,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ─── Real Dashboard Preview ───────────────────────────────────────────────────
-function RealDashboardPreview({ settings, subs, user }: {
+function RealDashboardPreview({ settings, subs, user, onWidgetReorder }: {
   settings: DashboardSettings;
   subs: Sub[];
   user: { is_verified: boolean; email: string } | null;
+  onWidgetReorder: (newOrder: WidgetId[]) => void;
 }) {
+  const [trendsData, setTrendsData] = useState<any>(null);
+  const [insights, setInsights] = useState<any[]>([]);
+  useEffect(() => {
+    apiFetch('/api/analytics/trends').then(setTrendsData).catch(() => {});
+    apiFetch('/api/analytics/insights').then(setInsights).catch(() => {});
+  }, []);
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.65);
   const DASHBOARD_WIDTH = 1400;
@@ -409,10 +421,18 @@ function RealDashboardPreview({ settings, subs, user }: {
           </div>
         )}
 
-        {/* Analytics */}
+        {/* Analytics — draggable in customize preview */}
         {subs.length > 0 && analyticsVisible && (
           <div style={{ marginBottom: densityGap }}>
-            <AdvancedAnalytics upcomingRenewals={upcomingRenewals} widgets={widgetMap} widgetSizes={settings.widgetSizes} widgetOrder={settings.widgets.map(w => w.id)} />
+            <DraggableAnalyticsGrid
+              widgetOrder={settings.widgets.map(w => w.id)}
+              widgetSizes={settings.widgetSizes}
+              widgets={widgetMap}
+              onReorder={onWidgetReorder}
+              upcomingRenewals={upcomingRenewals}
+              trendsData={trendsData}
+              insights={insights}
+            />
           </div>
         )}
 
@@ -546,6 +566,12 @@ export default function CustomizePage() {
   const [activeId, setActiveId] = useState<WidgetId | null>(null);
   const [subs, setSubs] = useState<Sub[]>([]);
   const [user, setUser] = useState<{ is_verified: boolean; email: string } | null>(null);
+  // Undo stack — each entry is a full settings snapshot before the change
+  const [undoStack, setUndoStack] = useState<DashboardSettings[]>([]);
+  // Grid rulers toggle
+  const [showGridRulers, setShowGridRulers] = useState(false);
+  // Track which widget IDs had settings changed this session (for unsaved dot)
+  const [changedIds, setChangedIds] = useState<Set<WidgetId>>(new Set());
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -560,9 +586,23 @@ export default function CustomizePage() {
     apiFetch("/users/me").then(setUser).catch(console.error);
   }, [router]);
 
-  function mark(updater: (prev: DashboardSettings) => DashboardSettings) {
-    setSettings(updater);
+  function mark(updater: (prev: DashboardSettings) => DashboardSettings, changedWidgetId?: WidgetId) {
+    setSettings(prev => {
+      setUndoStack(stack => [...stack.slice(-19), prev]); // keep last 20 states
+      return updater(prev);
+    });
     setIsDirty(true);
+    if (changedWidgetId) setChangedIds(s => new Set([...s, changedWidgetId]));
+  }
+
+  function handleUndo() {
+    setUndoStack(stack => {
+      if (stack.length === 0) return stack;
+      const prev = stack[stack.length - 1];
+      setSettings(prev);
+      setIsDirty(true);
+      return stack.slice(0, -1);
+    });
   }
 
   function handleDragStart(e: DragStartEvent) { setActiveId(e.active.id as WidgetId); }
@@ -577,13 +617,10 @@ export default function CustomizePage() {
     });
   }
   function handleToggle(id: WidgetId) {
-    mark(prev => ({ ...prev, widgets: prev.widgets.map(w => w.id === id ? { ...w, enabled: !w.enabled } : w) }));
+    mark(prev => ({ ...prev, widgets: prev.widgets.map(w => w.id === id ? { ...w, enabled: !w.enabled } : w) }), id);
   }
   function handleSpanChange(id: WidgetId, span: WidgetSpan) {
-    mark(prev => ({
-      ...prev,
-      widgetSizes: { ...prev.widgetSizes, [id]: span },
-    }));
+    mark(prev => ({ ...prev, widgetSizes: { ...prev.widgetSizes, [id]: span } }), id);
   }
   function handleStatCardToggle(id: StatCardId) {
     mark(prev => {
@@ -604,12 +641,52 @@ export default function CustomizePage() {
   }
   function handleSave() {
     saveDashboardSettings(settings);
-    setSaved(true); setIsDirty(false);
+    setSaved(true); setIsDirty(false); setChangedIds(new Set()); setUndoStack([]);
     setTimeout(() => setSaved(false), 2500);
   }
   function handleReset() {
     const d = getDefaults();
     setSettings(d); saveDashboardSettings(d); setIsDirty(false);
+    setUndoStack([]); setChangedIds(new Set());
+  }
+
+  // ── Layout Presets ──────────────────────────────────────────────────────────
+  const PRESETS = [
+    {
+      id: "student",
+      label: "Student Focus",
+      icon: "🎓",
+      description: "Savings & insights front and center",
+      widgetOrder: ["savings_card", "insights", "spending_trends", "renewals", "category_breakdown", "billing_calendar"] as WidgetId[],
+      widgetSizes: { savings_card: 2, insights: 2, spending_trends: 2, renewals: 1, category_breakdown: 1, billing_calendar: 4 } as Partial<Record<WidgetId, WidgetSpan>>,
+    },
+    {
+      id: "budget",
+      label: "Budget Mode",
+      icon: "💰",
+      description: "Spending & categories first",
+      widgetOrder: ["spending_trends", "category_breakdown", "renewals", "savings_card", "insights", "billing_calendar"] as WidgetId[],
+      widgetSizes: { spending_trends: 3, category_breakdown: 1, renewals: 2, savings_card: 2, insights: 2, billing_calendar: 4 } as Partial<Record<WidgetId, WidgetSpan>>,
+    },
+    {
+      id: "overview",
+      label: "Overview",
+      icon: "📊",
+      description: "Balanced view of everything",
+      widgetOrder: ["spending_trends", "savings_card", "category_breakdown", "renewals", "insights", "billing_calendar"] as WidgetId[],
+      widgetSizes: { spending_trends: 2, savings_card: 1, category_breakdown: 2, renewals: 1, insights: 1, billing_calendar: 4 } as Partial<Record<WidgetId, WidgetSpan>>,
+    },
+  ] as const;
+
+  function handlePreset(preset: typeof PRESETS[number]) {
+    mark(prev => ({
+      ...prev,
+      widgets: preset.widgetOrder
+        .map(id => prev.widgets.find(w => w.id === id))
+        .filter(Boolean)
+        .concat(prev.widgets.filter(w => !preset.widgetOrder.includes(w.id as WidgetId))) as typeof prev.widgets,
+      widgetSizes: { ...prev.widgetSizes, ...preset.widgetSizes },
+    }));
   }
 
   const enabledCount = settings.widgets.filter(w => w.enabled).length;
@@ -643,6 +720,11 @@ export default function CustomizePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {undoStack.length > 0 && (
+              <button onClick={handleUndo} title="Undo last change" className="text-xs text-amber-400/70 hover:text-amber-300 transition-colors px-2.5 py-2 rounded-lg hover:bg-amber-400/5 flex items-center gap-1.5">
+                <RotateCcw className="w-3 h-3" /> Undo
+              </button>
+            )}
             <button onClick={handleReset} className="text-xs text-white/25 hover:text-white/60 transition-colors px-2.5 py-2 rounded-lg hover:bg-white/5 flex items-center gap-1.5">
               <RotateCcw className="w-3 h-3" /><span className="hidden sm:inline">Reset</span>
             </button>
@@ -671,6 +753,26 @@ export default function CustomizePage() {
                 <PillOption active={settings.density === "comfortable"} onClick={() => mark(p => ({ ...p, density: "comfortable", layout: "grid" }))} icon={Layers} label="Comfy" sublabel="Spacious" />
                 <PillOption active={settings.density === "standard"}    onClick={() => mark(p => ({ ...p, density: "standard",    layout: "grid" }))} icon={LayoutGrid} label="Standard" sublabel="Balanced" />
                 <PillOption active={settings.density === "compact"}     onClick={() => mark(p => ({ ...p, density: "compact",     layout: "compact" }))} icon={AlignJustify} label="Compact" sublabel="Dense" />
+              </div>
+            </div>
+
+            <div className="border-t border-white/[0.05]" />
+
+            {/* ── Layout Presets ── */}
+            <div>
+              <SectionLabel>Layout Presets</SectionLabel>
+              <div className="flex flex-col gap-1.5">
+                {PRESETS.map(p => (
+                  <button key={p.id} onClick={() => handlePreset(p)}
+                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all border-white/6 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/14 group">
+                    <span className="text-base leading-none">{p.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white/70 group-hover:text-white transition-colors">{p.label}</p>
+                      <p className="text-[10px] text-white/25 leading-tight truncate">{p.description}</p>
+                    </div>
+                    <span className="ml-auto text-[9px] text-white/20 group-hover:text-violet-400 transition-colors font-bold uppercase tracking-wider">Apply →</span>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -753,6 +855,7 @@ export default function CustomizePage() {
                         key={widget.id} widget={widget} index={index}
                         onToggle={handleToggle} onSpanChange={handleSpanChange}
                         widgetSizes={settings.widgetSizes}
+                        hasUnsavedChange={changedIds.has(widget.id)}
                       />
                     ))}
                     {/* Separator */}
@@ -804,7 +907,20 @@ export default function CustomizePage() {
                 subsaver.example/dashboard
               </div>
             </div>
-            <div className="text-[10px] text-white/20 font-mono">{enabledCount} widgets active</div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowGridRulers(v => !v)}
+                title="Toggle 4-column grid rulers"
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1.5 ${
+                  showGridRulers
+                    ? "border-violet-500/40 bg-violet-500/15 text-violet-300"
+                    : "border-white/8 bg-white/[0.03] text-white/25 hover:text-white/50"
+                }`}
+              >
+                ⊞ Grid
+              </button>
+              <div className="text-[10px] text-white/20 font-mono">{enabledCount} widgets</div>
+            </div>
           </div>
 
           {/* Preview area */}
@@ -813,8 +929,28 @@ export default function CustomizePage() {
               <div className="absolute rounded-full blur-[80px] opacity-10" style={{ width: 500, height: 500, background: `radial-gradient(circle, ${theme.primary}26, transparent 70%)`, top: "-5%", right: "-5%" }} />
               <div className="absolute rounded-full blur-[60px] opacity-8"  style={{ width: 400, height: 400, background: `radial-gradient(circle, ${theme.secondary}1A, transparent 70%)`, bottom: "-5%", left: "-5%" }} />
             </div>
+            {/* 4-column grid rulers */}
+            {showGridRulers && (
+              <div className="pointer-events-none absolute inset-0 z-20" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1.25rem", padding: "1rem", paddingTop: "calc(1rem + 56px)" }}>
+                {[0,1,2,3].map(i => (
+                  <div key={i} style={{ border: "1px dashed rgba(139,92,246,0.2)", borderRadius: 12, background: "rgba(124,58,237,0.03)", height: "100%" }} />
+                ))}
+              </div>
+            )}
             <div className="relative z-10 h-full p-4">
-              <RealDashboardPreview settings={settings} subs={subs} user={user} />
+              <RealDashboardPreview
+                settings={settings}
+                subs={subs}
+                user={user}
+                onWidgetReorder={(newOrder) => {
+                  mark(prev => ({
+                    ...prev,
+                    widgets: newOrder
+                      .map(id => prev.widgets.find(w => w.id === id))
+                      .filter(Boolean) as typeof prev.widgets,
+                  }));
+                }}
+              />
             </div>
           </div>
         </div>
