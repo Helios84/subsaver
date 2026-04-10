@@ -4,12 +4,7 @@ from typing import List
 from datetime import datetime
 
 from dependencies import get_db, get_current_user
-from main import User, Subscription
-
-# Import will work after we create the table
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from models.db import User, Subscription
 
 router = APIRouter(prefix="/api/student-discounts", tags=["student-discounts"])
 

@@ -5,7 +5,7 @@ import calendar
 from typing import List, Dict, Any
 
 from dependencies import get_db, get_current_user
-from main import User, Subscription
+from models.db import User, Subscription
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 

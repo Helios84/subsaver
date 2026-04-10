@@ -5,6 +5,12 @@
 .env.production
 .env.development
 
+# Databases — NEVER commit SQLite files
+*.sqlite
+*.db
+*.db-shm
+*.db-wal
+
 # Python
 __pycache__/
 *.pyc

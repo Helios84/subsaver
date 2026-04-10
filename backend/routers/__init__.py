@@ -6,8 +6,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 
-# These will be imported from main.py
-from main import get_db, get_current_user, User, Subscription
+from dependencies import get_db, get_current_user
+from models.db import User, Subscription
 from services.reminder_service import reminder_service
 from services.scheduler import reminder_scheduler
 
