@@ -231,3 +231,13 @@ def me_email(current_user: User = Depends(get_current_user)):
 @router.get("/users/me", response_model=UserOut)
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.delete("/users/me", status_code=204)
+def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Permanently delete the current user's account and all associated data."""
+    db.delete(current_user)
+    db.commit()

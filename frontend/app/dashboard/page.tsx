@@ -5,12 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../lib/api";
 import {
-  LogOut,
-  Plus,
-  BadgeCheck,
-  GraduationCap,
-  Layout,
-  CreditCard,
+  LogOut, Plus, BadgeCheck, GraduationCap, Layout, CreditCard,
+  Search, SlidersHorizontal, X as XIcon,
 } from "lucide-react";
 import VerificationModal from "../components/VerificationModal";
 import StudentDiscountModal from "../components/StudentDiscountModal";
@@ -20,24 +16,26 @@ import DashboardEmptyState from "../components/DashboardEmptyState";
 import StatsGrid from "../components/dashboard/StatsGrid";
 import SubscriptionCard from "../components/dashboard/SubscriptionCard";
 import AddSubscriptionPanel from "../components/dashboard/AddSubscriptionPanel";
+import EditSubscriptionModal, { type EditState } from "../components/EditSubscriptionModal";
 import { loadDashboardSettings, type DashboardSettings, CURRENCY_SYMBOLS } from "../customize/page";
+import { useToast } from "../components/ToastProvider";
 import type { Sub, StudentDiscount, UserOut as User } from "../types/index";
 
 // ─── Local aliases ────────────────────────────────────────────────────────────
 type BillingCycle = "monthly" | "yearly";
 type Status = "active" | "cancelled";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const CATEGORIES = [
   { value: "Entertainment", icon: "🎬", color: "#7C3AED" },
-  { value: "Productivity", icon: "💼", color: "#F59E0B" },
-  { value: "Gaming", icon: "🎮", color: "#8B5CF6" },
-  { value: "Utilities", icon: "🔧", color: "#3B82F6" },
+  { value: "Productivity",  icon: "💼", color: "#F59E0B" },
+  { value: "Gaming",        icon: "🎮", color: "#8B5CF6" },
+  { value: "Utilities",     icon: "🔧", color: "#3B82F6" },
   { value: "Communication", icon: "📱", color: "#10B981" },
   { value: "Health & Fitness", icon: "🏋️", color: "#db2777" },
-  { value: "Education", icon: "📚", color: "#6366F1" },
+  { value: "Education",     icon: "📚", color: "#6366F1" },
   { value: "Food & Delivery", icon: "🍔", color: "#F97316" },
-  { value: "Other", icon: "🎨", color: "#6B7280" },
+  { value: "Other",         icon: "🎨", color: "#6B7280" },
 ];
 
 function formatMoney(cents: number, symbol = "$") {
@@ -56,11 +54,11 @@ function calculateDaysUntilRenewal(next_billing_date?: string): number | null {
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const router = useRouter();
+  const { toast } = useToast();
 
   // ── Core state
   const [subs, setSubs] = useState<Sub[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [msg, setMsg] = useState<string>("");
   const [user, setUser] = useState<User | null>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
 
@@ -75,10 +73,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setDashSettings(loadDashboardSettings());
-    // Re-read settings whenever window gains focus (user may have changed them)
     const onFocus = () => setDashSettings(loadDashboardSettings());
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "dashboardSettings") setDashSettings(loadDashboardSettings());
+    };
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   const isWidgetEnabled = (id: string) =>
@@ -95,6 +99,13 @@ export default function DashboardPage() {
       .catch((err) => console.error("Failed to fetch autocomplete services", err));
   }, []);
 
+  // ── Filter / Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "cancelled">("all");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [sortBy, setSortBy] = useState<"name" | "price_asc" | "price_desc" | "date">("date");
+  const [showFilters, setShowFilters] = useState(false);
+
   // ── Add form state
   const [formState, setFormState] = useState({
     name: "",
@@ -106,13 +117,13 @@ export default function DashboardPage() {
     splitWith: 1,
   });
 
-  // ── Edit state
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editState, setEditState] = useState({
+  // ── Edit state (now drives modal)
+  const [editingSub, setEditingSub] = useState<Sub | null>(null);
+  const [editState, setEditState] = useState<EditState>({
     name: "",
     price: "0",
-    cycle: "monthly" as BillingCycle,
-    status: "active" as Status,
+    cycle: "monthly",
+    status: "active",
     category: "Other",
     billingDate: "",
     isSplit: false,
@@ -140,14 +151,13 @@ export default function DashboardPage() {
   }
 
   async function fetchSubs() {
-    setMsg("");
     setLoading(true);
     try {
       const data = await apiFetch("/subscriptions", { method: "GET" });
       setSubs(data);
       await loadStudentDiscounts(data);
     } catch (err: any) {
-      setMsg(err?.message ?? "Failed to load subscriptions");
+      toast(err?.message ?? "Failed to load subscriptions", "error");
     } finally {
       setLoading(false);
     }
@@ -155,21 +165,12 @@ export default function DashboardPage() {
 
   async function loadStudentDiscounts(subscriptions: Sub[]) {
     try {
-      const ids = subscriptions
-        .filter((s) => s.status === "active")
-        .map((s) => s.id);
-
-      if (ids.length === 0) {
-        setStudentDiscounts(new Map());
-        return;
-      }
-
-      // Single batch request instead of N individual requests
+      const ids = subscriptions.filter((s) => s.status === "active").map((s) => s.id);
+      if (ids.length === 0) { setStudentDiscounts(new Map()); return; }
       const result = await apiFetch("/api/student-discounts/batch-check", {
         method: "POST",
         body: JSON.stringify({ subscription_ids: ids }),
       });
-
       const discountMap = new Map<number, StudentDiscount>();
       for (const [idStr, discount] of Object.entries(result)) {
         if (discount) discountMap.set(Number(idStr), discount as StudentDiscount);
@@ -181,24 +182,21 @@ export default function DashboardPage() {
   }
 
   async function addSampleData() {
-    setMsg("⏳ Adding demo subscriptions...");
+    toast("Adding demo subscriptions…", "info");
     const sampleSubs = [
-      { name: "Spotify", price_cents: 999, billing_cycle: "monthly", category: "Entertainment", split_with: 2 },
-      { name: "Netflix", price_cents: 1599, billing_cycle: "monthly", category: "Entertainment", split_with: 4 },
-      { name: "Adobe Creative Cloud", price_cents: 5499, billing_cycle: "monthly", category: "Productivity", split_with: 1 },
-      { name: "Xbox Game Pass", price_cents: 999, billing_cycle: "monthly", category: "Gaming", split_with: 1 },
+      { name: "Spotify",              price_cents: 999,  billing_cycle: "monthly", category: "Entertainment", split_with: 2 },
+      { name: "Netflix",              price_cents: 1599, billing_cycle: "monthly", category: "Entertainment", split_with: 4 },
+      { name: "Adobe Creative Cloud", price_cents: 5499, billing_cycle: "monthly", category: "Productivity",  split_with: 1 },
+      { name: "Xbox Game Pass",       price_cents: 999,  billing_cycle: "monthly", category: "Gaming",        split_with: 1 },
     ];
     try {
       for (const sub of sampleSubs) {
         await apiFetch("/subscriptions", { method: "POST", body: JSON.stringify(sub) });
       }
       await fetchSubs();
-      setMsg("✅ Demo data added! Explore your dashboard.");
-      setTimeout(() => setMsg(""), 4000);
+      toast("Demo data added! Explore your dashboard.", "success");
     } catch (err) {
-      console.error("Failed to add sample data", err);
-      setMsg("❌ Failed to add demo data. Please try again.");
-      setTimeout(() => setMsg(""), 3000);
+      toast("Failed to add demo data. Please try again.", "error");
     }
   }
 
@@ -212,10 +210,9 @@ export default function DashboardPage() {
         if (d) newMap.set(subscriptionId, { ...d, already_applied: true });
         return newMap;
       });
-      setMsg("✅ Student discount marked as applied!");
-      setTimeout(() => setMsg(""), 3000);
+      toast("Student discount marked as applied!", "success");
     } catch (err: any) {
-      setMsg(err?.message ?? "Failed to apply discount");
+      toast(err?.message ?? "Failed to apply discount", "error");
     }
   }
 
@@ -227,7 +224,6 @@ export default function DashboardPage() {
   // ── Add subscription
   async function createSub(e: React.FormEvent) {
     e.preventDefault();
-    setMsg("");
     try {
       const body: any = {
         name: formState.name.trim(),
@@ -240,17 +236,16 @@ export default function DashboardPage() {
       if (formState.billingDate) body.next_billing_date = new Date(formState.billingDate).toISOString();
       await apiFetch("/subscriptions", { method: "POST", body: JSON.stringify(body) });
       setFormState({ name: "", price: "9.99", cycle: "monthly", category: "Other", billingDate: "", isSplit: false, splitWith: 1 });
-      setMsg("✅ Subscription created!");
+      toast("Subscription created!", "success");
       fetchSubs();
     } catch (err: any) {
-      setMsg(err?.message ?? "Create failed");
+      toast(err?.message ?? "Create failed", "error");
     }
   }
 
   async function handleServiceSelect(service: StudentDiscount) {
     setShowServicePicker(false);
     const priceToSet = user?.is_verified ? service.student_price_cents : service.regular_price_cents;
-    setMsg("⏳ Adding subscription...");
     try {
       await apiFetch("/subscriptions", {
         method: "POST",
@@ -264,11 +259,9 @@ export default function DashboardPage() {
         }),
       });
       await fetchSubs();
-      setMsg(`✅ ${service.service_name} added!`);
-      setTimeout(() => setMsg(""), 3000);
+      toast(`${service.service_name} added!`, "success");
     } catch (err: any) {
-      setMsg(err?.message ?? "Failed to add subscription");
-      setTimeout(() => setMsg(""), 3000);
+      toast(err?.message ?? "Failed to add subscription", "error");
     }
   }
 
@@ -283,29 +276,26 @@ export default function DashboardPage() {
     }
   };
 
-  // ── Edit handlers
+  // ── Edit handlers (now open modal)
   function startEdit(s: Sub) {
-    setEditingId(s.id);
+    setEditingSub(s);
     setEditState({
       name: s.name,
       price: (s.price_cents / 100).toFixed(2),
-      cycle: s.billing_cycle,
-      status: s.status,
+      cycle: s.billing_cycle as BillingCycle,
+      status: s.status as Status,
       category: s.category || "Other",
       billingDate: s.next_billing_date ? s.next_billing_date.split("T")[0] : "",
       splitWith: s.split_with || 1,
       isSplit: (s.split_with || 1) > 1,
     });
-    setMsg("");
   }
 
   function cancelEdit() {
-    setEditingId(null);
-    setMsg("");
+    setEditingSub(null);
   }
 
   async function saveEdit(subId: number) {
-    setMsg("");
     try {
       const body: any = {
         name: editState.name.trim(),
@@ -318,45 +308,83 @@ export default function DashboardPage() {
       if (editState.billingDate) body.next_billing_date = new Date(editState.billingDate).toISOString();
       const updated = await apiFetch(`/subscriptions/${subId}`, { method: "PATCH", body: JSON.stringify(body) });
       setSubs((prev) => prev.map((s) => (s.id === subId ? updated : s)));
-      setEditingId(null);
+      setEditingSub(null);
+      toast("Subscription updated!", "success");
     } catch (err: any) {
-      setMsg(err?.message ?? "Update failed");
+      toast(err?.message ?? "Update failed", "error");
     }
   }
 
   async function toggleStatus(s: Sub) {
-    setMsg("");
     const next: Status = s.status === "active" ? "cancelled" : "active";
     setSubs((prev) => prev.map((x) => (x.id === s.id ? { ...x, status: next } : x)));
     try {
       const updated = await apiFetch(`/subscriptions/${s.id}`, { method: "PATCH", body: JSON.stringify({ status: next }) });
       setSubs((prev) => prev.map((x) => (x.id === s.id ? updated : x)));
+      toast(`Subscription ${next === "active" ? "resumed" : "paused"}`, "info");
     } catch (err: any) {
       setSubs((prev) => prev.map((x) => (x.id === s.id ? s : x)));
-      setMsg(err?.message ?? "Toggle failed");
+      toast(err?.message ?? "Toggle failed", "error");
     }
   }
 
   function confirmDelete(subId: number) {
-    if (editingId === subId) setEditingId(null);
     setDeletingId(subId);
-    setMsg("");
   }
 
   function cancelDelete() {
     setDeletingId(null);
-    setMsg("");
   }
 
   async function executeDelete(subId: number) {
-    setMsg("");
     try {
       await apiFetch(`/subscriptions/${subId}`, { method: "DELETE" });
       setSubs((prev) => prev.filter((s) => s.id !== subId));
       if (deletingId === subId) setDeletingId(null);
+      toast("Subscription deleted", "info");
     } catch (err: any) {
-      setMsg(err?.message ?? "Delete failed");
+      toast(err?.message ?? "Delete failed", "error");
     }
+  }
+
+  // ── Filtered & sorted subscriptions
+  const filteredSubs = useMemo(() => {
+    let result = [...subs];
+
+    // Search
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((s) => s.name.toLowerCase().includes(q));
+    }
+
+    // Status filter
+    if (filterStatus !== "all") {
+      result = result.filter((s) => s.status === filterStatus);
+    }
+
+    // Category filter
+    if (filterCategory !== "all") {
+      result = result.filter((s) => s.category === filterCategory);
+    }
+
+    // Sort
+    switch (sortBy) {
+      case "name":       result.sort((a, b) => a.name.localeCompare(b.name)); break;
+      case "price_asc":  result.sort((a, b) => a.price_cents - b.price_cents); break;
+      case "price_desc": result.sort((a, b) => b.price_cents - a.price_cents); break;
+      case "date":       result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
+    }
+
+    return result;
+  }, [subs, searchQuery, filterStatus, filterCategory, sortBy]);
+
+  const hasActiveFilters = searchQuery || filterStatus !== "all" || filterCategory !== "all" || sortBy !== "date";
+
+  function clearFilters() {
+    setSearchQuery("");
+    setFilterStatus("all");
+    setFilterCategory("all");
+    setSortBy("date");
   }
 
   // ── Analytics computations
@@ -371,7 +399,6 @@ export default function DashboardPage() {
       return acc + (s.billing_cycle === "monthly" ? s.price_cents : Math.round(s.price_cents / 12));
     }, 0);
     const avgPerSubscription = activeSubs.length > 0 ? sumMonthly / activeSubs.length : 0;
-
     const today = new Date();
     const upcoming = activeSubs
       .filter((s) => s.next_billing_date)
@@ -379,11 +406,9 @@ export default function DashboardPage() {
       .filter((s) => s.daysUntil !== null && s.daysUntil >= 0 && s.daysUntil <= 30)
       .sort((a, b) => (a.daysUntil || 0) - (b.daysUntil || 0));
 
-    // Build widgets map for AdvancedAnalytics
     const w: Record<string, boolean> = {};
     dashSettings.widgets.forEach((widget) => { w[widget.id] = widget.enabled; });
 
-    // Extra metrics
     const savings = activeSubs.filter(s => s.student_discount_applied).length * 500;
     const cancelled = subs.filter(s => s.status === "cancelled").length;
     const sorted = [...activeSubs].sort((a, b) => b.price_cents - a.price_cents);
@@ -392,20 +417,19 @@ export default function DashboardPage() {
 
     return {
       totalMonthly: formatMoney(sumMonthly, sym),
-      totalYearly: formatMoney(sumMonthly * 12, sym),
-      totalActive: activeSubs.length,
-      avgPerSub: formatMoney(avgPerSubscription, sym),
+      totalYearly:  formatMoney(sumMonthly * 12, sym),
+      totalActive:  activeSubs.length,
+      avgPerSub:    formatMoney(avgPerSubscription, sym),
       upcomingRenewals: upcoming,
       widgets: w,
-      totalSavings: formatMoney(savings, sym),
-      cancelledCount: String(cancelled),
-      mostExpensive: topSub ? `${topSub.name.length > 10 ? topSub.name.slice(0,9)+'…' : topSub.name}` : "N/A",
+      totalSavings:    formatMoney(savings, sym),
+      cancelledCount:  String(cancelled),
+      mostExpensive:   topSub ? `${topSub.name.length > 10 ? topSub.name.slice(0,9)+"…" : topSub.name}` : "N/A",
       nextRenewalDays: nextDays !== null ? `${nextDays}d` : "N/A",
     };
   }, [subs, dashSettings]);
 
   const layoutCompact = dashSettings.density === "compact" || dashSettings.layout === "compact";
-
 
   const statsCardValues: Record<string, string> = {
     monthly_spend:     totalMonthly,
@@ -420,6 +444,8 @@ export default function DashboardPage() {
   const statsCards = (dashSettings.statsCards ?? ["monthly_spend","active_count","yearly_projection","avg_per_sub"])
     .slice(0, 4)
     .map(id => ({ id: id as any, value: statsCardValues[id] ?? "—" }));
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   return (
     <main className="min-h-screen text-white pb-20 relative overflow-hidden" style={{ background: "#080B14" }}>
@@ -477,7 +503,7 @@ export default function DashboardPage() {
 
       <div className="relative z-10 mx-auto max-w-[1600px] px-6 lg:px-12 xl:px-16 py-10 space-y-16">
 
-        {/* Quick Actions — always visible */}
+        {/* Quick Actions */}
         <div className="flex gap-3 mb-2 overflow-x-auto pb-2">
           <button
             onClick={() => setShowServicePicker(true)}
@@ -486,16 +512,13 @@ export default function DashboardPage() {
             <Plus className="w-5 h-5" />
             <span className="font-bold">Add Subscription</span>
           </button>
-          <Link
-            href="/customize"
-            className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
-          >
+          <Link href="/customize" className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0">
             <Layout className="w-5 h-5 text-fuchsia-400" />
             <span className="font-medium">Customize</span>
           </Link>
         </div>
 
-        {/* Verify Student prompt for unverified users */}
+        {/* Verify Student prompt */}
         {user && !user.is_verified && (
           <button
             onClick={() => setShowVerificationModal(true)}
@@ -527,7 +550,7 @@ export default function DashboardPage() {
               />
             )}
 
-            {/* Advanced Analytics — only render when at least one analytics widget is enabled */}
+            {/* Advanced Analytics */}
             {subs.length > 0 && (analyticsWidgets.spending_trends || analyticsWidgets.category_breakdown || analyticsWidgets.savings_card || analyticsWidgets.insights || analyticsWidgets.renewals || analyticsWidgets.billing_calendar) && (
               <AdvancedAnalytics
                 upcomingRenewals={upcomingRenewals}
@@ -544,9 +567,8 @@ export default function DashboardPage() {
               {/* Subscription List */}
               {isWidgetEnabled("subscriptions") && (
                 <section className="rounded-2xl overflow-hidden min-h-[400px]" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                  {/* Vibrant header */}
+                  {/* Section Header */}
                   <div className="relative p-6 pb-5 overflow-hidden" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(217,70,239,0.12) 50%, rgba(79,70,229,0.08) 100%)", borderBottom: "1px solid rgba(124,58,237,0.2)" }}>
-                    {/* Decorative glow */}
                     <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(217,70,239,0.15) 0%, transparent 70%)" }} />
                     <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%)" }} />
 
@@ -557,7 +579,11 @@ export default function DashboardPage() {
                         </div>
                         <div>
                           <h2 className="text-lg font-bold text-white" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>Your Subscriptions</h2>
-                          <p className="text-xs text-white/40">Manage and track your services</p>
+                          <p className="text-xs text-white/40">
+                            {hasActiveFilters
+                              ? `Showing ${filteredSubs.length} of ${subs.length}`
+                              : `${subs.length} total · ${totalActive} active`}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -573,51 +599,153 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div style={{ padding: "1.5rem" }}>
-                  {loading ? (
-                    <div className="space-y-4">
-                      {[1, 2, 3, 4].map((i) => <div key={i} className="h-24 bg-white/5 animate-pulse rounded-xl border border-white/5" />)}
-                    </div>
-                  ) : subs.length === 0 ? (
-                    <div className="rounded-xl border-2 border-dashed border-white/10 p-12 text-center text-gray-400">
-                      <div className="mx-auto w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
-                        <Plus className="w-6 h-6 text-gray-400" />
-                      </div>
-                      <p className="font-medium">No subscriptions yet</p>
-                      <p className="text-sm mt-1">Add your first one to see analytics</p>
-                    </div>
-                  ) : (
-                    <div className={layoutCompact ? "flex flex-col gap-2" : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"}>
-                      {subs.map((s) => (
-                        <SubscriptionCard
-                          key={s.id}
-                          sub={s}
-                          isVerified={user?.is_verified ?? false}
-                          discount={studentDiscounts.get(s.id)}
-                          isEditing={editingId === s.id}
-                          isDeleting={deletingId === s.id}
-                          editState={editState}
-                          layoutCompact={layoutCompact}
-                          onStartEdit={startEdit}
-                          onCancelEdit={cancelEdit}
-                          onSaveEdit={saveEdit}
-                          onToggleStatus={toggleStatus}
-                          onConfirmDelete={confirmDelete}
-                          onCancelDelete={cancelDelete}
-                          onExecuteDelete={executeDelete}
-                          onDiscountClick={(d) => { setSelectedDiscount(d); setShowDiscountModal(true); }}
-                          onEditChange={(patch) => setEditState((prev) => ({ ...prev, ...patch }))}
+                  {/* ── Search & Filter Bar ── */}
+                  <div style={{ padding: "16px 24px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+                      {/* Search */}
+                      <div style={{ position: "relative", flex: 1 }}>
+                        <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 15, height: 15, color: "rgba(255,255,255,0.3)" }} />
+                        <input
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search subscriptions…"
+                          style={{
+                            width: "100%", padding: "9px 36px", borderRadius: 10,
+                            border: "1px solid rgba(255,255,255,0.08)",
+                            background: "rgba(255,255,255,0.03)",
+                            color: "white", fontSize: 13, outline: "none",
+                            boxSizing: "border-box",
+                            transition: "border-color 0.2s",
+                          }}
+                          onFocus={(e) => (e.target.style.borderColor = "rgba(124,58,237,0.5)")}
+                          onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.08)")}
                         />
-                      ))}
+                        {searchQuery && (
+                          <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", display: "flex", alignItems: "center" }}>
+                            <XIcon style={{ width: 14, height: 14 }} />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Filter toggle */}
+                      <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 6, padding: "9px 14px",
+                          borderRadius: 10, border: `1px solid ${hasActiveFilters ? "rgba(124,58,237,0.5)" : "rgba(255,255,255,0.08)"}`,
+                          background: hasActiveFilters ? "rgba(124,58,237,0.12)" : "rgba(255,255,255,0.03)",
+                          color: hasActiveFilters ? "#A78BFA" : "rgba(255,255,255,0.5)",
+                          fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap",
+                        }}
+                      >
+                        <SlidersHorizontal style={{ width: 14, height: 14 }} />
+                        Filters
+                        {hasActiveFilters && <span style={{ background: "#7C3AED", color: "white", borderRadius: "50%", width: 16, height: 16, fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>!</span>}
+                      </button>
+
+                      {hasActiveFilters && (
+                        <button
+                          onClick={clearFilters}
+                          style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "none", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.2s" }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
-                  )}
+
+                    {/* Expanded Filters */}
+                    {showFilters && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, paddingBottom: 14 }}>
+                        {/* Status */}
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "rgba(255,255,255,0.3)", marginBottom: 6 }}>Status</div>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            {(["all", "active", "cancelled"] as const).map((s) => (
+                              <button key={s} onClick={() => setFilterStatus(s)} style={{ flex: 1, padding: "6px 4px", borderRadius: 8, border: `1px solid ${filterStatus === s ? "rgba(124,58,237,0.5)" : "rgba(255,255,255,0.07)"}`, background: filterStatus === s ? "rgba(124,58,237,0.15)" : "rgba(255,255,255,0.02)", color: filterStatus === s ? "#A78BFA" : "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize", transition: "all 0.15s" }}>
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Category */}
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "rgba(255,255,255,0.3)", marginBottom: 6 }}>Category</div>
+                          <select
+                            value={filterCategory}
+                            onChange={(e) => setFilterCategory(e.target.value)}
+                            style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "#0F1220", color: "rgba(255,255,255,0.7)", fontSize: 12, cursor: "pointer", outline: "none" }}
+                          >
+                            <option value="all">All Categories</option>
+                            {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.icon} {c.value}</option>)}
+                          </select>
+                        </div>
+
+                        {/* Sort */}
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "rgba(255,255,255,0.3)", marginBottom: 6 }}>Sort by</div>
+                          <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value as any)}
+                            style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "#0F1220", color: "rgba(255,255,255,0.7)", fontSize: 12, cursor: "pointer", outline: "none" }}
+                          >
+                            <option value="date">Date Added</option>
+                            <option value="name">Name A–Z</option>
+                            <option value="price_asc">Price ↑</option>
+                            <option value="price_desc">Price ↓</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Cards */}
+                  <div style={{ padding: "1.5rem" }}>
+                    {loading ? (
+                      <div className="space-y-4">
+                        {[1, 2, 3, 4].map((i) => <div key={i} className="h-24 bg-white/5 animate-pulse rounded-xl border border-white/5" />)}
+                      </div>
+                    ) : filteredSubs.length === 0 ? (
+                      <div className="rounded-xl border-2 border-dashed border-white/10 p-12 text-center text-gray-400">
+                        <div className="mx-auto w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
+                          {hasActiveFilters ? <SlidersHorizontal className="w-6 h-6 text-gray-400" /> : <Plus className="w-6 h-6 text-gray-400" />}
+                        </div>
+                        <p className="font-medium">
+                          {hasActiveFilters ? "No subscriptions match your filters" : "No subscriptions yet"}
+                        </p>
+                        <p className="text-sm mt-1">
+                          {hasActiveFilters ? <button onClick={clearFilters} className="text-violet-400 hover:underline">Clear filters</button> : "Add your first one to see analytics"}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className={layoutCompact ? "flex flex-col gap-2" : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"}>
+                        {filteredSubs.map((s) => (
+                          <SubscriptionCard
+                            key={s.id}
+                            sub={s}
+                            isVerified={user?.is_verified ?? false}
+                            discount={studentDiscounts.get(s.id)}
+                            isDeleting={deletingId === s.id}
+                            layoutCompact={layoutCompact}
+                            onStartEdit={startEdit}
+                            onToggleStatus={toggleStatus}
+                            onConfirmDelete={confirmDelete}
+                            onCancelDelete={cancelDelete}
+                            onExecuteDelete={executeDelete}
+                            onDiscountClick={(d) => { setSelectedDiscount(d); setShowDiscountModal(true); }}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </section>
               )}
 
               {/* Add Subscription Panel */}
               <AddSubscriptionPanel
-                msg={msg}
+                msg=""
                 onSubmit={createSub}
                 onOpenPicker={() => setShowServicePicker(true)}
                 suggestions={suggestions}
@@ -649,6 +777,16 @@ export default function DashboardPage() {
             isVerified={user?.is_verified ?? false}
             onSelect={handleServiceSelect}
             onClose={() => setShowServicePicker(false)}
+          />
+        )}
+        {/* Edit Modal */}
+        {editingSub && (
+          <EditSubscriptionModal
+            sub={editingSub}
+            editState={editState}
+            onEditChange={(patch) => setEditState((prev) => ({ ...prev, ...patch }))}
+            onSave={saveEdit}
+            onClose={cancelEdit}
           />
         )}
       </div>

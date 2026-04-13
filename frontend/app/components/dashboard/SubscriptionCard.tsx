@@ -1,52 +1,19 @@
 "use client";
 
-import { Edit2, X, Save, Activity, Trash2, GraduationCap, Calendar } from "lucide-react";
+import { Edit2, Activity, Trash2, GraduationCap, Calendar } from "lucide-react";
 import { getServiceIcon } from "../../dashboard/serviceIcons";
-
-type BillingCycle = "monthly" | "yearly";
-type Status = "active" | "cancelled";
-
-export type Sub = {
-  id: number;
-  name: string;
-  price_cents: number;
-  billing_cycle: BillingCycle;
-  status: Status;
-  category: string;
-  created_at: string;
-  next_billing_date?: string;
-  student_discount_applied?: boolean;
-  split_with?: number;
-};
-
-export type StudentDiscount = {
-  id: number;
-  service_name: string;
-  category: string;
-  regular_price_cents: number;
-  student_price_cents: number;
-  discount_percentage: number;
-  monthly_savings_cents: number;
-  annual_savings_cents: number;
-  requirements: string;
-  verification_method: string;
-  direct_link: string;
-  availability: string;
-  notes: string | null;
-  subscription_id?: number;
-  already_applied?: boolean;
-};
+import type { Sub, StudentDiscount } from "../../types/index";
 
 const CATEGORIES = [
-  { value: "Entertainment", icon: "🎬", color: "#7C3AED" },
-  { value: "Productivity", icon: "💼", color: "#F59E0B" },
-  { value: "Gaming", icon: "🎮", color: "#8B5CF6" },
-  { value: "Utilities", icon: "🔧", color: "#3B82F6" },
-  { value: "Communication", icon: "📱", color: "#10B981" },
+  { value: "Entertainment",  icon: "🎬", color: "#7C3AED" },
+  { value: "Productivity",   icon: "💼", color: "#F59E0B" },
+  { value: "Gaming",         icon: "🎮", color: "#8B5CF6" },
+  { value: "Utilities",      icon: "🔧", color: "#3B82F6" },
+  { value: "Communication",  icon: "📱", color: "#10B981" },
   { value: "Health & Fitness", icon: "🏋️", color: "#db2777" },
-  { value: "Education", icon: "📚", color: "#6366F1" },
+  { value: "Education",      icon: "📚", color: "#6366F1" },
   { value: "Food & Delivery", icon: "🍔", color: "#F97316" },
-  { value: "Other", icon: "🎨", color: "#6B7280" },
+  { value: "Other",          icon: "🎨", color: "#6B7280" },
 ];
 
 function formatMoney(cents: number) {
@@ -68,33 +35,17 @@ function calculateDaysUntil(next_billing_date?: string): number | null {
   return Math.ceil((renewal.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-type EditState = {
-  name: string;
-  price: string;
-  cycle: BillingCycle;
-  status: Status;
-  category: string;
-  billingDate: string;
-  splitWith: number;
-  isSplit: boolean;
-};
-
 type Props = {
   sub: Sub;
   isVerified: boolean;
   discount?: StudentDiscount;
-  isEditing: boolean;
   isDeleting: boolean;
-  editState: EditState;
   onStartEdit: (s: Sub) => void;
-  onCancelEdit: () => void;
-  onSaveEdit: (id: number) => void;
   onToggleStatus: (s: Sub) => void;
   onConfirmDelete: (id: number) => void;
   onCancelDelete: () => void;
   onExecuteDelete: (id: number) => void;
   onDiscountClick: (d: StudentDiscount) => void;
-  onEditChange: (patch: Partial<EditState>) => void;
   layoutCompact?: boolean;
 };
 
@@ -102,18 +53,13 @@ export default function SubscriptionCard({
   sub: s,
   isVerified,
   discount,
-  isEditing,
   isDeleting,
-  editState,
   onStartEdit,
-  onCancelEdit,
-  onSaveEdit,
   onToggleStatus,
   onConfirmDelete,
   onCancelDelete,
   onExecuteDelete,
   onDiscountClick,
-  onEditChange,
   layoutCompact,
 }: Props) {
   const daysUntil = calculateDaysUntil(s.next_billing_date);
@@ -125,126 +71,9 @@ export default function SubscriptionCard({
       ? "bg-orange-500/10 text-orange-400 border-orange-500/20"
       : "bg-indigo-500/10 text-indigo-300 border-indigo-500/20";
 
-  if (isEditing) {
-    return (
-      <div className="md:col-span-2 xl:col-span-3 border border-violet-500/30 bg-white/5 backdrop-blur-sm rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Edit2 className="w-5 h-5 text-violet-400" />
-          Edit Subscription
-        </h3>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Service Name</label>
-            <input
-              value={editState.name}
-              onChange={(e) => onEditChange({ name: e.target.value })}
-              className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Price</label>
-            <div className="relative mt-1">
-              <span className="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">$</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={editState.price}
-                onChange={(e) => onEditChange({ price: e.target.value })}
-                className="w-full pl-10 pr-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Billing Cycle</label>
-            <select
-              value={editState.cycle}
-              onChange={(e) => onEditChange({ cycle: e.target.value as BillingCycle })}
-              className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 outline-none text-sm"
-            >
-              <option value="monthly" style={{ backgroundColor: "#1E293B" }}>Monthly</option>
-              <option value="yearly" style={{ backgroundColor: "#1E293B" }}>Yearly</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</label>
-            <select
-              value={editState.status}
-              onChange={(e) => onEditChange({ status: e.target.value as Status })}
-              className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 outline-none text-sm"
-            >
-              <option value="active" style={{ backgroundColor: "#1E293B" }}>Active</option>
-              <option value="cancelled" style={{ backgroundColor: "#1E293B" }}>Cancelled</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Category</label>
-            <select
-              value={editState.category}
-              onChange={(e) => onEditChange({ category: e.target.value })}
-              className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 outline-none text-sm"
-            >
-              {CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value} style={{ backgroundColor: "#1E293B" }}>
-                  {cat.icon} {cat.value}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Next Billing Date</label>
-            <input
-              type="date"
-              value={editState.billingDate}
-              onChange={(e) => onEditChange({ billingDate: e.target.value })}
-              className="mt-1 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-sm"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Split Cost?</label>
-            <div className="flex items-center gap-2 mt-2">
-              <input
-                type="checkbox"
-                checked={editState.isSplit}
-                onChange={(e) => onEditChange({ isSplit: e.target.checked })}
-                className="w-4 h-4 text-violet-400 rounded focus:ring-violet-500 border-white/20"
-              />
-              <span className="text-sm text-gray-300">Split with others</span>
-            </div>
-            {editState.isSplit && (
-              <input
-                type="number"
-                min="1"
-                value={editState.splitWith}
-                onChange={(e) => onEditChange({ splitWith: parseInt(e.target.value) || 1 })}
-                placeholder="Number of people"
-                className="mt-2 w-full px-3 py-2 rounded-lg border border-white/20 bg-white/5 text-white focus:border-violet-500 outline-none text-sm"
-              />
-            )}
-          </div>
-        </div>
-        <div className="flex gap-4 mt-6">
-          <button
-            onClick={() => onSaveEdit(s.id)}
-            className="flex items-center justify-center gap-2 px-8 py-4 text-base font-bold rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-700 hover:to-fuchsia-700 transition-all hover:scale-[1.02] shadow-lg hover:shadow-xl hover:shadow-violet-500/40"
-          >
-            <Save className="w-5 h-5" /> Save Changes
-          </button>
-          <button
-            onClick={onCancelEdit}
-            className="flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold rounded-xl border-2 border-white/20 text-gray-300 hover:bg-white/5 hover:border-white/30 transition-all hover:scale-[1.02]"
-          >
-            <X className="w-5 h-5" /> Cancel
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const ServiceIcon = getServiceIcon(s.name);
 
   if (layoutCompact) {
-    // Compact list view
     return (
       <div
         className={`flex items-center gap-4 p-3 rounded-xl liquid-card transition-all ${
@@ -344,7 +173,7 @@ export default function SubscriptionCard({
           </div>
         </div>
 
-        {/* Price — always same height */}
+        {/* Price */}
         <div className="mb-4" style={{ minHeight: 60 }}>
           <div className="relative inline-block">
             <div className="absolute inset-0 bg-green-400/20 blur-md rounded-lg" />
@@ -354,13 +183,12 @@ export default function SubscriptionCard({
           </div>
         </div>
 
-        {/* Renewal Info — split badge shown inline here */}
+        {/* Renewal Info */}
         <div className="flex items-center gap-2 mb-4 pb-4 border-b border-white/5">
           <Calendar className="w-3.5 h-3.5 text-white/30" />
           <span className="text-xs font-medium text-white/40">
             {s.next_billing_date ? formatDate(s.next_billing_date) : "No date set"}
           </span>
-          {/* Split badge — inline next to date */}
           {s.split_with && s.split_with > 1 && (
             <span className="text-[10px] font-semibold text-violet-300 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">
               Split ×{s.split_with} · Total: {formatMoney(s.price_cents)}
@@ -384,7 +212,7 @@ export default function SubscriptionCard({
           </div>
         )}
 
-        {/* Action Buttons — minimal icon row, reveals text on hover */}
+        {/* Action Buttons */}
         {!isDeleting && (
           <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-white/[0.05]">
             <button
