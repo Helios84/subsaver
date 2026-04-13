@@ -23,15 +23,10 @@ export default function SettingsPage() {
     useEffect(() => {
         const t = localStorage.getItem("subsaver_token");
         if (!t) { router.push("/login"); return; }
-        try {
-            const base64Url = t.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(c =>
-                '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-            ).join(''));
-            const payload = JSON.parse(jsonPayload);
-            if (payload.sub) setEmail(payload.sub);
-        } catch (e) { console.error(e); }
+        // Fetch email securely from API instead of decoding JWT manually
+        apiFetch("/users/me")
+            .then((data: any) => { if (data?.email) setEmail(data.email); })
+            .catch((e) => console.error("Failed to fetch user:", e));
         loadSettings();
     }, [router]);
 

@@ -13,7 +13,6 @@ import {
   CreditCard,
 } from "lucide-react";
 import VerificationModal from "../components/VerificationModal";
-// StudentDiscountBanner removed — incompatible API (expects discount object, not isVerified flag)
 import StudentDiscountModal from "../components/StudentDiscountModal";
 import AdvancedAnalytics from "../components/AdvancedAnalytics";
 import ServicePickerModal from "../components/ServicePickerModal";
@@ -21,49 +20,12 @@ import DashboardEmptyState from "../components/DashboardEmptyState";
 import StatsGrid from "../components/dashboard/StatsGrid";
 import SubscriptionCard from "../components/dashboard/SubscriptionCard";
 import AddSubscriptionPanel from "../components/dashboard/AddSubscriptionPanel";
-import { loadDashboardSettings, type DashboardSettings, ACCENT_THEMES, CURRENCY_SYMBOLS } from "../customize/page";
+import { loadDashboardSettings, type DashboardSettings, CURRENCY_SYMBOLS } from "../customize/page";
+import type { Sub, StudentDiscount, UserOut as User } from "../types/index";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Local aliases ────────────────────────────────────────────────────────────
 type BillingCycle = "monthly" | "yearly";
 type Status = "active" | "cancelled";
-
-type Sub = {
-  id: number;
-  name: string;
-  price_cents: number;
-  billing_cycle: BillingCycle;
-  status: Status;
-  category: string;
-  created_at: string;
-  next_billing_date?: string;
-  student_discount_applied?: boolean;
-  split_with?: number;
-};
-
-type StudentDiscount = {
-  id: number;
-  service_name: string;
-  category: string;
-  regular_price_cents: number;
-  student_price_cents: number;
-  discount_percentage: number;
-  monthly_savings_cents: number;
-  annual_savings_cents: number;
-  requirements: string;
-  verification_method: string;
-  direct_link: string;
-  availability: string;
-  notes: string | null;
-  subscription_id?: number;
-  already_applied?: boolean;
-};
-
-type User = {
-  id: number;
-  email: string;
-  is_verified: boolean;
-  edu_email?: string;
-};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -193,16 +155,24 @@ export default function DashboardPage() {
 
   async function loadStudentDiscounts(subscriptions: Sub[]) {
     try {
+      const ids = subscriptions
+        .filter((s) => s.status === "active")
+        .map((s) => s.id);
+
+      if (ids.length === 0) {
+        setStudentDiscounts(new Map());
+        return;
+      }
+
+      // Single batch request instead of N individual requests
+      const result = await apiFetch("/api/student-discounts/batch-check", {
+        method: "POST",
+        body: JSON.stringify({ subscription_ids: ids }),
+      });
+
       const discountMap = new Map<number, StudentDiscount>();
-      for (const sub of subscriptions) {
-        if (sub.status === "active") {
-          try {
-            const discount = await apiFetch(`/api/student-discounts/check/${sub.id}`, { method: "GET" });
-            if (discount) discountMap.set(sub.id, discount);
-          } catch {
-            // no discount for this sub
-          }
-        }
+      for (const [idStr, discount] of Object.entries(result)) {
+        if (discount) discountMap.set(Number(idStr), discount as StudentDiscount);
       }
       setStudentDiscounts(discountMap);
     } catch (err) {

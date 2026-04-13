@@ -1,11 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
-import os
 
-load_dotenv()
+from config import settings
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./subsaver_v2.db")
+DATABASE_URL = settings.database_url
 
 # Build engine kwargs — SQLite needs check_same_thread=False,
 # PostgreSQL works better with pool_pre_ping for Neon (which closes idle connections).

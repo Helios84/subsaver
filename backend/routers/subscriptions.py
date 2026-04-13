@@ -93,22 +93,6 @@ def update_subscription(
     return sub
 
 
-@router.patch("/subscriptions/{sub_id}/apply-discount")
-def apply_discount(
-    sub_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    sub = db.query(Subscription).filter(
-        Subscription.id == sub_id, Subscription.user_id == current_user.id
-    ).first()
-    if not sub:
-        raise HTTPException(status_code=404, detail="Subscription not found")
-    sub.student_discount_applied = True
-    sub.discount_applied_date = datetime.utcnow()
-    db.commit()
-    db.refresh(sub)
-    return sub
 
 
 @router.delete("/subscriptions/{sub_id}")

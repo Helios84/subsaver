@@ -2,6 +2,7 @@
 Pydantic schemas for authentication endpoints.
 """
 from typing import Optional
+from datetime import datetime
 from pydantic import BaseModel, EmailStr, field_validator
 
 
@@ -110,7 +111,7 @@ class UserOut(BaseModel):
     email: EmailStr
     is_verified: bool
     edu_email: Optional[str] = None
-    created_at: object  # datetime
+    created_at: datetime
 
     class Config:
         from_attributes = True

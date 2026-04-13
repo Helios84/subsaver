@@ -1,12 +1,72 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from datetime import datetime
+from pydantic import BaseModel
 
 from dependencies import get_db, get_current_user
 from models.db import User, Subscription
 
 router = APIRouter(prefix="/api/student-discounts", tags=["student-discounts"])
+
+
+class BatchCheckRequest(BaseModel):
+    subscription_ids: List[int]
+
+
+@router.post("/batch-check")
+async def batch_check_discounts(
+    payload: BatchCheckRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Check student discounts for multiple subscriptions in one request.
+    Returns a dict mapping subscription_id (str) → discount or null.
+    Eliminates N+1 HTTP requests from the dashboard.
+    """
+    try:
+        from models.student_discount import StudentDiscount
+
+        # Verify all subscriptions belong to this user
+        subs = db.query(Subscription).filter(
+            Subscription.id.in_(payload.subscription_ids),
+            Subscription.user_id == current_user.id,
+        ).all()
+
+        sub_map = {s.id: s for s in subs}
+
+        # Load all active discounts once
+        all_discounts = db.query(StudentDiscount).filter(
+            StudentDiscount.is_active == True
+        ).all()
+
+        result: dict = {}
+        for sub_id in payload.subscription_ids:
+            sub = sub_map.get(sub_id)
+            if not sub:
+                result[str(sub_id)] = None
+                continue
+
+            matched = None
+            for discount in all_discounts:
+                if (discount.service_name.lower() in sub.name.lower()
+                        or sub.name.lower() in discount.service_name.lower()):
+                    matched = discount
+                    break
+
+            if matched:
+                d = matched.to_dict()
+                d["subscription_id"] = sub_id
+                d["already_applied"] = sub.student_discount_applied
+                result[str(sub_id)] = d
+            else:
+                result[str(sub_id)] = None
+
+        return result
+    except Exception as e:
+        # Return empty map on error so UI still loads
+        return {str(sid): None for sid in payload.subscription_ids}
 
 
 @router.get("")

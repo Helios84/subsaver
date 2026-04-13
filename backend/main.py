@@ -3,6 +3,7 @@ SubSaver API — main entry point.
 Models, schemas, and routers are in their own modules.
 """
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,17 +20,31 @@ logger = logging.getLogger(__name__)
 # ── Rate Limiter ──────────────────────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address)
 
-# ── Database: create all tables on startup ────────────────────────────────────
-from database import engine, Base
+# ── Database: import engine/session + register all ORM models with Base ──────
+from database import engine, Base, SessionLocal
 import models  # noqa: F401 — registers all ORM models with Base
+# NOTE: Schema is managed by Alembic — run `alembic upgrade head` to apply migrations.
 
-Base.metadata.create_all(bind=engine)
+# ── Scheduler ─────────────────────────────────────────────────────────────────
+from services.scheduler import reminder_scheduler
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    reminder_scheduler.set_db_session_maker(SessionLocal)
+    reminder_scheduler.start()
+    logger.info("✅ Reminder scheduler started")
+    yield
+    reminder_scheduler.stop()
+    logger.info("Reminder scheduler stopped")
+
 
 # ── FastAPI App ───────────────────────────────────────────────────────────────
 app = FastAPI(
     title="SubSaver API",
     description="Subscription management platform for students",
     version="2.0.0",
+    lifespan=lifespan,
 )
 
 app.state.limiter = limiter
@@ -55,23 +70,6 @@ app.include_router(subscriptions_router)
 app.include_router(reminder_router)
 app.include_router(student_discounts_router)
 app.include_router(analytics_router)
-
-# ── Scheduler ────────────────────────────────────────────────────────────────
-from database import SessionLocal
-from services.scheduler import reminder_scheduler
-
-
-@app.on_event("startup")
-def startup_event():
-    reminder_scheduler.set_db_session_maker(SessionLocal)
-    reminder_scheduler.start()
-    logger.info("✅ Reminder scheduler started")
-
-
-@app.on_event("shutdown")
-def shutdown_event():
-    reminder_scheduler.stop()
-    logger.info("Reminder scheduler stopped")
 
 
 # ── Health ────────────────────────────────────────────────────────────────────

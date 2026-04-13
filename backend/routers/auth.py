@@ -4,6 +4,8 @@ import logging
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -20,9 +22,11 @@ from core.security import hash_password, verify_password, needs_rehash, create_a
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["auth"])
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/auth/register")
+@limiter.limit("10/minute")
 def register(request: Request, payload: RegisterRequest, db: Session = Depends(get_db)):
     try:
         email = payload.email.strip().lower()
@@ -40,6 +44,7 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
 
 
 @router.post("/auth/login", response_model=TokenResponse)
+@limiter.limit("5/minute")
 def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
@@ -64,6 +69,7 @@ def token(request: Request, form: OAuth2PasswordRequestForm = Depends(), db: Ses
 
 
 @router.post("/auth/forgot-password")
+@limiter.limit("3/minute")
 def forgot_password(request: Request, payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
@@ -162,7 +168,9 @@ def resend_verification(request: Request, payload: ResendVerificationRequest, db
 
 
 @router.post("/auth/verify-edu")
+@limiter.limit("5/minute")
 async def request_verification_code(
+    request: Request,
     req: VerificationRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
