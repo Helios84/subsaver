@@ -6,8 +6,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timedelta
 
-# Import dependencies from shared module
 from dependencies import get_current_user, get_db
+from models.db import Subscription
 
 
 router = APIRouter(prefix="/reminders", tags=["reminders"])
@@ -80,7 +80,6 @@ def get_upcoming_renewals(
     db: Session = Depends(get_db)
 ):
     """Get subscriptions with upcoming renewals."""
-    from main import Subscription
     
     subscriptions = (
         db.query(Subscription)

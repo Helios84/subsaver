@@ -88,7 +88,14 @@ export default function LoginPage() {
       const data = await apiFetch("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
       localStorage.setItem("subsaver_token", data.access_token);
       router.push("/dashboard");
-    } catch (err: any) { setMsg(err?.message ?? "Network error"); }
+    } catch (err: unknown) {
+      const message = (err as Error)?.message ?? "Network error";
+      if (message === "email_not_confirmed") {
+        setMsg(`__unconfirmed__${email}`);
+      } else {
+        setMsg(message);
+      }
+    }
     finally { setLoading(false); }
   }
 
@@ -293,11 +300,26 @@ export default function LoginPage() {
                 </>
               )}
 
-              {/* Error message */}
-              {msg && (
+              {/* Messages */}
+              {msg && !msg.startsWith("__unconfirmed__") && (
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 14px", borderRadius: "12px", background: msg.startsWith("✅") ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)", border: msg.startsWith("✅") ? "1px solid rgba(16,185,129,0.2)" : "1px solid rgba(239,68,68,0.2)" }}>
                   <Sparkles style={{ width: 15, height: 15, color: msg.startsWith("✅") ? "#34D399" : "#F87171", flexShrink: 0 }} />
                   <p style={{ fontSize: "13px", color: msg.startsWith("✅") ? "#34D399" : "#F87171", fontWeight: 500 }}>{msg}</p>
+                </div>
+              )}
+              {/* Email not confirmed banner */}
+              {msg.startsWith("__unconfirmed__") && (
+                <div style={{ padding: "14px 16px", borderRadius: "12px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)" }}>
+                  <p style={{ fontSize: "13px", color: "#FCD34D", fontWeight: 600, marginBottom: 8 }}>Email not confirmed</p>
+                  <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.45)", marginBottom: 10, lineHeight: 1.6 }}>
+                    Check your inbox for the confirmation code we sent when you registered.
+                  </p>
+                  <a
+                    href={`/verify-email?email=${encodeURIComponent(msg.replace("__unconfirmed__", ""))}`}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#FCD34D", textDecoration: "none", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.3)", padding: "7px 14px", borderRadius: 8 }}
+                  >
+                    Confirm Email →
+                  </a>
                 </div>
               )}
 

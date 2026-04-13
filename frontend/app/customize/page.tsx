@@ -23,6 +23,7 @@ import { apiFetch } from "../lib/api";
 import StatsGrid from "../components/dashboard/StatsGrid";
 import AdvancedAnalytics from "../components/AdvancedAnalytics";
 import DraggableAnalyticsGrid from "../components/DraggableAnalyticsGrid";
+import { getExchangeRates, formatMoney as fxFormat } from "../lib/currency";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type WidgetId =
@@ -181,7 +182,8 @@ type Sub = {
   next_billing_date?: string; student_discount_applied?: boolean; split_with?: number;
 };
 
-function formatMoney(cents: number, currency: Currency = "USD") {
+function formatMoney(cents: number, currency: Currency = "USD", rates?: Record<string, number>) {
+  if (rates) return fxFormat(cents, currency, rates);
   return `${CURRENCY_SYMBOLS[currency]}${(cents / 100).toFixed(2)}`;
 }
 
@@ -301,9 +303,11 @@ function RealDashboardPreview({ settings, subs, user, onWidgetReorder }: {
 }) {
   const [trendsData, setTrendsData] = useState<any>(null);
   const [insights, setInsights] = useState<any[]>([]);
+  const [fxRates, setFxRates] = useState<Record<string, number>>({ USD: 1, EUR: 0.92, GBP: 0.79 });
   useEffect(() => {
     apiFetch('/api/analytics/trends').then(setTrendsData).catch(() => {});
     apiFetch('/api/analytics/insights').then(setInsights).catch(() => {});
+    getExchangeRates().then(setFxRates).catch(() => {});
   }, []);
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.65);
@@ -346,11 +350,11 @@ function RealDashboardPreview({ settings, subs, user, onWidgetReorder }: {
   }).slice(0, 4);
 
   const statCardValues: Record<StatCardId, string> = {
-    monthly_spend:     formatMoney(sumMonthly, currency),
+    monthly_spend:     formatMoney(sumMonthly, currency, fxRates),
     active_count:      String(activeSubs.length),
-    yearly_projection: formatMoney(sumMonthly * 12, currency),
-    avg_per_sub:       formatMoney(avgPerSub, currency),
-    total_savings:     formatMoney(activeSubs.filter(s => s.student_discount_applied).reduce((a) => a + 500, 0), currency),
+    yearly_projection: formatMoney(sumMonthly * 12, currency, fxRates),
+    avg_per_sub:       formatMoney(avgPerSub, currency, fxRates),
+    total_savings:     formatMoney(activeSubs.filter(s => s.student_discount_applied).reduce((a) => a + 500, 0), currency, fxRates),
     cancelled_count:   String(subs.filter(s => s.status === "cancelled").length),
     most_expensive:    activeSubs.length > 0 ? `${activeSubs.sort((a,b) => b.price_cents - a.price_cents)[0].name.slice(0,8)}…` : "N/A",
     next_renewal_days: upcomingRenewals.length > 0 ? `${upcomingRenewals[0].daysUntil}d` : "N/A",

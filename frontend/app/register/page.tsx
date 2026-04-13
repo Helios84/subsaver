@@ -68,9 +68,13 @@ export default function RegisterPage() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setMsg(""); setLoading(true);
     try {
-      await apiFetch("/auth/register", { method: "POST", body: JSON.stringify({ email, password }) });
-      router.push("/login");
-    } catch (err: any) { setMsg(err?.message ?? "Network error. Please try again."); }
+      const res = await apiFetch("/auth/register", { method: "POST", body: JSON.stringify({ email, password }) });
+      // If SMTP is disabled, backend returns dev_code — pass it to the next page via sessionStorage
+      if (res.dev_code) {
+        sessionStorage.setItem("register_dev_code", res.dev_code);
+      }
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+    } catch (err: unknown) { setMsg((err as Error)?.message ?? "Network error. Please try again."); }
     finally { setLoading(false); }
   }
 

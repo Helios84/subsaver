@@ -106,10 +106,24 @@ class ResendVerificationRequest(BaseModel):
     email: EmailStr
 
 
+class ConfirmEmailRequest(BaseModel):
+    """Schema for POST /auth/confirm-email — verifying registration code."""
+    email: EmailStr
+    code: str
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, v: str) -> str:
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError("Confirmation code must be exactly 6 digits")
+        return v
+
+
 class UserOut(BaseModel):
     id: int
     email: EmailStr
     is_verified: bool
+    email_confirmed: bool
     edu_email: Optional[str] = None
     created_at: datetime
 

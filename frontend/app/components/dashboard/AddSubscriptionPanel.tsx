@@ -164,6 +164,8 @@ export default function AddSubscriptionPanel({
                 value={formState.price}
                 onChange={(e) => onFormChange({ price: e.target.value })}
                 type="number" min="0" step="0.01"
+                placeholder="0.00"
+                required
                 style={{ ...inputStyle, paddingLeft: "28px" }}
               />
             </div>

@@ -49,6 +49,7 @@ export interface UserOut {
   id: number;
   email: string;
   is_verified: boolean;
+  email_confirmed: boolean;
   edu_email?: string | null;
   created_at: string;
 }

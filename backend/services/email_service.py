@@ -4,13 +4,11 @@ Graceful degradation: if SMTP is not configured, the service logs warnings
 but the server starts normally. No crashes on missing credentials.
 """
 
-import smtplib
 import os
-import secrets
+import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
-from typing import Optional
 from jinja2 import Template
 
 
@@ -18,18 +16,23 @@ class EmailService:
     """Service for sending emails via SMTP with graceful degradation."""
 
     def __init__(self):
-        self.smtp_host = os.getenv("SMTP_HOST", "")
-        self.smtp_port = int(os.getenv("SMTP_PORT", "2525"))
-        self.smtp_user = os.getenv("SMTP_USER", "")
-        self.smtp_password = os.getenv("SMTP_PASSWORD", "")
-        self.from_email = os.getenv("SMTP_FROM_EMAIL", "noreply@subsaver.example")
-        self.from_name = os.getenv("SMTP_FROM_NAME", "SubSaver")
+        # Import settings here to avoid circular import issues at module load time
+        from config import settings
+
+        self.smtp_host = settings.smtp_host
+        self.smtp_port = settings.smtp_port
+        self.smtp_user = settings.smtp_user
+        self.smtp_password = settings.smtp_password
+        self.from_email = settings.smtp_from_email
+        self.from_name = settings.smtp_from_name
 
         # Graceful degradation: don't crash if SMTP is not configured
-        self.enabled = bool(self.smtp_host and self.smtp_user and self.smtp_password)
+        self.enabled = settings.smtp_enabled()
         if not self.enabled:
             print("[WARNING] Email service: SMTP not configured. Emails will NOT be sent.")
             print("          Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD in .env to enable.")
+        else:
+            print(f"[OK] Email service: SMTP configured via {self.smtp_host}:{self.smtp_port}")
 
     def _send_email(self, to_email: str, subject: str, html_content: str) -> bool:
         """
@@ -49,8 +52,10 @@ class EmailService:
             html_part = MIMEText(html_content, "html")
             msg.attach(html_part)
 
-            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10) as server:
+                server.ehlo()
                 server.starttls()
+                server.ehlo()
                 server.login(self.smtp_user, self.smtp_password)
                 server.send_message(msg)
 
@@ -58,9 +63,12 @@ class EmailService:
             return True
 
         except Exception as e:
+            import traceback
             # Safely log the error without triggering UnicodeEncodeError on Windows console
             error_msg = str(e).encode('ascii', 'ignore').decode('ascii')
+            tb = traceback.format_exc().encode('ascii', 'ignore').decode('ascii')
             print(f"[ERROR] Failed to send email to {to_email}: {error_msg}")
+            print(f"[ERROR] Traceback: {tb}")
             return False
 
     # ─── Public methods ───────────────────────────────────────────────────────
@@ -118,6 +126,50 @@ class EmailService:
         """
         return self._send_email(to_email, subject, html_content)
 
+    def send_email_confirmation(self, to_email: str, code: str) -> bool:
+        """
+        Send a 6-digit email confirmation code after registration.
+        Different from send_verification_code (which is for .edu student status).
+        """
+        subject = "SubSaver - Confirm Your Email"
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="margin:0;padding:0;background:#080B14;font-family:Inter,-apple-system,sans-serif;color:#fff;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#080B14;padding:40px 20px;">
+            <tr><td align="center">
+              <table width="520" cellpadding="0" cellspacing="0"
+                style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:40px;">
+                <tr><td>
+                  <p style="margin:0 0 32px;font-size:20px;font-weight:700;color:#fff;">
+                    Sub<span style="color:#A855F7;">Saver</span>
+                  </p>
+                  <h1 style="margin:0 0 12px;font-size:24px;font-weight:800;color:#fff;">
+                    Confirm your email address
+                  </h1>
+                  <p style="margin:0 0 28px;font-size:15px;color:rgba(255,255,255,0.5);line-height:1.6;">
+                    Thanks for signing up! Enter the code below to activate your account.
+                    This code expires in <strong style="color:#fff;">15 minutes</strong>.
+                  </p>
+                  <div style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);
+                    border-radius:12px;padding:24px;text-align:center;margin-bottom:28px;">
+                    <p style="margin:0;font-size:42px;font-weight:900;letter-spacing:12px;
+                      color:#A855F7;font-family:monospace;">{code}</p>
+                  </div>
+                  <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.3);line-height:1.6;">
+                    If you didn't create a SubSaver account, you can safely ignore this email.
+                  </p>
+                </td></tr>
+              </table>
+              <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.2);">
+                &copy; 2026 SubSaver. The #1 savings app for students.
+              </p>
+            </td></tr>
+          </table>
+        </body>
+        </html>
+        """
+        return self._send_email(to_email, subject, html_content)
 
     def send_password_reset_code(self, to_email: str, code: str) -> bool:
         """

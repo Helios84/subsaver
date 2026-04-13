@@ -83,10 +83,17 @@ def update_subscription(
     if payload.name is not None:         sub.name = payload.name.strip()
     if payload.price_cents is not None:  sub.price_cents = payload.price_cents
     if payload.billing_cycle is not None: sub.billing_cycle = payload.billing_cycle
-    if payload.status is not None:       sub.status = payload.status
     if payload.category is not None:     sub.category = payload.category if payload.category in CATEGORIES else "Other"
     if payload.next_billing_date is not None: sub.next_billing_date = payload.next_billing_date
     if payload.split_with is not None:   sub.split_with = payload.split_with
+
+    # Track cancellation timestamp for accurate analytics
+    if payload.status is not None and payload.status != sub.status:
+        sub.status = payload.status
+        if payload.status == "cancelled":
+            sub.cancelled_at = datetime.utcnow()
+        elif payload.status == "active":
+            sub.cancelled_at = None  # Reactivated
 
     db.commit()
     db.refresh(sub)

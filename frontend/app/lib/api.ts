@@ -1,5 +1,3 @@
-"use client";
-
 const API_BASE = "/backend_api";
 
 type ApiFetchOptions = RequestInit & { skipAuth?: boolean };
@@ -13,7 +11,7 @@ export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
   }
 
   if (!opts.skipAuth) {
-    const token = localStorage.getItem("subsaver_token");
+    const token = typeof window !== "undefined" ? localStorage.getItem("subsaver_token") : null;
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 

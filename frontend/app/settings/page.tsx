@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "../lib/api";
 import { useToast } from "../components/ToastProvider";
 import {
@@ -70,13 +70,22 @@ function SectionIcon({ children, color, bg }: { children: React.ReactNode; color
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-export default function SettingsPage() {
+// ─── Inner page (needs useSearchParams → must be inside Suspense) ─────────────
+function SettingsPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [user, setUser]     = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Read ?tab= from URL on mount
+  useEffect(() => {
+    const urlTab = searchParams.get("tab") as Tab | null;
+    if (urlTab && TABS.some((t) => t.id === urlTab)) {
+      setActiveTab(urlTab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const t = localStorage.getItem("subsaver_token");
@@ -191,6 +200,15 @@ export default function SettingsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+// ─── Page export (wrapped in Suspense for useSearchParams) ────────────────────
+export default function SettingsPage() {
+  return (
+    <Suspense>
+      <SettingsPageInner />
+    </Suspense>
   );
 }
 

@@ -4,11 +4,7 @@ from datetime import datetime, timedelta
 from typing import List, Tuple
 from sqlalchemy.orm import Session
 
-# Import models from main.py
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+from models.db import User, Subscription
 from services.email_service import email_service
 
 
@@ -21,8 +17,6 @@ class ReminderService:
         
         Returns list of tuples: (subscription, user, days_until_renewal)
         """
-        from main import Subscription, User
-        
         now = datetime.utcnow()
         subscriptions_to_remind = []
         
@@ -52,10 +46,33 @@ class ReminderService:
     def send_reminders(self, db: Session) -> dict:
         """
         Check for subscriptions needing reminders and send emails.
+        Also resets reminder_sent flag for subscriptions whose billing date has passed.
         
         Returns:
             dict with 'sent', 'failed', and 'total' counts
         """
+        now = datetime.utcnow()
+
+        # ── Auto-reset reminder_sent for subscriptions whose billing date has passed ──
+        overdue_subs = (
+            db.query(Subscription)
+            .filter(
+                Subscription.status == "active",
+                Subscription.reminder_sent == True,
+                Subscription.next_billing_date.isnot(None),
+                Subscription.next_billing_date < now,
+            )
+            .all()
+        )
+        for sub in overdue_subs:
+            sub.reminder_sent = False
+            sub.last_reminder_date = None
+            sub.next_billing_date = self.calculate_next_billing_date(
+                sub.next_billing_date, sub.billing_cycle
+            )
+        if overdue_subs:
+            db.commit()
+
         subscriptions_to_remind = self.get_subscriptions_needing_reminders(db)
         
         sent_count = 0

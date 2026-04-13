@@ -16,6 +16,7 @@ from schemas.auth import (
     ForgotPasswordRequest, VerifyResetCodeRequest, ResetPasswordRequest,
     VerificationRequest, VerificationConfirmRequest,
     VerifyRegistrationRequest, ResendVerificationRequest, UserOut,
+    ConfirmEmailRequest,
 )
 from core.security import hash_password, verify_password, needs_rehash, create_access_token
 
@@ -30,17 +31,105 @@ limiter = Limiter(key_func=get_remote_address)
 def register(request: Request, payload: RegisterRequest, db: Session = Depends(get_db)):
     try:
         email = payload.email.strip().lower()
-        if db.query(User).filter(User.email == email).first():
-            raise HTTPException(status_code=400, detail="User already exists")
-        user = User(email=email, password_hash=hash_password(payload.password))
+        existing = db.query(User).filter(User.email == email).first()
+
+        if existing:
+            # If already confirmed → reject
+            if existing.email_confirmed:
+                raise HTTPException(status_code=400, detail="User already exists")
+            # If unconfirmed but code is still valid → tell them to check email
+            if (
+                existing.verification_code
+                and existing.verification_code_expires
+                and datetime.utcnow() < existing.verification_code_expires
+            ):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Account already registered. Check your email for the confirmation code."
+                )
+            # Unconfirmed + expired code → allow re-registration (update existing row)
+            code = str(secrets.randbelow(900000) + 100000)
+            existing.password_hash = hash_password(payload.password)
+            existing.verification_code = code
+            existing.verification_code_expires = datetime.utcnow() + timedelta(minutes=15)
+            db.commit()
+            from services.email_service import email_service
+            sent = email_service.send_email_confirmation(email, code)
+            if not sent:
+                logger.warning(f"SMTP disabled. Re-registration code for {email}: {code}")
+                return {"message": "registered", "dev_code": code}
+            return {"message": "registered"}
+
+        # New user
+        code = str(secrets.randbelow(900000) + 100000)
+        user = User(
+            email=email,
+            password_hash=hash_password(payload.password),
+            email_confirmed=False,
+            verification_code=code,
+            verification_code_expires=datetime.utcnow() + timedelta(minutes=15),
+        )
         db.add(user)
         db.commit()
+        from services.email_service import email_service
+        sent = email_service.send_email_confirmation(email, code)
+        if not sent:
+            logger.warning(f"SMTP disabled. Email confirmation code for {email}: {code}")
+            return {"message": "registered", "dev_code": code}
         return {"message": "registered"}
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Registration error: {e}")
+        import traceback as _tb
+        logger.error(f"Registration error: {e}\n{_tb.format_exc()}")
         raise HTTPException(status_code=500, detail="Registration failed")
+
+
+@router.post("/auth/confirm-email")
+@limiter.limit("10/minute")
+def confirm_email(request: Request, payload: ConfirmEmailRequest, db: Session = Depends(get_db)):
+    """Verify the 6-digit code sent after registration to confirm the user's email."""
+    email = payload.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.email_confirmed:
+        return {"message": "Already confirmed"}
+    if not user.verification_code or not user.verification_code_expires:
+        raise HTTPException(status_code=400, detail="No confirmation code found. Please register again.")
+    if datetime.utcnow() > user.verification_code_expires:
+        user.verification_code = None
+        user.verification_code_expires = None
+        db.commit()
+        raise HTTPException(status_code=400, detail="Confirmation code expired. Please request a new one.")
+    if not secrets.compare_digest(user.verification_code, payload.code):
+        raise HTTPException(status_code=400, detail="Invalid confirmation code")
+    user.email_confirmed = True
+    user.verification_code = None
+    user.verification_code_expires = None
+    db.commit()
+    return {"message": "Email confirmed successfully! You can now log in."}
+
+
+@router.post("/auth/resend-confirmation")
+@limiter.limit("3/minute")
+def resend_confirmation(request: Request, payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Resend email confirmation code for unconfirmed accounts."""
+    email = payload.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        return {"message": "If that email exists, a code has been sent."}
+    if user.email_confirmed:
+        return {"message": "Already confirmed"}
+    code = str(secrets.randbelow(900000) + 100000)
+    user.verification_code = code
+    user.verification_code_expires = datetime.utcnow() + timedelta(minutes=15)
+    db.commit()
+    from services.email_service import email_service
+    sent = email_service.send_email_confirmation(email, code)
+    if not sent:
+        return {"message": "Code sent", "dev_code": code}
+    return {"message": "Confirmation code resent to your email"}
 
 
 @router.post("/auth/login", response_model=TokenResponse)
@@ -50,6 +139,11 @@ def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not user.email_confirmed:
+        raise HTTPException(
+            status_code=403,
+            detail="email_not_confirmed",
+        )
     # Transparent bcrypt upgrade
     if needs_rehash(user.password_hash):
         user.password_hash = hash_password(payload.password)

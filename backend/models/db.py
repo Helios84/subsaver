@@ -31,6 +31,9 @@ class User(Base):
     reset_code = Column(String, nullable=True)
     reset_expires = Column(DateTime, nullable=True)
 
+    # Email confirmation (required at registration)
+    email_confirmed = Column(Boolean, default=False, nullable=False)
+
     subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -54,5 +57,6 @@ class Subscription(Base):
     student_discount_applied = Column(Boolean, default=False)
     discount_applied_date = Column(DateTime, nullable=True)
     split_with = Column(Integer, default=1)
+    cancelled_at = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="subscriptions")

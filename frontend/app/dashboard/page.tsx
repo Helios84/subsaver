@@ -19,6 +19,8 @@ import AddSubscriptionPanel from "../components/dashboard/AddSubscriptionPanel";
 import EditSubscriptionModal, { type EditState } from "../components/EditSubscriptionModal";
 import { loadDashboardSettings, type DashboardSettings, CURRENCY_SYMBOLS } from "../customize/page";
 import { useToast } from "../components/ToastProvider";
+import OnboardingModal, { shouldShowOnboarding } from "../components/OnboardingModal";
+import { getExchangeRates, formatMoney as fxFormat, type Currency } from "../lib/currency";
 import type { Sub, StudentDiscount, UserOut as User } from "../types/index";
 
 // ─── Local aliases ────────────────────────────────────────────────────────────
@@ -38,8 +40,8 @@ const CATEGORIES = [
   { value: "Other",         icon: "🎨", color: "#6B7280" },
 ];
 
-function formatMoney(cents: number, symbol = "$") {
-  return `${symbol}${(cents / 100).toFixed(2)}`;
+function formatMoney(cents: number, currency: import("../lib/currency").Currency, rates: Record<string, number>) {
+  return fxFormat(cents, currency, rates);
 }
 
 function calculateDaysUntilRenewal(next_billing_date?: string): number | null {
@@ -70,6 +72,12 @@ export default function DashboardPage() {
 
   // ── Dashboard settings (from /customize)
   const [dashSettings, setDashSettings] = useState<DashboardSettings>(loadDashboardSettings);
+
+  // ── Real FX rates for currency conversion
+  const [fxRates, setFxRates] = useState<Record<string, number>>({ USD: 1, EUR: 0.92, GBP: 0.79 });
+
+  // ── Onboarding
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     setDashSettings(loadDashboardSettings());
@@ -139,6 +147,10 @@ export default function DashboardPage() {
     if (!t) router.push("/login");
     fetchSubs();
     fetchUser();
+    // Load real FX rates
+    getExchangeRates().then(setFxRates).catch(console.warn);
+    // Show onboarding for first-time visitors
+    if (shouldShowOnboarding()) setShowOnboarding(true);
   }, [router]);
 
   async function fetchUser() {
@@ -388,12 +400,12 @@ export default function DashboardPage() {
   }
 
   // ── Analytics computations
+  const currency = (dashSettings.currency ?? "USD") as Currency;
   const {
     totalMonthly, totalActive, totalYearly, avgPerSub,
     upcomingRenewals, widgets: analyticsWidgets,
     totalSavings, cancelledCount, mostExpensive, nextRenewalDays,
   } = useMemo(() => {
-    const sym = CURRENCY_SYMBOLS[dashSettings.currency ?? "USD"] ?? "$";
     const activeSubs = subs.filter((s) => s.status === "active");
     const sumMonthly = activeSubs.reduce((acc, s) => {
       return acc + (s.billing_cycle === "monthly" ? s.price_cents : Math.round(s.price_cents / 12));
@@ -416,18 +428,18 @@ export default function DashboardPage() {
     const nextDays = upcoming[0]?.daysUntil ?? null;
 
     return {
-      totalMonthly: formatMoney(sumMonthly, sym),
-      totalYearly:  formatMoney(sumMonthly * 12, sym),
+      totalMonthly: formatMoney(sumMonthly, currency, fxRates),
+      totalYearly:  formatMoney(sumMonthly * 12, currency, fxRates),
       totalActive:  activeSubs.length,
-      avgPerSub:    formatMoney(avgPerSubscription, sym),
+      avgPerSub:    formatMoney(avgPerSubscription, currency, fxRates),
       upcomingRenewals: upcoming,
       widgets: w,
-      totalSavings:    formatMoney(savings, sym),
+      totalSavings:    formatMoney(savings, currency, fxRates),
       cancelledCount:  String(cancelled),
       mostExpensive:   topSub ? `${topSub.name.length > 10 ? topSub.name.slice(0,9)+"…" : topSub.name}` : "N/A",
       nextRenewalDays: nextDays !== null ? `${nextDays}d` : "N/A",
     };
-  }, [subs, dashSettings]);
+  }, [subs, dashSettings, fxRates, currency]);
 
   const layoutCompact = dashSettings.density === "compact" || dashSettings.layout === "compact";
 
@@ -449,6 +461,17 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen text-white pb-20 relative overflow-hidden" style={{ background: "#080B14" }}>
+      {/* Onboarding Modal */}
+      {showOnboarding && (
+        <OnboardingModal
+          onClose={() => setShowOnboarding(false)}
+          onAddSubscription={() => {
+            // Scroll to add subscription panel
+            document.getElementById("add-subscription-panel")?.scrollIntoView({ behavior: "smooth" });
+          }}
+        />
+      )}
+
       {/* Aurora Background */}
       <div className="aurora-container">
         <div className="aurora-blob animate-aurora-1" style={{ width: "700px", height: "700px", background: "radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%)", top: "-5%", right: "-5%" }} />
@@ -575,7 +598,7 @@ export default function DashboardPage() {
                     <div className="relative flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.35), rgba(217,70,239,0.25))", border: "1px solid rgba(124,58,237,0.4)", boxShadow: "0 0 16px rgba(124,58,237,0.25)" }}>
-                          <CreditCard className="w-4.5 h-4.5 text-violet-300" />
+                        <CreditCard className="w-[18px] h-[18px] text-violet-300" />
                         </div>
                         <div>
                           <h2 className="text-lg font-bold text-white" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>Your Subscriptions</h2>
@@ -744,17 +767,19 @@ export default function DashboardPage() {
               )}
 
               {/* Add Subscription Panel */}
-              <AddSubscriptionPanel
-                msg=""
-                onSubmit={createSub}
-                onOpenPicker={() => setShowServicePicker(true)}
-                suggestions={suggestions}
-                showSuggestions={showSuggestions}
-                onNameChange={handleNameChange}
-                onSuggestionSelect={handleServiceSelect}
-                formState={formState}
-                onFormChange={(patch) => setFormState((prev) => ({ ...prev, ...patch }))}
-              />
+              <div id="add-subscription-panel">
+                <AddSubscriptionPanel
+                  msg=""
+                  onSubmit={createSub}
+                  onOpenPicker={() => setShowServicePicker(true)}
+                  suggestions={suggestions}
+                  showSuggestions={showSuggestions}
+                  onNameChange={handleNameChange}
+                  onSuggestionSelect={handleServiceSelect}
+                  formState={formState}
+                  onFormChange={(patch) => setFormState((prev) => ({ ...prev, ...patch }))}
+                />
+              </div>
             </div>
           </div>
         )}

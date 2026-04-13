@@ -18,75 +18,48 @@ async def get_spending_trends(
     db: Session = Depends(get_db)
 ):
     """
-    Get monthly spending trends for the last 6 months and forecast for next month.
-    Also returns category breakdown.
+    Get monthly spending trends for the last 6 months.
+    Uses cancelled_at to accurately include subscriptions only during their active period.
     """
     subs = db.query(Subscription).filter(
         Subscription.user_id == current_user.id,
-        # We include cancelled ones if they were active during the period, 
-        # but for simplicity in this version we might stick to active or check created_at
     ).all()
 
     today = datetime.utcnow()
-    
-    # 1. Monthly Trends (Last 6 Months)
+    first_of_this_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    # 1. Monthly Trends (Last 6 Months) — accurate with cancelled_at
     trends = []
-    # Loop back 6 months
     for i in range(5, -1, -1):
-        month_date = today - timedelta(days=30 * i) # Approx
-        # Better month calculation:
-        year = today.year
-        month = today.month - i
-        while month <= 0:
-            month += 12
-            year -= 1
-        
-        # Start and end of that month
+        # Correctly subtract months by working from first-of-month and going back
+        month_offset = first_of_this_month.month - i
+        year = first_of_this_month.year + (month_offset - 1) // 12
+        month = ((month_offset - 1) % 12) + 1
+
         start_of_month = datetime(year, month, 1)
-        if month == 12:
-            end_of_month = datetime(year + 1, 1, 1)
-        else:
-            end_of_month = datetime(year, month + 1, 1)
+        end_of_month = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
 
         monthly_total_cents = 0
-        
+
         for sub in subs:
-            # Check if sub existed
+            # Sub must have been created before this month ended
             if sub.created_at >= end_of_month:
                 continue
-            
-            # If cancelled, check if it was cancelled before this month
-            # We don't track cancelled_at, so we assume cancelled status implies "not active now"
-            # For accurate trends we'd need history.
-            # Fallback: Use current Active subs to show "Runway" or "Projected" if history is missing.
-            # OR: Mock historical data based on creation date.
-            
-            isActiveInMonth = True
-            if sub.status == "cancelled":
-                # Rough heuristic: if it's cancelled, assume it stopped "recently"?
-                # Actually, simply counting active ones is safer for "Current Trends"
-                # But request asks for "Spending Trends" -> "Unusual Spikes".
-                # Let's count ALL subs that were created before this month.
-                # If cancelled, we don't know when. Let's include them if created_at < start_of_month? 
-                # No, that's messy without cancelled_at.
-                # Let's only count ACTIVE subscriptions for "Projected Trend" 
-                # OR include cancelled ones as if they were active until now?
-                pass
 
-            # Simplified Model: "Projected Cost Breakdown"
-            # Calculate what the cost WOULD BE if all *currently active* subs were active back then.
-            if sub.status == "active" and sub.created_at < end_of_month:
-                if sub.billing_cycle == "monthly":
+            # Sub must NOT have been cancelled before this month started
+            if sub.cancelled_at is not None and sub.cancelled_at < start_of_month:
+                continue
+
+            # Sub is considered active in this month
+            if sub.billing_cycle == "monthly":
+                monthly_total_cents += sub.price_cents
+            else:
+                # Yearly: only count if billing date falls in this month
+                if sub.next_billing_date and sub.next_billing_date.month == month:
                     monthly_total_cents += sub.price_cents
                 else:
-                    # Yearly: check if renewal hits this month?
-                    # If start_of_month <= renewal_date < end_of_month
-                    # We can project renewal dates back/forward.
-                    # next_billing_date is future.
-                    # renewal_month = next_billing_date.month
-                    # If this month == renewal_month, add full price.
-                    if sub.next_billing_date and sub.next_billing_date.month == month:
-                        monthly_total_cents += sub.price_cents
+                    # Amortize yearly cost as monthly
+                    monthly_total_cents += sub.price_cents // 12
 
         trends.append({
             "month": get_month_name(start_of_month),
@@ -94,18 +67,13 @@ async def get_spending_trends(
             "total_cents": monthly_total_cents
         })
 
-    # 2. Category Breakdown
-    category_totals = {}
-    total_spend_cents = 0
-    
+    # 2. Category Breakdown (current active only)
     active_subs = [s for s in subs if s.status == "active"]
-    
+    category_totals: Dict[str, int] = {}
+    total_spend_cents = 0
+
     for sub in active_subs:
-        # Amortized monthly cost for category view
-        monthly_cost = sub.price_cents
-        if sub.billing_cycle == "yearly":
-            monthly_cost = sub.price_cents // 12
-            
+        monthly_cost = sub.price_cents if sub.billing_cycle == "monthly" else sub.price_cents // 12
         cat = sub.category or "Other"
         category_totals[cat] = category_totals.get(cat, 0) + monthly_cost
         total_spend_cents += monthly_cost
@@ -118,7 +86,6 @@ async def get_spending_trends(
             "total_cents": output_cents,
             "percentage": round(percentage, 1)
         })
-    
     breakdown.sort(key=lambda x: x["total_cents"], reverse=True)
 
     return {
