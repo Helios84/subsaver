@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Mail, Lock, ArrowRight, CheckCircle2, GraduationCap, Shield, Sparkles, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, ArrowRight, CheckCircle2, GraduationCap, Shield, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { apiFetch } from "../lib/api";
 
 /* ── Shared styles ─────────────────────────────────────────────────────────── */
@@ -217,7 +217,7 @@ export default function RegisterPage() {
             {/* Error */}
             {msg && (
               <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 14px", borderRadius: "12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
-                <Sparkles style={{ width: 15, height: 15, color: "#F87171", flexShrink: 0 }} />
+                <AlertCircle style={{ width: 15, height: 15, color: "#F87171", flexShrink: 0 }} />
                 <p style={{ fontSize: "13px", color: "#F87171", fontWeight: 500 }}>{msg}</p>
               </div>
             )}
@@ -251,7 +251,8 @@ export default function RegisterPage() {
             </p>
           </div>
           <p style={{ textAlign: "center", fontSize: "11px", color: "rgba(255,255,255,0.18)", marginTop: "1rem" }}>
-            By creating an account, you agree to our Terms of Service
+            By creating an account, you agree to our{" "}
+            <Link href="/terms" style={{ color: "#A78BFA" }}>Terms of Service</Link>
           </p>
         </div>
       </div>

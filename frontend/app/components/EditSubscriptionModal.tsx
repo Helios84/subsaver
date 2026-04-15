@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Edit2, Save, X } from "lucide-react";
+import { Edit2, Save, X, Loader2 } from "lucide-react";
 import type { Sub } from "../types/index";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,6 +36,7 @@ const CATEGORIES = [
 type Props = {
   sub: Sub;
   editState: EditState;
+  saving?: boolean;
   onEditChange: (patch: Partial<EditState>) => void;
   onSave: (id: number) => void;
   onClose: () => void;
@@ -67,7 +68,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function EditSubscriptionModal({ sub, editState, onEditChange, onSave, onClose }: Props) {
+export default function EditSubscriptionModal({ sub, editState, saving = false, onEditChange, onSave, onClose }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape
@@ -266,19 +267,24 @@ export default function EditSubscriptionModal({ sub, editState, onEditChange, on
         <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
           <button
             onClick={() => onSave(sub.id)}
+            disabled={saving}
             style={{
-              flex: 1, padding: "13px 24px", borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: "pointer",
+              flex: 1, padding: "13px 24px", borderRadius: 14, fontSize: 15, fontWeight: 700,
+              cursor: saving ? "not-allowed" : "pointer",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              background: "linear-gradient(135deg, #7C3AED, #D946EF)",
-              boxShadow: "0 4px 20px rgba(124,58,237,0.4)",
+              background: saving ? "rgba(124,58,237,0.4)" : "linear-gradient(135deg, #7C3AED, #D946EF)",
+              boxShadow: saving ? "none" : "0 4px 20px rgba(124,58,237,0.4)",
               color: "white", border: "none",
               transition: "all 0.2s",
+              opacity: saving ? 0.7 : 1,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
+            onMouseEnter={(e) => { if (!saving) e.currentTarget.style.transform = "scale(1.02)"; }}
             onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
-            <Save style={{ width: 16, height: 16 }} />
-            Save Changes
+            {saving
+              ? <><Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} /> Saving…</>
+              : <><Save style={{ width: 16, height: 16 }} /> Save Changes</>
+            }
           </button>
           <button
             onClick={onClose}

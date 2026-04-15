@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, ArrowLeft, RefreshCw, CheckCircle2, Sparkles } from "lucide-react";
+import { Mail, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 import { apiFetch } from "../lib/api";
 
 /* ── Digit input styles ──────────────────────────────────────────────────── */
@@ -250,7 +250,7 @@ function VerifyEmailInner() {
             {/* Error */}
             {error && (
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", marginBottom: 20 }}>
-                <Sparkles size={14} color="#F87171" style={{ flexShrink: 0 }} />
+                <AlertCircle size={14} color="#F87171" style={{ flexShrink: 0 }} />
                 <p style={{ fontSize: 13, color: "#F87171", fontWeight: 500, margin: 0 }}>{error}</p>
               </div>
             )}
@@ -293,9 +293,13 @@ function VerifyEmailInner() {
             </div>
 
             {/* Help */}
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.2)", textAlign: "center", marginTop: 28, lineHeight: 1.6 }}>
-              Can&apos;t find the email? Check your spam folder.<br />
-              Code expires in 15 minutes.
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", textAlign: "center", marginTop: 28, lineHeight: 1.6 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, marginBottom: 4 }}>
+                <Mail size={13} style={{ flexShrink: 0, opacity: 0.6 }} />
+                Can&apos;t find the email? Check your spam folder.
+              </span>
+              <br />
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>Code expires in 15 minutes.</span>
             </p>
           </>
         )}

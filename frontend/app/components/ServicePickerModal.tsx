@@ -26,14 +26,17 @@ type Props = {
 };
 
 const CATEGORY_COLORS: Record<string, { bg: string, text: string, border: string }> = {
-    "Entertainment": { bg: "rgba(124,58,237,0.15)", text: "text-violet-400", border: "border-violet-500/30" },
-    "Music": { bg: "rgba(236,72,153,0.15)", text: "text-pink-400", border: "border-pink-500/30" },
-    "Productivity": { bg: "rgba(59,130,246,0.15)", text: "text-blue-400", border: "border-blue-500/30" },
-    "Creative": { bg: "rgba(249,115,22,0.15)", text: "text-orange-400", border: "border-orange-500/30" },
-    "Software": { bg: "rgba(107,114,128,0.15)", text: "text-gray-400", border: "border-gray-500/30" },
-    "News": { bg: "rgba(234,179,8,0.15)", text: "text-yellow-400", border: "border-yellow-500/30" },
-    "Shopping": { bg: "rgba(16,185,129,0.15)", text: "text-emerald-400", border: "border-emerald-500/30" },
-    "Other": { bg: "rgba(156,163,175,0.15)", text: "text-gray-400", border: "border-gray-500/30" }
+    "Entertainment":    { bg: "rgba(124,58,237,0.15)",  text: "text-violet-400",  border: "border-violet-500/30"  },
+    "Gaming":           { bg: "rgba(139,92,246,0.15)",  text: "text-purple-400",  border: "border-purple-500/30"  },
+    "Productivity":     { bg: "rgba(59,130,246,0.15)",  text: "text-blue-400",    border: "border-blue-500/30"    },
+    "Education":        { bg: "rgba(99,102,241,0.15)",  text: "text-indigo-400",  border: "border-indigo-500/30"  },
+    "Health & Fitness": { bg: "rgba(219,39,119,0.15)",  text: "text-pink-400",    border: "border-pink-500/30"    },
+    "Food & Delivery":  { bg: "rgba(249,115,22,0.15)",  text: "text-orange-400",  border: "border-orange-500/30"  },
+    "News & Media":     { bg: "rgba(234,179,8,0.15)",   text: "text-yellow-400",  border: "border-yellow-500/30"  },
+    "Finance":          { bg: "rgba(16,185,129,0.15)",  text: "text-emerald-400", border: "border-emerald-500/30" },
+    "Communication":    { bg: "rgba(6,182,212,0.15)",   text: "text-cyan-400",    border: "border-cyan-500/30"    },
+    "Utilities":        { bg: "rgba(107,114,128,0.15)", text: "text-gray-400",    border: "border-gray-500/30"    },
+    "Other":            { bg: "rgba(156,163,175,0.15)", text: "text-gray-400",    border: "border-gray-500/30"    },
 };
 
 export default function ServicePickerModal({ isVerified, onSelect, onClose }: Props) {
@@ -178,8 +181,11 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
                             Verify your student email to unlock exclusive discounts!
                         </p>
                     )}
-                    <p className="text-[11px] text-white/30 font-medium">
-                        Can't find a service? You can close this window and enter it manually.
+                    <p className="text-xs text-white/50 font-medium">
+                        Can&apos;t find a service?{" "}
+                        <button onClick={onClose} className="text-violet-400 underline hover:text-violet-300 transition-colors">
+                            Enter it manually
+                        </button>
                     </p>
                 </div>
             </div>

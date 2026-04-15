@@ -17,8 +17,30 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "SubSaver | Smart Savings for Students",
-  description: "The intelligent subscription manager built for campus life. Find student discounts, split costs with roommates, and stop wasting money.",
+  title: {
+    default: "SubSaver | Smart Savings for Students",
+    template: "%s | SubSaver",
+  },
+  description: "The intelligent subscription manager built for campus life. Find student discounts, split costs with roommates, and stop wasting money on subscriptions.",
+  keywords: ["student discounts", "subscription manager", "save money student", "student deals", "subscription tracker"],
+  authors: [{ name: "SubSaver" }],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://subsaver.example",
+    siteName: "SubSaver",
+    title: "SubSaver | Smart Savings for Students",
+    description: "Track subscriptions, find student discounts, and save up to $847/year. Built for campus life.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SubSaver | Smart Savings for Students",
+    description: "Track subscriptions, find student discounts, and save up to $847/year.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

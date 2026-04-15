@@ -99,7 +99,7 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
                                 <span className="text-lg font-bold text-white">Student Discount</span>
                                 <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full"
                                     style={{ background: "rgba(217,70,239,0.2)", color: "#E879F9", border: "1px solid rgba(217,70,239,0.32)" }}>
-                                    Available ✦
+                                    Available ✨
                                 </span>
                             </div>
                             <p className="text-sm text-white/40 mt-0.5">{discount.service_name}</p>
@@ -236,7 +236,7 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
                         >
                             {applying
                                 ? <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                                : <><CheckCircle2 className="w-4 h-4" /> Applied</>
+                                : <><CheckCircle2 className="w-4 h-4" /> Mark as Applied</>
                             }
                         </button>
                     )}

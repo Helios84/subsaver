@@ -158,13 +158,11 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* CENTER: Navigation (Absolutely positioned for perfect centering regardless of side widths) */}
+            {/* CENTER: Navigation */}
             <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden lg:flex items-center gap-8">
-              {["Features", "Pricing", "Students"].map(item => (
-                <span key={item} className="text-sm text-white/50 hover:text-white transition-colors cursor-pointer font-medium">
-                  {item}
-                </span>
-              ))}
+              <a href="#features" className="text-sm text-white/50 hover:text-white transition-colors cursor-pointer font-medium">Features</a>
+              <a href="#stats" className="text-sm text-white/50 hover:text-white transition-colors cursor-pointer font-medium">Why Us</a>
+              <a href="#testimonials" className="text-sm text-white/50 hover:text-white transition-colors cursor-pointer font-medium">Students</a>
             </nav>
 
             {/* RIGHT: Actions */}
@@ -286,9 +284,9 @@ export default function Home() {
                   <Zap className="w-5 h-5" style={{ fill: "currentColor" }} />
                   Start Saving Free
                 </Link>
-                <Link href="/dashboard" className="hero-btn-ghost text-base font-semibold px-9 py-4 flex items-center gap-2.5">
+                <Link href="/register" className="hero-btn-ghost text-base font-semibold px-9 py-4 flex items-center gap-2.5">
                   <BarChart3 className="w-5 h-5" />
-                  View Demo
+                  Get Started Free
                 </Link>
               </>
             )}
@@ -318,7 +316,7 @@ export default function Home() {
       <div className="section-divider" />
 
       {/* ─── STATS ─── */}
-      <section style={{ width: "100%", padding: "80px 0" }}>
+      <section id="stats" style={{ width: "100%", padding: "80px 0" }}>
         <div style={CONTAINER_STYLE}>
           {/*
             2×2 on mobile/tablet  →  4×1 on ≥1024 px
@@ -400,7 +398,7 @@ export default function Home() {
       <div className="section-divider" />
 
       {/* ─── FEATURES ─── */}
-      <section style={{ width: "100%", padding: "112px 0" }}>
+      <section id="features" style={{ width: "100%", padding: "112px 0" }}>
         <div style={CONTAINER_STYLE}>
           {/* Centred heading */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: "64px", width: "100%" }}>
@@ -434,7 +432,7 @@ export default function Home() {
       <div className="section-divider" />
 
       {/* ─── TESTIMONIALS ─── */}
-      <section style={{ width: "100%", padding: "112px 0" }}>
+      <section id="testimonials" style={{ width: "100%", padding: "112px 0" }}>
         <div style={CONTAINER_STYLE}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: "64px", width: "100%" }}>
             <h2
@@ -651,11 +649,11 @@ export default function Home() {
                 Sub<span className="text-white/40">Saver</span>
               </span>
             </div>
-            <p className="text-sm text-white/25">© 2026 SubSaver. All rights reserved.</p>
+            <p className="text-sm text-white/25">© {new Date().getFullYear()} SubSaver. All rights reserved.</p>
             <div className="flex gap-6 text-sm text-white/35">
-              <span className="hover:text-white cursor-pointer transition-colors">Privacy</span>
-              <span className="hover:text-white cursor-pointer transition-colors">Terms</span>
-              <span className="hover:text-white cursor-pointer transition-colors">Support</span>
+              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+              <a href="mailto:support@subsaver.example" className="hover:text-white transition-colors">Support</a>
             </div>
           </div>
         </div>

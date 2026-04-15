@@ -93,7 +93,8 @@ def update_subscription(
         if payload.status == "cancelled":
             sub.cancelled_at = datetime.utcnow()
         elif payload.status == "active":
-            sub.cancelled_at = None  # Reactivated
+            sub.cancelled_at = None   # Reactivated
+            sub.reminder_sent = False  # Allow reminders again after reactivation
 
     db.commit()
     db.refresh(sub)

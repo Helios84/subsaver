@@ -48,7 +48,9 @@ export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
 
     return data;
   } catch (err) {
-    console.error("[API DEBUG] Fetch Error:", err);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[API] Fetch Error:", err);
+    }
     throw err;
   }
 }

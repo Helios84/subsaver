@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { apiFetch } from "../lib/api";
-import { Mail, Lock, ArrowRight, Sparkles, Shield, Zap, Star, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { Mail, Lock, ArrowRight, Sparkles, Shield, Zap, Star, Eye, EyeOff, CheckCircle, Hash } from "lucide-react";
 
 /* ── Styled input wrapper ─────────────────────────────────────────────────── */
 function Field({
@@ -81,6 +81,8 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
+  const searchParams = useSearchParams();
+  const confirmed = searchParams.get("confirmed");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setMsg(""); setLoading(true);
@@ -231,6 +233,14 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* Email confirmed banner */}
+          {confirmed === "1" && forgotStage === "login" && (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 14px", borderRadius: "12px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", marginBottom: "1rem" }}>
+              <CheckCircle style={{ width: 16, height: 16, color: "#34D399", flexShrink: 0 }} />
+              <p style={{ fontSize: "13px", color: "#34D399", fontWeight: 600 }}>Email confirmed! You can now log in.</p>
+            </div>
+          )}
+
           {forgotStage === "success" ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem" }}>
               <div style={{ width: 64, height: 64, background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -275,9 +285,8 @@ export default function LoginPage() {
                 </Field>
               )}
 
-              {/* Code */}
               {forgotStage === "code" && (
-                <Field label="6-Digit Code" icon={Sparkles}>
+                <Field label="6-Digit Code" icon={Hash}>
                   <StyledInput value={resetCode} onChange={(e) => setResetCode(e.target.value)} type="text" maxLength={6} placeholder="123456" required extraStyle={{ letterSpacing: "4px", fontWeight: 700 }} />
                 </Field>
               )}
@@ -360,7 +369,8 @@ export default function LoginPage() {
             </p>
           </div>
           <p style={{ textAlign: "center", fontSize: "11px", color: "rgba(255,255,255,0.18)", marginTop: "1rem" }}>
-            By logging in, you agree to our Terms of Service
+            By logging in, you agree to our{" "}
+            <Link href="/terms" style={{ color: "#A78BFA" }}>Terms of Service</Link>
           </p>
         </div>
       </div>

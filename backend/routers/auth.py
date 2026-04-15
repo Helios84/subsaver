@@ -4,8 +4,6 @@ import logging
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -19,11 +17,11 @@ from schemas.auth import (
     ConfirmEmailRequest,
 )
 from core.security import hash_password, verify_password, needs_rehash, create_access_token
+from limiter import limiter
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["auth"])
-limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/auth/register")
@@ -86,7 +84,7 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
 
 
 @router.post("/auth/confirm-email")
-@limiter.limit("10/minute")
+@limiter.limit("5/minute")
 def confirm_email(request: Request, payload: ConfirmEmailRequest, db: Session = Depends(get_db)):
     """Verify the 6-digit code sent after registration to confirm the user's email."""
     email = payload.email.strip().lower()

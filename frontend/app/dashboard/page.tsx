@@ -29,15 +29,17 @@ type Status = "active" | "cancelled";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const CATEGORIES = [
-  { value: "Entertainment", icon: "🎬", color: "#7C3AED" },
-  { value: "Productivity",  icon: "💼", color: "#F59E0B" },
-  { value: "Gaming",        icon: "🎮", color: "#8B5CF6" },
-  { value: "Utilities",     icon: "🔧", color: "#3B82F6" },
-  { value: "Communication", icon: "📱", color: "#10B981" },
-  { value: "Health & Fitness", icon: "🏋️", color: "#db2777" },
-  { value: "Education",     icon: "📚", color: "#6366F1" },
+  { value: "Entertainment",   icon: "🎬", color: "#7C3AED" },
+  { value: "Productivity",    icon: "💼", color: "#F59E0B" },
+  { value: "Gaming",          icon: "🎮", color: "#8B5CF6" },
+  { value: "Utilities",       icon: "🔧", color: "#3B82F6" },
+  { value: "Communication",   icon: "📱", color: "#10B981" },
+  { value: "Health & Fitness",icon: "🏋️", color: "#db2777" },
+  { value: "Education",       icon: "📚", color: "#6366F1" },
   { value: "Food & Delivery", icon: "🍔", color: "#F97316" },
-  { value: "Other",         icon: "🎨", color: "#6B7280" },
+  { value: "News & Media",    icon: "📰", color: "#EAB308" },
+  { value: "Finance",         icon: "💳", color: "#10B981" },
+  { value: "Other",           icon: "📦", color: "#6B7280" },
 ];
 
 function formatMoney(cents: number, currency: import("../lib/currency").Currency, rates: Record<string, number>) {
@@ -83,7 +85,7 @@ export default function DashboardPage() {
     setDashSettings(loadDashboardSettings());
     const onFocus = () => setDashSettings(loadDashboardSettings());
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "dashboardSettings") setDashSettings(loadDashboardSettings());
+      if (e.key === "dashboard_settings_v4") setDashSettings(loadDashboardSettings());
     };
     window.addEventListener("focus", onFocus);
     window.addEventListener("storage", onStorage);
@@ -140,6 +142,9 @@ export default function DashboardPage() {
 
   // ── Delete state
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  // ── Edit saving state
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // ── Fetch on mount
   useEffect(() => {
@@ -308,6 +313,7 @@ export default function DashboardPage() {
   }
 
   async function saveEdit(subId: number) {
+    setSavingEdit(true);
     try {
       const body: any = {
         name: editState.name.trim(),
@@ -324,6 +330,8 @@ export default function DashboardPage() {
       toast("Subscription updated!", "success");
     } catch (err: any) {
       toast(err?.message ?? "Update failed", "error");
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -809,6 +817,7 @@ export default function DashboardPage() {
           <EditSubscriptionModal
             sub={editingSub}
             editState={editState}
+            saving={savingEdit}
             onEditChange={(patch) => setEditState((prev) => ({ ...prev, ...patch }))}
             onSave={saveEdit}
             onClose={cancelEdit}
