@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from dependencies import get_current_user, get_db
 from models.db import Subscription
@@ -117,20 +117,59 @@ def send_reminders_now(
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Manually trigger reminder check (for testing/admin)."""
+    """Manually trigger reminder check for current user only (not all users)."""
     from services.reminder_service import reminder_service
     
-    result = reminder_service.send_reminders(db)
+    # M-8 fix: only send reminders for the requesting user, not all users
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    active_subs = (
+        db.query(Subscription)
+        .filter(
+            Subscription.user_id == current_user.id,
+            Subscription.status == "active",
+            Subscription.next_billing_date.isnot(None),
+            Subscription.reminder_sent == False,
+        )
+        .all()
+    )
+    
+    sent_count = 0
+    failed_count = 0
+    from services.email_service import email_service
+    
+    for sub in active_subs:
+        days_until = (sub.next_billing_date - now).days
+        if 0 <= days_until <= current_user.reminder_days_before:
+            success = email_service.send_reminder_email(
+                to_email=current_user.email,
+                subscription_name=sub.name,
+                price_cents=sub.price_cents,
+                billing_cycle=sub.billing_cycle,
+                next_billing_date=sub.next_billing_date,
+                days_until_renewal=days_until
+            )
+            if success:
+                sub.reminder_sent = True
+                sub.last_reminder_date = datetime.now(timezone.utc).replace(tzinfo=None)
+                sent_count += 1
+            else:
+                failed_count += 1
+    
+    db.commit()
     return {
-        "message": "Reminder check completed",
-        **result
+        "message": "Reminder check completed for your account",
+        "sent": sent_count,
+        "failed": failed_count,
+        "total": sent_count + failed_count
     }
 
 
 @router.post("/test-email")
 def send_test_email(current_user=Depends(get_current_user)):
-    """Send a test reminder email to the current user."""
+    """Send a test reminder email to the current user. Rate limited: 3/hour."""
     from services.email_service import email_service
+    from limiter import limiter
+    from fastapi import Request
     
     # Send test email
     success = email_service.send_reminder_email(
@@ -138,7 +177,7 @@ def send_test_email(current_user=Depends(get_current_user)):
         subscription_name="Netflix (Test)",
         price_cents=1599,
         billing_cycle="monthly",
-        next_billing_date=datetime.utcnow() + timedelta(days=7),
+        next_billing_date=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=7),
         days_until_renewal=7
     )
     

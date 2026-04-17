@@ -61,12 +61,19 @@ export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [msg, setMsg] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [showPw2, setShowPw2] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setMsg(""); setLoading(true);
+    if (password !== confirmPassword) {
+      setMsg("Passwords do not match.");
+      setLoading(false);
+      return;
+    }
     try {
       const res = await apiFetch("/auth/register", { method: "POST", body: JSON.stringify({ email, password }) });
       // If SMTP is disabled, backend returns dev_code — pass it to the next page via sessionStorage
@@ -211,6 +218,19 @@ export default function RegisterPage() {
               <button type="button" onClick={() => setShowPw(!showPw)}
                 style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1 }}>
                 {showPw ? <EyeOff style={{ width: 17, height: 17 }} /> : <Eye style={{ width: 17, height: 17 }} />}
+              </button>
+            </Field>
+
+            {/* Confirm Password */}
+            <Field label="Confirm Password" icon={Lock}>
+              <StyledInput
+                value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                type={showPw2 ? "text" : "password"} placeholder="••••••••" required minLength={8}
+                extraStyle={{ paddingRight: "2.75rem" }}
+              />
+              <button type="button" onClick={() => setShowPw2(!showPw2)}
+                style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1 }}>
+                {showPw2 ? <EyeOff style={{ width: 17, height: 17 }} /> : <Eye style={{ width: 17, height: 17 }} />}
               </button>
             </Field>
 

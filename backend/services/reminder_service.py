@@ -1,8 +1,14 @@
 """Reminder service for checking and sending subscription renewal reminders."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import List, Tuple
 from sqlalchemy.orm import Session
+
+try:
+    from dateutil.relativedelta import relativedelta
+    HAS_RELATIVEDELTA = True
+except ImportError:
+    HAS_RELATIVEDELTA = False
 
 from models.db import User, Subscription
 from services.email_service import email_service
@@ -17,7 +23,7 @@ class ReminderService:
         
         Returns list of tuples: (subscription, user, days_until_renewal)
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         subscriptions_to_remind = []
         
         # Get all active subscriptions with next_billing_date set
@@ -51,7 +57,7 @@ class ReminderService:
         Returns:
             dict with 'sent', 'failed', and 'total' counts
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
 
         # ── Auto-reset reminder_sent for subscriptions whose billing date has passed ──
         overdue_subs = (
@@ -67,6 +73,7 @@ class ReminderService:
         for sub in overdue_subs:
             sub.reminder_sent = False
             sub.last_reminder_date = None
+            # H-4 fix: use next_billing_date as base, not created_at
             sub.next_billing_date = self.calculate_next_billing_date(
                 sub.next_billing_date, sub.billing_cycle
             )
@@ -92,7 +99,7 @@ class ReminderService:
             if success:
                 # Mark reminder as sent
                 sub.reminder_sent = True
-                sub.last_reminder_date = datetime.utcnow()
+                sub.last_reminder_date = datetime.now(timezone.utc).replace(tzinfo=None)
                 sent_count += 1
             else:
                 failed_count += 1
@@ -108,38 +115,44 @@ class ReminderService:
     
     def calculate_next_billing_date(
         self,
-        created_at: datetime,
+        current_billing_date: datetime,
         billing_cycle: str
     ) -> datetime:
         """
-        Calculate next billing date based on creation date and cycle.
+        Calculate next billing date by advancing from current_billing_date.
+        H-4/H-5 fix: use current next_billing_date as base (not created_at),
+        and use relativedelta for accurate month arithmetic.
         
         Args:
-            created_at: When subscription was created
+            current_billing_date: The current next_billing_date
             billing_cycle: 'monthly' or 'yearly'
             
         Returns:
             Next billing date
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        next_date = current_billing_date
         
         if billing_cycle == "monthly":
-            # Add months until we're in the future
-            next_date = created_at
             while next_date <= now:
-                # Add 30 days (approximate month)
-                next_date = next_date + timedelta(days=30)
+                if HAS_RELATIVEDELTA:
+                    next_date = next_date + relativedelta(months=1)
+                else:
+                    # Fallback if python-dateutil not installed
+                    next_date = next_date + timedelta(days=30)
         else:  # yearly
-            # Add years until we're in the future
-            next_date = created_at
             while next_date <= now:
-                next_date = next_date + timedelta(days=365)
+                if HAS_RELATIVEDELTA:
+                    next_date = next_date + relativedelta(years=1)
+                else:
+                    next_date = next_date + timedelta(days=365)
         
         return next_date
     
     def reset_reminder_for_next_cycle(self, subscription, db: Session):
         """
         Reset reminder flags when subscription renews.
+        H-4 fix: use next_billing_date as base, not created_at.
         
         Args:
             subscription: Subscription object
@@ -147,8 +160,9 @@ class ReminderService:
         """
         subscription.reminder_sent = False
         subscription.last_reminder_date = None
+        # H-4 fix: use next_billing_date as base
         subscription.next_billing_date = self.calculate_next_billing_date(
-            subscription.created_at,
+            subscription.next_billing_date,
             subscription.billing_cycle
         )
         db.commit()

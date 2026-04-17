@@ -3,6 +3,8 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import type { WidgetSpan } from "./AdvancedAnalytics";
 import { WIDGET_H } from "./AdvancedAnalytics";
+import { formatMoney as fxFormat } from "../lib/currency";
+import type { Currency } from "../lib/currency";
 
 interface TrendData {
     month: string;
@@ -10,7 +12,17 @@ interface TrendData {
     total_cents: number;
 }
 
-export default function SpendingTrendsChart({ data, span = 2 }: { data: TrendData[], span?: WidgetSpan }) {
+export default function SpendingTrendsChart({
+    data,
+    span = 2,
+    currency = "USD",
+    fxRates = { USD: 1, EUR: 0.92, GBP: 0.79 },
+}: {
+    data: TrendData[];
+    span?: WidgetSpan;
+    currency?: Currency;
+    fxRates?: Record<string, number>;
+}) {
     // Filter out months with $0 to avoid "wall of zeros"
     const allFormatted = (data || []).map(d => ({
         name: d.month,
@@ -87,7 +99,7 @@ export default function SpendingTrendsChart({ data, span = 2 }: { data: TrendDat
                                 axisLine={false}
                                 tickLine={false}
                                 tick={{ fill: '#64748B', fontSize: 10 }}
-                                tickFormatter={(v) => `$${v}`}
+                                tickFormatter={(v) => fxFormat(v * 100, currency, fxRates)}
                             />
                         )}
                         <Tooltip
@@ -98,7 +110,7 @@ export default function SpendingTrendsChart({ data, span = 2 }: { data: TrendDat
                                 color: '#fff',
                                 fontSize: 12,
                             }}
-                            formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Spend']}
+                            formatter={(value: any) => [fxFormat(Number(value) * 100, currency, fxRates), 'Spend']}
                         />
                         <Area
                             type="monotone"

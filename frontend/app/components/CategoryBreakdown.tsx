@@ -3,6 +3,9 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity } from 'lucide-react';
 import type { WidgetSpan } from "./AdvancedAnalytics";
 import { WIDGET_H } from "./AdvancedAnalytics";
+import { formatMoney as fxFormat } from "../lib/currency";
+import type { Currency } from "../lib/currency";
+import { CATEGORIES as CAT_LIST } from "../lib/categories";
 
 interface CategoryData {
     category: string;
@@ -10,19 +13,19 @@ interface CategoryData {
     percentage: number;
 }
 
-const CATEGORIES = [
-    { value: "Entertainment", icon: "🎬", color: "#8B5CF6" },    // Violet
-    { value: "Productivity",  icon: "💼", color: "#D946EF" },    // Fuchsia (brand)
-    { value: "Gaming",        icon: "🎮", color: "#06B6D4" },    // Cyan (brand)
-    { value: "Utilities",     icon: "🔧", color: "#6366F1" },    // Indigo
-    { value: "Communication", icon: "📱", color: "#10B981" },    // Emerald
-    { value: "Health & Fitness", icon: "🏋️", color: "#EC4899" }, // Pink
-    { value: "Education",     icon: "📚", color: "#A78BFA" },    // Violet light
-    { value: "Food & Delivery", icon: "🍔", color: "#34D399" },  // Emerald light
-    { value: "Other",         icon: "🎨", color: "#64748B" },    // Slate
-];
+const CATEGORIES = CAT_LIST;
 
-export default function CategoryBreakdown({ data, span = 2 }: { data: CategoryData[], span?: WidgetSpan }) {
+export default function CategoryBreakdown({
+    data,
+    span = 2,
+    currency = "USD",
+    fxRates = { USD: 1, EUR: 0.92, GBP: 0.79 },
+}: {
+    data: CategoryData[];
+    span?: WidgetSpan;
+    currency?: Currency;
+    fxRates?: Record<string, number>;
+}) {
     const chartData = (data || []).map(d => {
         const catInfo = CATEGORIES.find(c => c.value === d.category) || CATEGORIES[CATEGORIES.length - 1];
         return {
@@ -70,7 +73,7 @@ export default function CategoryBreakdown({ data, span = 2 }: { data: CategoryDa
                             </Pie>
                             <Tooltip
                                 contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: 12 }}
-                                formatter={(value: any) => `$${Number(value).toFixed(2)}`}
+                                formatter={(value: any) => fxFormat(Number(value) * 100, currency, fxRates)}
                             />
                         </PieChart>
                     </ResponsiveContainer>
@@ -98,14 +101,14 @@ export default function CategoryBreakdown({ data, span = 2 }: { data: CategoryDa
                                 </Pie>
                                 <Tooltip
                                     contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: 12 }}
-                                    formatter={(value: any) => `$${Number(value).toFixed(2)}`}
+                                    formatter={(value: any) => fxFormat(Number(value) * 100, currency, fxRates)}
                                 />
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="text-center">
                                 <p className="text-[9px] text-gray-400 uppercase tracking-wide">Total</p>
-                                <p className="text-lg font-black text-white">${total.toFixed(0)}</p>
+                                <p className="text-lg font-black text-white">{fxFormat(total * 100, currency, fxRates)}</p>
                                 <p className="text-[9px] text-gray-400">/mo</p>
                             </div>
                         </div>
@@ -120,7 +123,7 @@ export default function CategoryBreakdown({ data, span = 2 }: { data: CategoryDa
                                     <span className="text-xs text-gray-300 truncate">{cat.name}</span>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
-                                    <span className="text-xs font-bold text-white font-mono">${cat.value.toFixed(0)}</span>
+                                    <span className="text-xs font-bold text-white font-mono">{fxFormat(cat.value * 100, currency, fxRates)}</span>
                                     <span className="text-[10px] text-gray-500 w-8 text-right">{cat.percentage.toFixed(0)}%</span>
                                 </div>
                             </div>

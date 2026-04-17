@@ -5,6 +5,8 @@ import { apiFetch } from "../lib/api";
 import { GraduationCap, ArrowRight, TrendingUp } from "lucide-react";
 import type { WidgetSpan } from "./AdvancedAnalytics";
 import { WIDGET_H } from "./AdvancedAnalytics";
+import { formatMoney as fxFormat } from "../lib/currency";
+import type { Currency } from "../lib/currency";
 
 interface SavingsData {
     total_saved_monthly: number;
@@ -15,7 +17,15 @@ interface SavingsData {
     discounts_available: number;
 }
 
-export default function StudentSavingsCard({ span = 2 }: { span?: WidgetSpan }) {
+export default function StudentSavingsCard({
+    span = 2,
+    currency = "USD",
+    fxRates = { USD: 1, EUR: 0.92, GBP: 0.79 },
+}: {
+    span?: WidgetSpan;
+    currency?: Currency;
+    fxRates?: Record<string, number>;
+}) {
     const [data, setData] = useState<SavingsData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -57,10 +67,10 @@ export default function StudentSavingsCard({ span = 2 }: { span?: WidgetSpan }) 
                     <p className="text-[10px] text-gray-400 uppercase tracking-wide">Saved / year</p>
                     <div className="flex items-baseline gap-1 mt-0.5">
                         <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
-                            ${(data.total_saved_yearly / 100).toFixed(0)}
+                            {fxFormat(data.total_saved_yearly, currency, fxRates)}
                         </span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">${(data.total_saved_monthly / 100).toFixed(0)}<span className="text-white/30">/mo</span></p>
+                    <p className="text-xs text-gray-400 mt-1">{fxFormat(data.total_saved_monthly, currency, fxRates)}<span className="text-white/30">/mo</span></p>
                 </div>
 
                 <div className="space-y-1.5">
@@ -103,23 +113,23 @@ export default function StudentSavingsCard({ span = 2 }: { span?: WidgetSpan }) 
                     <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Total Saved</p>
                     <div className="flex items-baseline gap-1">
                         <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
-                            ${(data.total_saved_yearly / 100).toFixed(0)}
+                            {fxFormat(data.total_saved_yearly, currency, fxRates)}
                         </span>
                         <span className="text-xs text-gray-500">/yr</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">${(data.total_saved_monthly / 100).toFixed(0)}<span className="text-white/30">/mo</span></p>
+                    <p className="text-xs text-gray-400 mt-0.5">{fxFormat(data.total_saved_monthly, currency, fxRates)}<span className="text-white/30">/mo</span></p>
                 </div>
 
                 {/* Secondary metrics */}
                 <div className="flex flex-col gap-2 justify-center min-w-[90px]">
                     <div>
                         <p className="text-[10px] text-gray-500 uppercase tracking-wide">Potential</p>
-                        <p className="text-sm font-bold text-gray-200">${(data.potential_yearly / 100).toFixed(0)}<span className="text-xs text-gray-500 font-normal">/yr</span></p>
+                        <p className="text-sm font-bold text-gray-200">{fxFormat(data.potential_yearly, currency, fxRates)}<span className="text-xs text-gray-500 font-normal">/yr</span></p>
                     </div>
                     {span >= 3 && (
                         <div>
                             <p className="text-[10px] text-gray-500 uppercase tracking-wide">Monthly</p>
-                            <p className="text-sm font-bold text-gray-200">${(data.total_saved_monthly / 100).toFixed(0)}<span className="text-xs text-gray-500 font-normal">/mo</span></p>
+                            <p className="text-sm font-bold text-gray-200">{fxFormat(data.total_saved_monthly, currency, fxRates)}<span className="text-xs text-gray-500 font-normal">/mo</span></p>
                         </div>
                     )}
                 </div>

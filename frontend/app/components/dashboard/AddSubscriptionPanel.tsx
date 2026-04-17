@@ -1,20 +1,9 @@
 "use client";
 
 import { Plus, Search, Activity } from "lucide-react";
+import { CATEGORIES } from "../../lib/categories";
 
 type BillingCycle = "monthly" | "yearly";
-
-const CATEGORIES = [
-  { value: "Entertainment", icon: "🎬" },
-  { value: "Productivity", icon: "💼" },
-  { value: "Gaming", icon: "🎮" },
-  { value: "Utilities", icon: "🔧" },
-  { value: "Communication", icon: "📱" },
-  { value: "Health & Fitness", icon: "🏋️" },
-  { value: "Education", icon: "📚" },
-  { value: "Food & Delivery", icon: "🍔" },
-  { value: "Other", icon: "🎨" },
-];
 
 type Props = {
   msg: string;
@@ -24,6 +13,8 @@ type Props = {
   showSuggestions: boolean;
   onNameChange: (val: string) => void;
   onSuggestionSelect: (service: any) => void;
+  currency?: string;
+  currencySymbol?: string;
   formState: {
     name: string;
     price: string;
@@ -67,6 +58,7 @@ const fieldStyle: React.CSSProperties = {
 export default function AddSubscriptionPanel({
   msg, onSubmit, onOpenPicker, suggestions, showSuggestions,
   onNameChange, onSuggestionSelect, formState, onFormChange,
+  currency, currencySymbol,
 }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -159,7 +151,7 @@ export default function AddSubscriptionPanel({
           <div style={fieldStyle}>
             <label style={labelStyle}>Cost</label>
             <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", fontSize: 14, fontWeight: 500, pointerEvents: "none", zIndex: 1 }}>$</span>
+              <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", fontSize: 14, fontWeight: 500, pointerEvents: "none", zIndex: 1 }}>{currencySymbol ?? "$"}</span>
               <input
                 value={formState.price}
                 onChange={(e) => onFormChange({ price: e.target.value })}

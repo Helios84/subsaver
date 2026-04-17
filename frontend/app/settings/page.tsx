@@ -206,7 +206,7 @@ function SettingsPageInner() {
 // ─── Page export (wrapped in Suspense for useSearchParams) ────────────────────
 export default function SettingsPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#080B14" }} />}>
       <SettingsPageInner />
     </Suspense>
   );

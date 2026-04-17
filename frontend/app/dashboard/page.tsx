@@ -429,7 +429,8 @@ export default function DashboardPage() {
     const w: Record<string, boolean> = {};
     dashSettings.widgets.forEach((widget) => { w[widget.id] = widget.enabled; });
 
-    const savings = activeSubs.filter(s => s.student_discount_applied).length * 500;
+    // totalSavings shown via StudentSavingsCard API — use 0 as placeholder in stat cards
+    const savings = 0; // StudentSavingsCard fetches real data from /api/student-discounts/savings
     const cancelled = subs.filter(s => s.status === "cancelled").length;
     const sorted = [...activeSubs].sort((a, b) => b.price_cents - a.price_cents);
     const topSub = sorted[0];
@@ -475,7 +476,7 @@ export default function DashboardPage() {
           onClose={() => setShowOnboarding(false)}
           onAddSubscription={() => {
             // Scroll to add subscription panel
-            document.getElementById("add-subscription-panel")?.scrollIntoView({ behavior: "smooth" });
+            document.getElementById("add-new-form")?.scrollIntoView({ behavior: "smooth" });
           }}
         />
       )}
@@ -589,6 +590,8 @@ export default function DashboardPage() {
                 allSubscriptions={subs}
                 widgetOrder={dashSettings.widgets.map(w => w.id as any)}
                 widgetSizes={dashSettings.widgetSizes ?? {}}
+                currency={currency}
+                fxRates={fxRates}
               />
             )}
 

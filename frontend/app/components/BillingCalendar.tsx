@@ -3,6 +3,9 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import type { WidgetSpan } from "./AdvancedAnalytics";
 import { WIDGET_H } from "./AdvancedAnalytics";
+import { CAT_COLORS as MASTER_CAT_COLORS } from "../lib/categories";
+import { formatMoney as fxFormat } from "../lib/currency";
+import type { Currency } from "../lib/currency";
 
 type Sub = {
   id: number;
@@ -15,13 +18,8 @@ type Sub = {
   split_with?: number;
 };
 
-const CAT_COLORS: Record<string, string> = {
-  Entertainment: "#8B5CF6",
-  Productivity:  "#D946EF",
-  Gaming:        "#06B6D4",
-  Utilities:     "#6366F1",
-  Other:         "#64748B",
-};
+// Full category color map from master list
+const CAT_COLORS: Record<string, string> = MASTER_CAT_COLORS;
 
 function subColor(name: string, category?: string) {
   if (category && CAT_COLORS[category]) return CAT_COLORS[category];
@@ -31,12 +29,22 @@ function subColor(name: string, category?: string) {
   return palette[Math.abs(hash) % palette.length];
 }
 
-function fmt(cents: number, split?: number) {
+function fmt(cents: number, split: number | undefined, currency: Currency, rates: Record<string, number>) {
   const effective = split && split > 1 ? cents / split : cents;
-  return `$${(effective / 100).toFixed(2)}`;
+  return fxFormat(effective, currency, rates);
 }
 
-export default function BillingCalendar({ subscriptions, span = 4 }: { subscriptions: Sub[], span?: WidgetSpan }) {
+export default function BillingCalendar({
+  subscriptions,
+  span = 4,
+  currency = "USD",
+  fxRates = { USD: 1, EUR: 0.92, GBP: 0.79 },
+}: {
+  subscriptions: Sub[];
+  span?: WidgetSpan;
+  currency?: Currency;
+  fxRates?: Record<string, number>;
+}) {
   const today = new Date();
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selected, setSelected] = useState<number | null>(null);
@@ -77,7 +85,7 @@ export default function BillingCalendar({ subscriptions, span = 4 }: { subscript
         <div className="flex items-center gap-2 px-4 pt-4 pb-2 shrink-0">
           <Calendar className="w-4 h-4 text-cyan-400 shrink-0" />
           <h3 className="text-sm font-semibold text-white">Billing</h3>
-          <span className="ml-auto text-xs font-bold text-cyan-300 font-mono">${(totalThisMonth / 100).toFixed(0)}</span>
+          <span className="ml-auto text-xs font-bold text-cyan-300 font-mono">{fxFormat(totalThisMonth, currency, fxRates)}</span>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-3 space-y-1.5 min-h-0">
           {upcoming.length === 0 ? (
@@ -96,7 +104,7 @@ export default function BillingCalendar({ subscriptions, span = 4 }: { subscript
                   {subs.length > 2 && <span className="text-[10px] text-white/30">+{subs.length - 2}</span>}
                 </div>
               </div>
-              <span className="text-xs font-bold text-white/80 font-mono shrink-0">{fmt(subs.reduce((a, s) => a + s.price_cents, 0), undefined)}</span>
+              <span className="text-xs font-bold text-white/80 font-mono shrink-0">{fmt(subs.reduce((a, s) => a + s.price_cents, 0), undefined, currency, fxRates)}</span>
             </div>
           ))}
         </div>
@@ -123,7 +131,7 @@ export default function BillingCalendar({ subscriptions, span = 4 }: { subscript
             <Calendar className="w-4 h-4 text-cyan-400" />
             <h3 className="text-sm font-semibold text-white">This Week</h3>
           </div>
-          <span className="text-xs font-bold text-cyan-300 font-mono">${(totalThisMonth / 100).toFixed(2)} <span className="text-white/30 font-normal">this month</span></span>
+          <span className="text-xs font-bold text-cyan-300 font-mono">{fxFormat(totalThisMonth, currency, fxRates)} <span className="text-white/30 font-normal">this month</span></span>
         </div>
         {/* Week grid */}
         <div className="flex-1 px-3 py-2 min-h-0">
@@ -184,7 +192,7 @@ export default function BillingCalendar({ subscriptions, span = 4 }: { subscript
         <div className="flex items-center gap-3">
           <div className="text-right">
             <p className="text-[10px] text-white/35 leading-none">This month</p>
-            <p className="text-sm font-black text-cyan-300 font-mono">${(totalThisMonth/100).toFixed(2)}</p>
+            <p className="text-sm font-black text-cyan-300 font-mono">{fxFormat(totalThisMonth, currency, fxRates)}</p>
           </div>
           <div className="flex gap-1">
             <button onClick={() => setViewDate(new Date(year, month - 1, 1))}
@@ -274,7 +282,7 @@ export default function BillingCalendar({ subscriptions, span = 4 }: { subscript
                       </div>
                       <span className="text-xs text-white/80 truncate">{s.name}</span>
                     </div>
-                    <span className="text-xs font-bold text-emerald-400 font-mono shrink-0">{fmt(s.price_cents, s.split_with)}</span>
+                    <span className="text-xs font-bold text-emerald-400 font-mono shrink-0">{fmt(s.price_cents, s.split_with, currency, fxRates)}</span>
                   </div>
                 );
               })}

@@ -2,6 +2,8 @@
 import { Calendar, Clock, CheckCircle, DollarSign } from 'lucide-react';
 import type { WidgetSpan } from "./AdvancedAnalytics";
 import { WIDGET_H } from "./AdvancedAnalytics";
+import { formatMoney as fxFormat } from "../lib/currency";
+import type { Currency } from "../lib/currency";
 
 interface Subscription {
     id: number;
@@ -22,7 +24,17 @@ function urgencyStyle(days: number) {
     return { badgeBg:   'rgba(124,58,237,0.12)', badgeColor: '#C4B5FD', badgeBorder: 'rgba(124,58,237,0.25)', dot: '#8B5CF6' };
 }
 
-export default function UpcomingRenewals({ subscriptions, span = 1 }: { subscriptions: Subscription[], span?: WidgetSpan }) {
+export default function UpcomingRenewals({
+    subscriptions,
+    span = 1,
+    currency = "USD",
+    fxRates = { USD: 1, EUR: 0.92, GBP: 0.79 },
+}: {
+    subscriptions: Subscription[];
+    span?: WidgetSpan;
+    currency?: Currency;
+    fxRates?: Record<string, number>;
+}) {
     const compact = span === 1;
 
     // Summary for the footer
@@ -96,7 +108,7 @@ export default function UpcomingRenewals({ subscriptions, span = 1 }: { subscrip
                                         </div>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <p className="text-xs font-bold text-white font-mono">${(sub.price_cents / 100).toFixed(2)}</p>
+                                        <p className="text-xs font-bold text-white font-mono">{fxFormat(sub.price_cents, currency, fxRates)}</p>
                                         <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border"
                                             style={{ background: style.badgeBg, color: style.badgeColor, borderColor: style.badgeBorder }}>
                                             {label}
@@ -117,7 +129,7 @@ export default function UpcomingRenewals({ subscriptions, span = 1 }: { subscrip
                             <span className="text-[10px] text-white/30 uppercase tracking-wide">Total due</span>
                         </div>
                         <span className="text-xs font-black text-violet-300 font-mono">
-                            ${(totalUpcoming / 100).toFixed(2)}
+                            {fxFormat(totalUpcoming, currency, fxRates)}
                         </span>
                     </div>
                 </>

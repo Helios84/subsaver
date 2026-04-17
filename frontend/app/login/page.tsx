@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -67,7 +67,7 @@ function StyledInput(props: React.InputHTMLAttributes<HTMLInputElement> & { extr
   );
 }
 
-export default function LoginPage() {
+function LoginPageInner() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -375,5 +375,13 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#080B14" }} />}>
+      <LoginPageInner />
+    </Suspense>
   );
 }

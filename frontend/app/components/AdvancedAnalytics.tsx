@@ -38,12 +38,16 @@ export default function AdvancedAnalytics({
   allSubscriptions,
   widgetOrder,
   widgetSizes = {},
+  currency = "USD",
+  fxRates = { USD: 1, EUR: 0.92, GBP: 0.79 },
 }: {
   upcomingRenewals: any[];
   widgets: Record<string, boolean>;
   allSubscriptions?: any[];
   widgetOrder?: WidgetId[];
   widgetSizes?: Partial<Record<WidgetId, WidgetSpan>>;
+  currency?: import("../lib/currency").Currency;
+  fxRates?: Record<string, number>;
 }) {
   const [trendsData, setTrendsData] = useState<any>(null);
   const [insights, setInsights] = useState<any[]>([]);
@@ -79,21 +83,21 @@ export default function AdvancedAnalytics({
   function renderWidget(id: WidgetId, span: WidgetSpan): React.ReactNode {
     switch (id) {
       case 'savings_card':
-        return <StudentSavingsCard span={span} />;
+        return <StudentSavingsCard span={span} currency={currency} fxRates={fxRates} />;
       case 'spending_trends':
         return trendsData?.trends
-          ? <SpendingTrendsChart data={trendsData.trends} span={span} />
+          ? <SpendingTrendsChart data={trendsData.trends} span={span} currency={currency} fxRates={fxRates} />
           : <ChartSkeleton />;
       case 'category_breakdown':
         return trendsData?.breakdown
-          ? <CategoryBreakdown data={trendsData.breakdown} span={span} />
+          ? <CategoryBreakdown data={trendsData.breakdown} span={span} currency={currency} fxRates={fxRates} />
           : <ChartSkeleton />;
       case 'insights':
         return <InsightsPanel insights={insights} span={span} />;
       case 'renewals':
-        return <UpcomingRenewals subscriptions={upcomingRenewals} span={span} />;
+        return <UpcomingRenewals subscriptions={upcomingRenewals} span={span} currency={currency} fxRates={fxRates} />;
       case 'billing_calendar':
-        return <BillingCalendar subscriptions={allSubscriptions ?? upcomingRenewals} span={span} />;
+        return <BillingCalendar subscriptions={allSubscriptions ?? upcomingRenewals} span={span} currency={currency} fxRates={fxRates} />;
       default:
         return null;
     }

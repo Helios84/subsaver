@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import calendar
 from typing import List, Dict, Any
 
@@ -25,7 +25,7 @@ async def get_spending_trends(
         Subscription.user_id == current_user.id,
     ).all()
 
-    today = datetime.utcnow()
+    today = datetime.now(timezone.utc).replace(tzinfo=None)
     first_of_this_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     # 1. Monthly Trends (Last 6 Months) — accurate with cancelled_at
@@ -109,7 +109,7 @@ async def get_insights(
     ).all()
 
     insights = []
-    today = datetime.utcnow()
+    today = datetime.now(timezone.utc).replace(tzinfo=None)
 
     # Insight 1: Upcoming Renewals (next 7 days)
     upcoming_count = 0
@@ -125,7 +125,8 @@ async def get_insights(
         insights.append({
             "type": "warning",
             "title": "Upcoming Renewals",
-            "message": f"You have {upcoming_count} subscriptions renewing this week totaling ${(upcoming_cost_cents/100):.2f}.",
+            "message": f"You have {upcoming_count} subscriptions renewing this week totaling {upcoming_cost_cents} cents.",
+            "amount_cents": upcoming_cost_cents,
             "action": "Review"
         })
 
@@ -167,7 +168,8 @@ async def get_insights(
         insights.append({
             "type": "success",
             "title": "Annual Plan Savings",
-            "message": f"Switching {count_switchable} services to annual plans could save you ~${(potential_yearly_savings/100):.0f}/year.",
+            "message": f"Switching {count_switchable} services to annual plans could save you ~{round(potential_yearly_savings/100*12)}/year.",
+            "amount_cents": int(potential_yearly_savings),
             "action": "View Options"
         })
 
