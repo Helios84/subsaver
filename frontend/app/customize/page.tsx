@@ -23,7 +23,7 @@ import { apiFetch } from "../lib/api";
 import StatsGrid from "../components/dashboard/StatsGrid";
 import AdvancedAnalytics from "../components/AdvancedAnalytics";
 import DraggableAnalyticsGrid from "../components/DraggableAnalyticsGrid";
-import { getExchangeRates, formatMoney as fxFormat } from "../lib/currency";
+import { getExchangeRates, formatMoney as fxFormat, CURRENCY_SYMBOLS } from "../lib/currency";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type WidgetId =
@@ -61,9 +61,7 @@ export type AccentTheme = "violet";
 // Fixed palette — violet/fuchsia, not configurable
 const BRAND = { primary: "#7C3AED", secondary: "#D946EF" };
 
-export const CURRENCY_SYMBOLS: Record<Currency, string> = {
-  USD: "$", EUR: "€", GBP: "£",
-};
+// CURRENCY_SYMBOLS imported from lib/currency — single source of truth
 
 export const STAT_CARD_LABELS: Record<StatCardId, string> = {
   monthly_spend:     "Monthly Spend",

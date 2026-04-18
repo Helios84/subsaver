@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '../lib/api';
 import SpendingTrendsChart from './SpendingTrendsChart';
 import CategoryBreakdown from './CategoryBreakdown';
@@ -49,10 +50,12 @@ export default function AdvancedAnalytics({
   currency?: import("../lib/currency").Currency;
   fxRates?: Record<string, number>;
 }) {
+  const router = useRouter();
   const [trendsData, setTrendsData] = useState<any>(null);
   const [insights, setInsights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // H-D fix: re-fetch analytics when subscriptions change
   useEffect(() => {
     async function load() {
       try {
@@ -69,7 +72,7 @@ export default function AdvancedAnalytics({
       }
     }
     load();
-  }, []);
+  }, [(allSubscriptions ?? []).length]); // re-fetch when subscription count changes
 
   // Determine the ordered list of analytics widgets to render
   const orderedIds: WidgetId[] = widgetOrder

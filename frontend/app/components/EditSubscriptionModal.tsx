@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Edit2, Save, X, Loader2 } from "lucide-react";
 import type { Sub } from "../types/index";
+import { CATEGORIES } from "../lib/categories";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type BillingCycle = "monthly" | "yearly";
@@ -18,20 +19,6 @@ export type EditState = {
   splitWith: number;
   isSplit: boolean;
 };
-
-const CATEGORIES = [
-  { value: "Entertainment",  icon: "🎬" },
-  { value: "Productivity",   icon: "💼" },
-  { value: "Gaming",         icon: "🎮" },
-  { value: "Utilities",      icon: "🔧" },
-  { value: "Communication",  icon: "📱" },
-  { value: "Health & Fitness", icon: "🏋️" },
-  { value: "Education",      icon: "📚" },
-  { value: "Food & Delivery", icon: "🍔" },
-  { value: "News & Media",   icon: "📰" },
-  { value: "Finance",        icon: "💳" },
-  { value: "Other",          icon: "🎨" },
-];
 
 type Props = {
   sub: Sub;

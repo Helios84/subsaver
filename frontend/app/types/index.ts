@@ -68,10 +68,11 @@ export interface SpendingTrend {
 }
 
 export interface AnalyticsInsight {
-  type: string;
+  type: "warning" | "info" | "success";
   title: string;
-  description: string;
-  severity: "info" | "warning" | "success";
+  message: string;   // backend returns "message", not "description"
+  action: string;
+  amount_cents?: number;  // optional — added in previous session for currency formatting
 }
 
 // ─── Batch-check API response ─────────────────────────────────────────────────

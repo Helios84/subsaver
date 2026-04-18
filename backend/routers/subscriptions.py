@@ -1,9 +1,10 @@
 """Subscription CRUD router — /subscriptions endpoints."""
 import logging
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from limiter import limiter
 from sqlalchemy.orm import Session
 
 from dependencies import get_db, get_current_user
@@ -26,7 +27,9 @@ def list_subscriptions(current_user: User = Depends(get_current_user), db: Sessi
 
 
 @router.post("/subscriptions", response_model=SubscriptionOut)
+@limiter.limit("60/minute")
 def create_subscription(
+    request: Request,
     payload: SubscriptionCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -37,7 +40,7 @@ def create_subscription(
         next_billing_date = payload.next_billing_date
         if not next_billing_date and payload.status == "active":
             next_billing_date = reminder_service.calculate_next_billing_date(
-                datetime.utcnow(), payload.billing_cycle
+                datetime.now(timezone.utc).replace(tzinfo=None), payload.billing_cycle
             )
         sub = Subscription(
             user_id=current_user.id,
@@ -91,7 +94,7 @@ def update_subscription(
     if payload.status is not None and payload.status != sub.status:
         sub.status = payload.status
         if payload.status == "cancelled":
-            sub.cancelled_at = datetime.utcnow()
+            sub.cancelled_at = datetime.now(timezone.utc).replace(tzinfo=None)
         elif payload.status == "active":
             sub.cancelled_at = None   # Reactivated
             sub.reminder_sent = False  # Allow reminders again after reactivation

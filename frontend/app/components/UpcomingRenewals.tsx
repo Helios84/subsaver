@@ -1,8 +1,8 @@
 "use client";
-import { Calendar, Clock, CheckCircle, DollarSign } from 'lucide-react';
+import { Calendar, Clock, CheckCircle } from 'lucide-react';
 import type { WidgetSpan } from "./AdvancedAnalytics";
 import { WIDGET_H } from "./AdvancedAnalytics";
-import { formatMoney as fxFormat } from "../lib/currency";
+import { formatMoney as fxFormat, CURRENCY_SYMBOLS } from "../lib/currency";
 import type { Currency } from "../lib/currency";
 
 interface Subscription {
@@ -125,7 +125,7 @@ export default function UpcomingRenewals({
                         style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(124,58,237,0.04)' }}
                     >
                         <div className="flex items-center gap-1.5">
-                            <DollarSign className="w-3 h-3 text-violet-400/60" />
+                            <span className="text-violet-400/60 text-sm font-bold shrink-0">{CURRENCY_SYMBOLS[currency]}</span>
                             <span className="text-[10px] text-white/30 uppercase tracking-wide">Total due</span>
                         </div>
                         <span className="text-xs font-black text-violet-300 font-mono">

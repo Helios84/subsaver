@@ -2,7 +2,7 @@
 ORM models for User and Subscription.
 Extracted from main.py so all modules can import without circular imports.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 
@@ -15,7 +15,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
     # Reminder settings
     reminder_enabled = Column(Boolean, default=True)
@@ -48,7 +48,7 @@ class Subscription(Base):
     billing_cycle = Column(String, default="monthly")
     status = Column(String, default="active")
     category = Column(String, default="Other")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
     next_billing_date = Column(DateTime, nullable=True)
     reminder_sent = Column(Boolean, default=False)

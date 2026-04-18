@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     # ── Database ──
     database_url: str = "sqlite:///./subsaver.db"
 
+    # ── URLs ──
+    frontend_url: str = "https://subsaver.example"
+
     # ── CORS ──
     # Accept comma-separated list: "http://localhost:3000,https://subsaver.example"
     allowed_origins: str = "http://localhost:3000"

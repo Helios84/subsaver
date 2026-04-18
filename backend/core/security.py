@@ -5,7 +5,7 @@ Extracted from main.py to avoid circular imports.
 import hashlib
 import secrets
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import bcrypt as _bcrypt
 from jose import jwt
@@ -51,6 +51,6 @@ def needs_rehash(hashed: str) -> bool:
 
 
 def create_access_token(email: str) -> str:
-    exp = datetime.utcnow() + timedelta(minutes=settings.jwt_expires_min)
+    exp = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=settings.jwt_expires_min)
     payload = {"sub": email, "exp": exp}
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_alg)

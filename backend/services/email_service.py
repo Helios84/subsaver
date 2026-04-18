@@ -229,8 +229,10 @@ class EmailService:
         """
         Send a notification that the password has been successfully changed.
         """
+        from config import settings as _settings
+        frontend_url = _settings.frontend_url
         subject = "SubSaver - Password Changed"
-        html_content = """
+        html_content = f"""
         <!DOCTYPE html>
         <html>
         <body style="margin:0;padding:0;background:#080B14;font-family:Inter,-apple-system,sans-serif;color:#fff;">

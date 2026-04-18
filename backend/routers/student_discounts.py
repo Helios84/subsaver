@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
-from pydantic import BaseModel
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field
 
 from dependencies import get_db, get_current_user
 from models.db import User, Subscription
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/student-discounts", tags=["student-discounts"])
 
 
 class BatchCheckRequest(BaseModel):
-    subscription_ids: List[int]
+    subscription_ids: List[int] = Field(..., max_length=500)
 
 
 @router.post("/batch-check")
@@ -166,7 +166,7 @@ async def mark_discount_applied(
         
         # Update subscription
         subscription.student_discount_applied = True
-        subscription.discount_applied_date = datetime.utcnow()
+        subscription.discount_applied_date = datetime.now(timezone.utc).replace(tzinfo=None)
         
         # Optionally update the price to student price
         # subscription.price_cents = discount.student_price_cents
@@ -174,11 +174,19 @@ async def mark_discount_applied(
         db.commit()
         db.refresh(subscription)
         
+        monthly_savings = discount.regular_price_cents - discount.student_price_cents
+        # M-E fix: for yearly subscriptions, savings are already annual — don't multiply
+        if subscription.billing_cycle == "yearly":
+            yearly_savings = monthly_savings  # already a yearly difference
+            monthly_savings_display = monthly_savings // 12
+        else:
+            yearly_savings = monthly_savings * 12
+            monthly_savings_display = monthly_savings
         return {
             "message": "Student discount marked as applied",
             "subscription_id": subscription_id,
-            "savings_per_month_cents": discount.regular_price_cents - discount.student_price_cents,
-            "savings_per_year_cents": (discount.regular_price_cents - discount.student_price_cents) * 12
+            "savings_per_month_cents": monthly_savings_display,
+            "savings_per_year_cents": yearly_savings
         }
     except HTTPException:
         raise

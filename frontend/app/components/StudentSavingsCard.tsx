@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiFetch } from "../lib/api";
 import { GraduationCap, ArrowRight, TrendingUp } from "lucide-react";
 import type { WidgetSpan } from "./AdvancedAnalytics";
@@ -26,6 +27,7 @@ export default function StudentSavingsCard({
     currency?: Currency;
     fxRates?: Record<string, number>;
 }) {
+    const router = useRouter();
     const [data, setData] = useState<SavingsData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -48,8 +50,9 @@ export default function StudentSavingsCard({
     );
     if (!data) return null;
 
-    const progress = data.discounts_available > 0
-        ? (data.discounts_applied / data.discounts_available) * 100
+    const totalDiscounts = data.discounts_applied + data.discounts_available;
+    const progress = totalDiscounts > 0
+        ? (data.discounts_applied / totalDiscounts) * 100
         : 0;
 
     // span=1: ultra-compact, just the key number + progress
@@ -145,7 +148,9 @@ export default function StudentSavingsCard({
                     <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(168,85,247,0.5)]"
                         style={{ width: `${Math.max(5, progress)}%` }} />
                 </div>
-                <button className="w-full py-2 bg-gradient-to-r from-violet-600/30 to-fuchsia-600/30 hover:from-violet-600/50 hover:to-fuchsia-600/50 text-white rounded-lg font-medium text-xs transition-all border border-violet-500/20 flex items-center justify-center gap-1.5">
+                <button
+                    onClick={() => router.push('/settings#student-discounts')}
+                    className="w-full py-2 bg-gradient-to-r from-violet-600/30 to-fuchsia-600/30 hover:from-violet-600/50 hover:to-fuchsia-600/50 text-white rounded-lg font-medium text-xs transition-all border border-violet-500/20 flex items-center justify-center gap-1.5">
                     View All Discounts
                     <ArrowRight className="w-3.5 h-3.5" />
                 </button>

@@ -17,30 +17,18 @@ import StatsGrid from "../components/dashboard/StatsGrid";
 import SubscriptionCard from "../components/dashboard/SubscriptionCard";
 import AddSubscriptionPanel from "../components/dashboard/AddSubscriptionPanel";
 import EditSubscriptionModal, { type EditState } from "../components/EditSubscriptionModal";
-import { loadDashboardSettings, type DashboardSettings, CURRENCY_SYMBOLS } from "../customize/page";
+import { loadDashboardSettings, type DashboardSettings } from "../customize/page";
 import { useToast } from "../components/ToastProvider";
 import OnboardingModal, { shouldShowOnboarding } from "../components/OnboardingModal";
 import { getExchangeRates, formatMoney as fxFormat, type Currency } from "../lib/currency";
+import { CATEGORIES } from "../lib/categories";
 import type { Sub, StudentDiscount, UserOut as User } from "../types/index";
 
 // ─── Local aliases ────────────────────────────────────────────────────────────
 type BillingCycle = "monthly" | "yearly";
 type Status = "active" | "cancelled";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const CATEGORIES = [
-  { value: "Entertainment",   icon: "🎬", color: "#7C3AED" },
-  { value: "Productivity",    icon: "💼", color: "#F59E0B" },
-  { value: "Gaming",          icon: "🎮", color: "#8B5CF6" },
-  { value: "Utilities",       icon: "🔧", color: "#3B82F6" },
-  { value: "Communication",   icon: "📱", color: "#10B981" },
-  { value: "Health & Fitness",icon: "🏋️", color: "#db2777" },
-  { value: "Education",       icon: "📚", color: "#6366F1" },
-  { value: "Food & Delivery", icon: "🍔", color: "#F97316" },
-  { value: "News & Media",    icon: "📰", color: "#EAB308" },
-  { value: "Finance",         icon: "💳", color: "#10B981" },
-  { value: "Other",           icon: "📦", color: "#6B7280" },
-];
+// CATEGORIES imported from lib/categories (see import above)
 
 function formatMoney(cents: number, currency: import("../lib/currency").Currency, rates: Record<string, number>) {
   return fxFormat(cents, currency, rates);
@@ -763,6 +751,8 @@ export default function DashboardPage() {
                             discount={studentDiscounts.get(s.id)}
                             isDeleting={deletingId === s.id}
                             layoutCompact={layoutCompact}
+                            currency={currency}
+                            fxRates={fxRates}
                             onStartEdit={startEdit}
                             onToggleStatus={toggleStatus}
                             onConfirmDelete={confirmDelete}

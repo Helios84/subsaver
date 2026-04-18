@@ -1,7 +1,7 @@
 """Auth router — all /auth/* endpoints."""
 import secrets
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
@@ -39,7 +39,7 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
             if (
                 existing.verification_code
                 and existing.verification_code_expires
-                and datetime.utcnow() < existing.verification_code_expires
+                and datetime.now(timezone.utc).replace(tzinfo=None) < existing.verification_code_expires
             ):
                 raise HTTPException(
                     status_code=400,
@@ -49,7 +49,7 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
             code = str(secrets.randbelow(900000) + 100000)
             existing.password_hash = hash_password(payload.password)
             existing.verification_code = code
-            existing.verification_code_expires = datetime.utcnow() + timedelta(minutes=15)
+            existing.verification_code_expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=15)
             db.commit()
             from services.email_service import email_service
             sent = email_service.send_email_confirmation(email, code)
@@ -65,7 +65,7 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
             password_hash=hash_password(payload.password),
             email_confirmed=False,
             verification_code=code,
-            verification_code_expires=datetime.utcnow() + timedelta(minutes=15),
+            verification_code_expires=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=15),
         )
         db.add(user)
         db.commit()
@@ -95,7 +95,7 @@ def confirm_email(request: Request, payload: ConfirmEmailRequest, db: Session = 
         return {"message": "Already confirmed"}
     if not user.verification_code or not user.verification_code_expires:
         raise HTTPException(status_code=400, detail="No confirmation code found. Please register again.")
-    if datetime.utcnow() > user.verification_code_expires:
+    if datetime.now(timezone.utc).replace(tzinfo=None) > user.verification_code_expires:
         user.verification_code = None
         user.verification_code_expires = None
         db.commit()
@@ -121,7 +121,7 @@ def resend_confirmation(request: Request, payload: ForgotPasswordRequest, db: Se
         return {"message": "Already confirmed"}
     code = str(secrets.randbelow(900000) + 100000)
     user.verification_code = code
-    user.verification_code_expires = datetime.utcnow() + timedelta(minutes=15)
+    user.verification_code_expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=15)
     db.commit()
     from services.email_service import email_service
     sent = email_service.send_email_confirmation(email, code)
@@ -157,6 +157,8 @@ def token(request: Request, form: OAuth2PasswordRequestForm = Depends(), db: Ses
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(form.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not user.email_confirmed:
+        raise HTTPException(status_code=403, detail="email_not_confirmed")
     return {"access_token": create_access_token(email), "token_type": "bearer"}
 
 
@@ -169,7 +171,7 @@ def forgot_password(request: Request, payload: ForgotPasswordRequest, db: Sessio
         return {"message": "If that email exists, a reset code has been sent."}
     code = str(secrets.randbelow(900000) + 100000)
     user.reset_code = code
-    user.reset_expires = datetime.utcnow() + timedelta(minutes=15)
+    user.reset_expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=15)
     db.commit()
     from services.email_service import email_service
     sent = email_service.send_password_reset_code(user.email, code)
@@ -185,7 +187,7 @@ def verify_reset_code(request: Request, payload: VerifyResetCodeRequest, db: Ses
     user = db.query(User).filter(User.email == email).first()
     if not user or not user.reset_code or not user.reset_expires:
         raise HTTPException(status_code=400, detail="Invalid request")
-    if datetime.utcnow() > user.reset_expires:
+    if datetime.now(timezone.utc).replace(tzinfo=None) > user.reset_expires:
         raise HTTPException(status_code=400, detail="Reset code expired")
     if not secrets.compare_digest(user.reset_code, payload.code):
         raise HTTPException(status_code=400, detail="Invalid reset code")
@@ -198,7 +200,7 @@ def reset_password(request: Request, payload: ResetPasswordRequest, db: Session 
     user = db.query(User).filter(User.email == email).first()
     if not user or not user.reset_code or not user.reset_expires:
         raise HTTPException(status_code=400, detail="Invalid request")
-    if datetime.utcnow() > user.reset_expires:
+    if datetime.now(timezone.utc).replace(tzinfo=None) > user.reset_expires:
         user.reset_code = None
         user.reset_expires = None
         db.commit()
@@ -224,7 +226,7 @@ def verify_registration(request: Request, payload: VerifyRegistrationRequest, db
         return {"message": "Already verified"}
     if not user.verification_code or not user.verification_code_expires:
         raise HTTPException(status_code=400, detail="No verification code found.")
-    if datetime.utcnow() > user.verification_code_expires:
+    if datetime.now(timezone.utc).replace(tzinfo=None) > user.verification_code_expires:
         user.verification_code = None
         user.verification_code_expires = None
         db.commit()
@@ -250,7 +252,7 @@ def resend_verification(request: Request, payload: ResendVerificationRequest, db
         raise HTTPException(status_code=400, detail="No .edu email on file.")
     code = str(secrets.randbelow(900000) + 100000)
     user.verification_code = code
-    user.verification_code_expires = datetime.utcnow() + timedelta(minutes=15)
+    user.verification_code_expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=15)
     db.commit()
     from services.email_service import email_service
     sent = email_service.send_verification_code(user.edu_email, code)
@@ -271,7 +273,7 @@ async def request_verification_code(
         if current_user.is_verified:
             return {"message": "Already verified", "is_verified": True}
         code = str(secrets.randbelow(900000) + 100000)
-        expires_at = datetime.utcnow() + timedelta(minutes=15)
+        expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=15)
         current_user.edu_email = req.edu_email
         current_user.verification_code = code
         current_user.verification_code_expires = expires_at
@@ -301,7 +303,7 @@ async def confirm_verification_code(
         return {"message": "Already verified", "is_verified": True}
     if not current_user.verification_code or not current_user.verification_code_expires:
         raise HTTPException(status_code=400, detail="No verification code found.")
-    if datetime.utcnow() > current_user.verification_code_expires:
+    if datetime.now(timezone.utc).replace(tzinfo=None) > current_user.verification_code_expires:
         current_user.verification_code = None
         current_user.verification_code_expires = None
         db.commit()

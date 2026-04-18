@@ -3,22 +3,11 @@
 import { Edit2, Activity, Trash2, GraduationCap, Calendar } from "lucide-react";
 import { getServiceIcon } from "../../dashboard/serviceIcons";
 import type { Sub, StudentDiscount } from "../../types/index";
+import { CATEGORIES } from "../../lib/categories";
+import { formatMoney as fxFormat } from "../../lib/currency";
+import type { Currency } from "../../lib/currency";
 
-const CATEGORIES = [
-  { value: "Entertainment",  icon: "🎬", color: "#7C3AED" },
-  { value: "Productivity",   icon: "💼", color: "#F59E0B" },
-  { value: "Gaming",         icon: "🎮", color: "#8B5CF6" },
-  { value: "Utilities",      icon: "🔧", color: "#3B82F6" },
-  { value: "Communication",  icon: "📱", color: "#10B981" },
-  { value: "Health & Fitness", icon: "🏋️", color: "#db2777" },
-  { value: "Education",      icon: "📚", color: "#6366F1" },
-  { value: "Food & Delivery", icon: "🍔", color: "#F97316" },
-  { value: "Other",          icon: "🎨", color: "#6B7280" },
-];
-
-function formatMoney(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
-}
+// BUG-3 fix: use master CATEGORIES list + accept currency/fxRates props
 
 function formatDate(dateString?: string): string {
   if (!dateString) return "Not set";
@@ -47,6 +36,8 @@ type Props = {
   onExecuteDelete: (id: number) => void;
   onDiscountClick: (d: StudentDiscount) => void;
   layoutCompact?: boolean;
+  currency?: Currency;
+  fxRates?: Record<string, number>;
 };
 
 export default function SubscriptionCard({
@@ -61,6 +52,8 @@ export default function SubscriptionCard({
   onExecuteDelete,
   onDiscountClick,
   layoutCompact,
+  currency = "USD",
+  fxRates = { USD: 1, EUR: 0.92, GBP: 0.79 },
 }: Props) {
   const daysUntil = calculateDaysUntil(s.next_billing_date);
 
@@ -72,6 +65,13 @@ export default function SubscriptionCard({
       : "bg-indigo-500/10 text-indigo-300 border-indigo-500/20";
 
   const ServiceIcon = getServiceIcon(s.name);
+
+  // BUG-3: use fxFormat instead of hardcoded $
+  const priceDisplay = fxFormat(
+    s.split_with && s.split_with > 1 ? Math.round(s.price_cents / s.split_with) : s.price_cents,
+    currency,
+    fxRates
+  );
 
   if (layoutCompact) {
     return (
@@ -103,7 +103,7 @@ export default function SubscriptionCard({
         </div>
         {/* Price */}
         <div className="text-emerald-400 font-bold text-base shrink-0">
-          {formatMoney(s.split_with && s.split_with > 1 ? s.price_cents / s.split_with : s.price_cents)}
+          {priceDisplay}
         </div>
         {/* Actions */}
         {!isDeleting ? (
@@ -173,12 +173,12 @@ export default function SubscriptionCard({
           </div>
         </div>
 
-        {/* Price */}
+        {/* Price — BUG-3: currency-aware */}
         <div className="mb-4" style={{ minHeight: 60 }}>
           <div className="relative inline-block">
             <div className="absolute inset-0 bg-green-400/20 blur-md rounded-lg" />
             <div className="relative text-2xl font-bold text-green-400 font-mono tabular-nums">
-              {formatMoney(s.split_with && s.split_with > 1 ? s.price_cents / s.split_with : s.price_cents)}
+              {priceDisplay}
             </div>
           </div>
         </div>
@@ -191,7 +191,7 @@ export default function SubscriptionCard({
           </span>
           {s.split_with && s.split_with > 1 && (
             <span className="text-[10px] font-semibold text-violet-300 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">
-              Split ×{s.split_with} · Total: {formatMoney(s.price_cents)}
+              Split ×{s.split_with} · Total: {fxFormat(s.price_cents, currency, fxRates)}
             </span>
           )}
           {s.next_billing_date && daysUntil !== null && (
