@@ -178,9 +178,15 @@ export default function SubscriptionCard({
   // ── GRID CARD LAYOUT ───────────────────────────────────────────────────────────
   return (
     <div
-      className="group relative rounded-xl transition-[transform,box-shadow,border-color] duration-300 overflow-hidden liquid-card"
+      className="group relative rounded-xl transition-[transform,box-shadow,border-color] duration-300 liquid-card"
       style={isDeleting ? { border: "1px solid rgba(239,68,68,0.4)", background: "rgba(239,68,68,0.05)" } : {}}
     >
+      {/* Glow overlay — needs overflow-hidden separately */}
+      <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+        <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-30"
+          style={{ background: `radial-gradient(circle, ${accent}60, transparent)` }} />
+      </div>
+
       {/* Student Discount Badge */}
       {discount && isVerified && (
         <div className="absolute top-3 right-3 z-10">
