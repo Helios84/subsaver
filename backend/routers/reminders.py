@@ -92,7 +92,7 @@ def get_upcoming_renewals(
     )
     
     result = []
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     
     for sub in subscriptions:
         days_until = (sub.next_billing_date - now).days if sub.next_billing_date else None

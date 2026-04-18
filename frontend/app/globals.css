@@ -1001,7 +1001,7 @@ select option:hover {
   animation: shimmer-sweep 1.8s infinite;
 }
 /* -------------------------------
-   STATS GRID � responsive
+   STATS GRID — responsive
    ------------------------------- */
 
 /* Mobile / tablet: 2 columns */
@@ -1009,7 +1009,7 @@ select option:hover {
   grid-template-columns: repeat(2, 1fr);
 }
 
-/* Desktop (\u22651024px): 4 columns */
+/* Desktop (≥1024px): 4 columns */
 @media (min-width: 1024px) {
   .stats-grid {
     grid-template-columns: repeat(4, 1fr) !important;
@@ -1024,5 +1024,87 @@ select option:hover {
   }
   .stats-grid > div:nth-child(4) {
     border-right: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════
+   AURORA BACKGROUND LAYOUT CLASSES
+   Used in dashboard/page.tsx & settings/page.tsx
+   ═══════════════════════════════════════ */
+
+.aurora-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.aurora-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+/* ═══════════════════════════════════════
+   GRADIENT TEXT UTILITY
+   ═══════════════════════════════════════ */
+
+.gradient-text {
+  background: linear-gradient(135deg, #A855F7, #D946EF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ═══════════════════════════════════════
+   SPIN ANIMATION (standard, 1s)
+   Used in verify-email/page.tsx inline style
+   ═══════════════════════════════════════ */
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════
+   CUSTOM SELECT ARROWS (.liquid-select)
+   ═══════════════════════════════════════ */
+
+.liquid-select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,0.4)' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px !important;
+  cursor: pointer;
+}
+
+/* ═══════════════════════════════════════
+   CARD ACTION BUTTONS — hover / touch
+   On pointer-capable devices: hidden until hover
+   On touch devices: always visible
+   ═══════════════════════════════════════ */
+
+@media (hover: hover) {
+  /* Desktop: hide buttons by default, reveal on group hover */
+  .card-actions-hover {
+    opacity: 0;
+    border-top-color: transparent !important;
+  }
+
+  .group:hover .card-actions-hover {
+    opacity: 1;
+    border-top-color: rgba(255, 255, 255, 0.05) !important;
+  }
+}
+
+@media (hover: none) {
+  /* Touch devices: always show */
+  .card-actions-hover {
+    opacity: 1;
   }
 }

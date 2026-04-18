@@ -168,7 +168,7 @@ async def get_insights(
         insights.append({
             "type": "success",
             "title": "Annual Plan Savings",
-            "message": f"Switching {count_switchable} services to annual plans could save you ~{round(potential_yearly_savings/100*12)}/year.",
+            "message": f"Switching {count_switchable} services to annual plans could save you ~${round(potential_yearly_savings / 100):.0f}/year.",
             "amount_cents": int(potential_yearly_savings),
             "action": "View Options"
         })

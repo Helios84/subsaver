@@ -42,6 +42,11 @@ function VerifyEmailInner() {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
+    // Guard: redirect to register if no email param
+    if (!email) {
+      router.replace("/register");
+      return;
+    }
     setTimeout(() => setMounted(true), 50);
     inputRefs.current[0]?.focus();
     // Read dev_code from sessionStorage if register page saved it
@@ -50,7 +55,7 @@ function VerifyEmailInner() {
       setDevCode(saved);
       sessionStorage.removeItem("register_dev_code");
     }
-  }, []);
+  }, [email, router]);
 
   // Cooldown countdown
   useEffect(() => {

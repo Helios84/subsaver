@@ -3,7 +3,7 @@ Pydantic schemas for subscriptions.
 """
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 BILLING_CYCLES = {"monthly", "yearly"}
 STATUSES = {"active", "cancelled"}
@@ -135,9 +135,9 @@ class SubscriptionOut(BaseModel):
     category: str = "Other"
     created_at: datetime
     next_billing_date: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
     reminder_sent: bool = False
     student_discount_applied: bool = False
     split_with: int = 1
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
-from datetime import datetime
+from datetime import datetime, timezone
 from database import Base
 
 
@@ -31,10 +31,10 @@ class StudentDiscount(Base):
     
     # Metadata
     notes = Column(Text, nullable=True)  # Additional info, tips, special conditions
-    last_updated = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     is_active = Column(Boolean, default=True)  # Can disable outdated discounts
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     
     def to_dict(self):
         """Convert to dictionary for API responses"""

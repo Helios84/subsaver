@@ -78,7 +78,7 @@ class ReminderService:
                 sub.next_billing_date, sub.billing_cycle
             )
         if overdue_subs:
-            db.commit()
+            db.flush()  # flush within transaction so next query sees updates
 
         subscriptions_to_remind = self.get_subscriptions_needing_reminders(db)
         

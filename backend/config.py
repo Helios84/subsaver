@@ -4,10 +4,13 @@ Validates all required env-variables at startup.
 """
 from typing import List
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
+from pydantic import ConfigDict, field_validator
 
 
 class Settings(BaseSettings):
+    # ── Environment ──
+    environment: str = "production"  # "development" | "production"
+
     # ── JWT ──
     jwt_secret: str
     jwt_alg: str = "HS256"
@@ -46,10 +49,11 @@ class Settings(BaseSettings):
         """Returns True only if SMTP is properly configured."""
         return bool(self.smtp_host and self.smtp_user and self.smtp_password)
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = ConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
 
 
 # Singleton — import this everywhere

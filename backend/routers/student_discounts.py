@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field
+import logging
 
 from dependencies import get_db, get_current_user
 from models.db import User, Subscription
@@ -65,7 +66,7 @@ async def batch_check_discounts(
 
         return result
     except Exception as e:
-        # Return empty map on error so UI still loads
+        logging.getLogger(__name__).error(f"batch-check failed: {e}", exc_info=True)
         return {str(sid): None for sid in payload.subscription_ids}
 
 

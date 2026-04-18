@@ -18,6 +18,7 @@ from schemas.auth import (
 )
 from core.security import hash_password, verify_password, needs_rehash, create_access_token
 from limiter import limiter
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,8 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
             sent = email_service.send_email_confirmation(email, code)
             if not sent:
                 logger.warning(f"SMTP disabled. Re-registration code for {email}: {code}")
-                return {"message": "registered", "dev_code": code}
+                if settings.environment == "development":
+                    return {"message": "registered", "dev_code": code}
             return {"message": "registered"}
 
         # New user
@@ -73,7 +75,8 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
         sent = email_service.send_email_confirmation(email, code)
         if not sent:
             logger.warning(f"SMTP disabled. Email confirmation code for {email}: {code}")
-            return {"message": "registered", "dev_code": code}
+            if settings.environment == "development":
+                return {"message": "registered", "dev_code": code}
         return {"message": "registered"}
     except HTTPException:
         raise
@@ -126,7 +129,8 @@ def resend_confirmation(request: Request, payload: ForgotPasswordRequest, db: Se
     from services.email_service import email_service
     sent = email_service.send_email_confirmation(email, code)
     if not sent:
-        return {"message": "Code sent", "dev_code": code}
+        if settings.environment == "development":
+            return {"message": "Code sent", "dev_code": code}
     return {"message": "Confirmation code resent to your email"}
 
 
@@ -177,7 +181,8 @@ def forgot_password(request: Request, payload: ForgotPasswordRequest, db: Sessio
     sent = email_service.send_password_reset_code(user.email, code)
     if not sent:
         logger.warning(f"SMTP disabled. Reset code for {user.email}: {code}")
-        return {"message": "If that email exists, a reset code has been sent.", "dev_code": code}
+        if settings.environment == "development":
+            return {"message": "If that email exists, a reset code has been sent.", "dev_code": code}
     return {"message": "If that email exists, a reset code has been sent."}
 
 
@@ -241,6 +246,7 @@ def verify_registration(request: Request, payload: VerifyRegistrationRequest, db
 
 
 @router.post("/auth/resend-verification")
+@limiter.limit("3/minute")
 def resend_verification(request: Request, payload: ResendVerificationRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
@@ -257,7 +263,8 @@ def resend_verification(request: Request, payload: ResendVerificationRequest, db
     from services.email_service import email_service
     sent = email_service.send_verification_code(user.edu_email, code)
     if not sent:
-        return {"message": "Code resent", "dev_code": code, "expires_in_minutes": 15}
+        if settings.environment == "development":
+            return {"message": "Code resent", "dev_code": code, "expires_in_minutes": 15}
     return {"message": f"Code resent to {user.edu_email}", "expires_in_minutes": 15}
 
 
@@ -285,7 +292,9 @@ async def request_verification_code(
             sent_main = email_service.send_verification_code(current_user.email, code)
         if not (sent_edu or sent_main):
             logger.warning(f"SMTP disabled. Verification code: {code}")
-            return {"message": "SMTP not configured.", "dev_code": code, "expires_in_minutes": 15}
+            if settings.environment == "development":
+                return {"message": "SMTP not configured.", "dev_code": code, "expires_in_minutes": 15}
+            return {"message": f"Code sent to {req.edu_email}.", "expires_in_minutes": 15}
         return {"message": f"Code sent to {req.edu_email}.", "expires_in_minutes": 15}
     except Exception as e:
         import traceback

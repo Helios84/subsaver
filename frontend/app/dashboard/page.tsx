@@ -679,9 +679,9 @@ export default function DashboardPage() {
 
                     {/* Expanded Filters */}
                     {showFilters && (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, paddingBottom: 14 }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, paddingBottom: 14 }}>
                         {/* Status */}
-                        <div>
+                        <div style={{ flex: "1 1 140px", minWidth: 120 }}>
                           <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "rgba(255,255,255,0.3)", marginBottom: 6 }}>Status</div>
                           <div style={{ display: "flex", gap: 6 }}>
                             {(["all", "active", "cancelled"] as const).map((s) => (
@@ -693,12 +693,13 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Category */}
-                        <div>
+                        <div style={{ flex: "1 1 140px", minWidth: 120 }}>
                           <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "rgba(255,255,255,0.3)", marginBottom: 6 }}>Category</div>
                           <select
                             value={filterCategory}
                             onChange={(e) => setFilterCategory(e.target.value)}
-                            style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "#0F1220", color: "rgba(255,255,255,0.7)", fontSize: 12, cursor: "pointer", outline: "none" }}
+                            className="liquid-select"
+                            style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "#0F1220", color: "rgba(255,255,255,0.7)", fontSize: 12, outline: "none" }}
                           >
                             <option value="all">All Categories</option>
                             {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.icon} {c.value}</option>)}
@@ -706,12 +707,13 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Sort */}
-                        <div>
+                        <div style={{ flex: "1 1 140px", minWidth: 120 }}>
                           <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "rgba(255,255,255,0.3)", marginBottom: 6 }}>Sort by</div>
                           <select
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as any)}
-                            style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "#0F1220", color: "rgba(255,255,255,0.7)", fontSize: 12, cursor: "pointer", outline: "none" }}
+                            className="liquid-select"
+                            style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "#0F1220", color: "rgba(255,255,255,0.7)", fontSize: 12, outline: "none" }}
                           >
                             <option value="date">Date Added</option>
                             <option value="name">Name A–Z</option>
@@ -726,8 +728,30 @@ export default function DashboardPage() {
                   {/* Cards */}
                   <div style={{ padding: "1.5rem" }}>
                     {loading ? (
-                      <div className="space-y-4">
-                        {[1, 2, 3, 4].map((i) => <div key={i} className="h-24 bg-white/5 animate-pulse rounded-xl border border-white/5" />)}
+                      /* Skeleton — mimics the 3-col card grid layout */
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {[1, 2, 3, 4, 5, 6].map((i) => (
+                          <div key={i} className="rounded-xl p-5 animate-pulse" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                            {/* Icon + name row */}
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-12 h-12 rounded-xl shrink-0" style={{ background: "rgba(255,255,255,0.06)" }} />
+                              <div className="flex-1">
+                                <div className="h-4 rounded-lg mb-2" style={{ background: "rgba(255,255,255,0.06)", width: "60%" }} />
+                                <div className="h-3 rounded-lg" style={{ background: "rgba(255,255,255,0.04)", width: "40%" }} />
+                              </div>
+                            </div>
+                            {/* Price + progress row */}
+                            <div className="grid grid-cols-2 gap-4 mb-3">
+                              <div className="h-7 rounded-lg" style={{ background: "rgba(255,255,255,0.06)", width: "70%" }} />
+                              <div className="flex flex-col gap-2 justify-center">
+                                <div className="h-3 rounded-lg" style={{ background: "rgba(255,255,255,0.04)" }} />
+                                <div className="h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }} />
+                              </div>
+                            </div>
+                            {/* Action bar */}
+                            <div className="h-8 rounded-lg mt-3" style={{ background: "rgba(255,255,255,0.04)" }} />
+                          </div>
+                        ))}
                       </div>
                     ) : filteredSubs.length === 0 ? (
                       <div className="rounded-xl border-2 border-dashed border-white/10 p-12 text-center text-gray-400">
