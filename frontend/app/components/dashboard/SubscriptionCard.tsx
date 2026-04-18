@@ -85,20 +85,26 @@ export default function SubscriptionCard({
   fxRates = { USD: 1, EUR: 0.92, GBP: 0.79 },
 }: Props) {
   const daysUntil = calculateDaysUntil(s.next_billing_date);
-  const progress  = getBillingProgress(daysUntil, s.billing_cycle);
-  const accent    = getServiceColor(s.name);
+  const progress = getBillingProgress(daysUntil, s.billing_cycle);
+  const accent = getServiceColor(s.name);
   const ServiceIcon = getServiceIcon(s.name);
 
   // Renewal urgency styles
   const urgency =
     daysUntil !== null && daysUntil <= 3 && daysUntil >= 0
-      ? { bg: "rgba(239,68,68,0.12)", color: "#F87171", border: "rgba(239,68,68,0.3)", pulse: true,
-          bar: "linear-gradient(90deg,#EF4444,#F97316)" }
+      ? {
+        bg: "rgba(239,68,68,0.12)", color: "#F87171", border: "rgba(239,68,68,0.3)", pulse: true,
+        bar: "linear-gradient(90deg,#EF4444,#F97316)"
+      }
       : daysUntil !== null && daysUntil <= 7
-      ? { bg: "rgba(249,115,22,0.12)", color: "#FB923C", border: "rgba(249,115,22,0.3)", pulse: false,
-          bar: "linear-gradient(90deg,#F97316,#FBBF24)" }
-      : { bg: "rgba(99,102,241,0.12)", color: "#A5B4FC", border: "rgba(99,102,241,0.25)", pulse: false,
-          bar: "linear-gradient(90deg,#7C3AED,#D946EF)" };
+        ? {
+          bg: "rgba(249,115,22,0.12)", color: "#FB923C", border: "rgba(249,115,22,0.3)", pulse: false,
+          bar: "linear-gradient(90deg,#F97316,#FBBF24)"
+        }
+        : {
+          bg: "rgba(99,102,241,0.12)", color: "#A5B4FC", border: "rgba(99,102,241,0.25)", pulse: false,
+          bar: "linear-gradient(90deg,#7C3AED,#D946EF)"
+        };
 
   const priceDisplay = fxFormat(
     s.split_with && s.split_with > 1 ? Math.round(s.price_cents / s.split_with) : s.price_cents,
@@ -121,8 +127,8 @@ export default function SubscriptionCard({
           {ServiceIcon
             ? <ServiceIcon className={icon} style={{ color: accent }} />
             : <span className={`font-black ${letter}`} style={{ color: accent }}>
-                {s.name.charAt(0).toUpperCase()}
-              </span>
+              {s.name.charAt(0).toUpperCase()}
+            </span>
           }
         </div>
       </div>
@@ -132,18 +138,16 @@ export default function SubscriptionCard({
   // ── COMPACT LAYOUT ────────────────────────────────────────────────────────────
   if (layoutCompact) {
     return (
-      <div className={`flex items-center gap-4 p-3 rounded-xl liquid-card transition-[transform,box-shadow,border-color] ${
-        isDeleting ? "border border-red-500/30 bg-red-500/5" : ""
-      }`}>
+      <div className={`flex items-center gap-4 p-3 rounded-xl liquid-card transition-[transform,box-shadow,border-color] ${isDeleting ? "border border-red-500/30 bg-red-500/5" : ""
+        }`}>
         <IconBlock size="sm" />
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-white text-sm truncate">{s.name}</div>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-              s.status === "active" ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-gray-400"
-            }`}>{s.status}</span>
+            <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${s.status === "active" ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-gray-400"
+              }`}>{s.status}</span>
             <span className="text-[11px] text-white/40 capitalize">{s.billing_cycle}</span>
           </div>
         </div>
@@ -200,8 +204,10 @@ export default function SubscriptionCard({
             <button
               onClick={() => onDiscountClick(discount)}
               className="px-2.5 py-1 rounded-full flex items-center gap-1.5 transition-all hover:scale-105"
-              style={{ background: "linear-gradient(135deg,rgba(124,58,237,0.2),rgba(217,70,239,0.2))",
-                border: "1px solid rgba(217,70,239,0.3)", boxShadow: "0 0 10px rgba(124,58,237,0.2)" }}
+              style={{
+                background: "linear-gradient(135deg,rgba(124,58,237,0.2),rgba(217,70,239,0.2))",
+                border: "1px solid rgba(217,70,239,0.3)", boxShadow: "0 0 10px rgba(124,58,237,0.2)"
+              }}
             >
               <GraduationCap className="w-3.5 h-3.5 text-fuchsia-300" />
               <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-200">
@@ -219,11 +225,10 @@ export default function SubscriptionCard({
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-white text-base truncate">{s.name}</h3>
             <div className="flex items-center gap-2 mt-1.5">
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                s.status === "active"
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${s.status === "active"
                   ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                   : "bg-white/5 text-gray-400 border border-white/10"
-              }`}>{s.status}</span>
+                }`}>{s.status}</span>
               <span className="text-[11px] font-medium text-white/40 capitalize bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
                 {s.billing_cycle}
               </span>
@@ -312,7 +317,7 @@ export default function SubscriptionCard({
         {/* Action Buttons — hidden by default on desktop, revealed on hover.
             On touch devices always visible (via .card-actions-hover in globals.css) */}
         {!isDeleting && (
-          <div className="card-actions-hover flex items-center gap-1.5 mt-3 pt-3 border-t border-white/[0.05] pl-1 transition-opacity duration-200">
+          <div className="card-actions-hover flex items-center gap-1 -mx-5 px-4 mt-3 pt-3 border-t border-white/[0.05] transition-opacity duration-200">
             <button
               onClick={() => onStartEdit(s)}
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl transition-all text-white/40 hover:text-white hover:bg-white/[0.07]"
@@ -324,11 +329,10 @@ export default function SubscriptionCard({
 
             <button
               onClick={() => onToggleStatus(s)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl transition-all border ${
-                s.status === "active"
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl transition-all border ${s.status === "active"
                   ? "text-white/40 hover:text-amber-300 hover:bg-amber-500/[0.08] border-transparent"
                   : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20"
-              }`}
+                }`}
               title={s.status === "active" ? "Pause" : "Resume"}
             >
               <Activity className="w-3.5 h-3.5" />
