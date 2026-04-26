@@ -327,12 +327,15 @@ class EmailService:
             )
 
         template = Template(template_str)
+        from config import settings
+        dashboard_url = f"{settings.frontend_url}/dashboard"
         return template.render(
             subscription_name=subscription_name,
             price=price,
             billing_cycle=billing_cycle.capitalize(),
             renewal_date=renewal_date,
             days_until=days_until,
+            dashboard_url=dashboard_url,
         )
 
 

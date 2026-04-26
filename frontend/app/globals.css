@@ -1027,36 +1027,11 @@ select option:hover {
   }
 }
 
-/* ═══════════════════════════════════════
-   AURORA BACKGROUND LAYOUT CLASSES
-   Used in dashboard/page.tsx & settings/page.tsx
-   ═══════════════════════════════════════ */
 
-.aurora-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 0;
-}
+/* NOTE: Duplicate .aurora-container/.aurora-blob and .gradient-text blocks were
+   removed from here. The canonical definitions are in the AURORA BG HELPER
+   and GRADIENT TEXT sections above. */
 
-.aurora-blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  will-change: transform;
-}
-
-/* ═══════════════════════════════════════
-   GRADIENT TEXT UTILITY
-   ═══════════════════════════════════════ */
-
-.gradient-text {
-  background: linear-gradient(135deg, #A855F7, #D946EF);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
 
 /* ═══════════════════════════════════════
    SPIN ANIMATION (standard, 1s)

@@ -158,7 +158,7 @@ export default function BillingCalendar({
               {dayMap[selected].map(s => (
                 <div key={s.id} className="flex items-center justify-between text-xs">
                   <span className="text-white/70 truncate">{s.name}</span>
-                  <span className="text-emerald-400 font-bold font-mono shrink-0 ml-2">{fmt(s.price_cents, s.split_with)}</span>
+                  <span className="text-emerald-400 font-bold font-mono shrink-0 ml-2">{fmt(s.price_cents, s.split_with, currency, fxRates)}</span>
                 </div>
               ))}
             </div>
