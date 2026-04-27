@@ -81,8 +81,7 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
     except HTTPException:
         raise
     except Exception as e:
-        import traceback as _tb
-        logger.error(f"Registration error: {e}\n{_tb.format_exc()}")
+        logger.exception(f"Registration error: {e}")
         raise HTTPException(status_code=500, detail="Registration failed")
 
 
@@ -297,8 +296,7 @@ async def request_verification_code(
             return {"message": f"Code sent to {req.edu_email}.", "expires_in_minutes": 15}
         return {"message": f"Code sent to {req.edu_email}.", "expires_in_minutes": 15}
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        logger.exception("EDU verification error")
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -5,11 +5,14 @@ but the server starts normally. No crashes on missing credentials.
 """
 
 import os
+import logging
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from jinja2 import Template
+
+logger = logging.getLogger(__name__)
 
 
 class EmailService:
@@ -29,10 +32,9 @@ class EmailService:
         # Graceful degradation: don't crash if SMTP is not configured
         self.enabled = settings.smtp_enabled()
         if not self.enabled:
-            print("[WARNING] Email service: SMTP not configured. Emails will NOT be sent.")
-            print("          Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD in .env to enable.")
+            logger.warning("Email service: SMTP not configured. Emails will NOT be sent. Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD.")
         else:
-            print(f"[OK] Email service: SMTP configured via {self.smtp_host}:{self.smtp_port}")
+            logger.info(f"Email service: SMTP configured via {self.smtp_host}:{self.smtp_port}")
 
     def _send_email(self, to_email: str, subject: str, html_content: str) -> bool:
         """
@@ -40,7 +42,7 @@ class EmailService:
         Returns False (without raising) if SMTP is not configured or fails.
         """
         if not self.enabled:
-            print(f"[WARNING] Email not sent (SMTP disabled): to={to_email}, subject={subject}")
+            logger.warning(f"Email not sent (SMTP disabled): to={to_email}, subject={subject}")
             return False
 
         try:
@@ -59,16 +61,11 @@ class EmailService:
                 server.login(self.smtp_user, self.smtp_password)
                 server.send_message(msg)
 
-            print(f"[SUCCESS] Email sent to {to_email}: {subject}")
+            logger.info(f"Email sent to {to_email}: {subject}")
             return True
 
         except Exception as e:
-            import traceback
-            # Safely log the error without triggering UnicodeEncodeError on Windows console
-            error_msg = str(e).encode('ascii', 'ignore').decode('ascii')
-            tb = traceback.format_exc().encode('ascii', 'ignore').decode('ascii')
-            print(f"[ERROR] Failed to send email to {to_email}: {error_msg}")
-            print(f"[ERROR] Traceback: {tb}")
+            logger.exception(f"Failed to send email to {to_email}: {e}")
             return False
 
     # ─── Public methods ───────────────────────────────────────────────────────
@@ -258,7 +255,7 @@ class EmailService:
                   
                   <!-- CTA -->
                   <div style="text-align:center;margin-bottom:28px;">
-                    <a href="https://subsaver.example/login" style="display:inline-block;background:linear-gradient(135deg, #7C3AED, #D946EF);color:#fff;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:8px;">
+                    <a href="{frontend_url}/login" style="display:inline-block;background:linear-gradient(135deg, #7C3AED, #D946EF);color:#fff;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:8px;">
                       Log In Now
                     </a>
                   </div>
@@ -320,7 +317,7 @@ class EmailService:
             with open(template_path, "r", encoding="utf-8") as f:
                 template_str = f.read()
         except FileNotFoundError:
-            print(f"[WARNING] Template not found at {template_path}, using fallback.")
+            logger.warning(f"Email template not found at {template_path}, using fallback.")
             return (
                 f"<p>Your subscription <strong>{subscription_name}</strong>"
                 f" ({price}) renews on {renewal_date}.</p>"

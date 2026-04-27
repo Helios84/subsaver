@@ -34,7 +34,6 @@ def create_subscription(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    import traceback
     try:
         from services.reminder_service import reminder_service
         next_billing_date = payload.next_billing_date
@@ -57,7 +56,7 @@ def create_subscription(
         db.refresh(sub)
         return sub
     except Exception:
-        traceback.print_exc()
+        logger.exception("Failed to create subscription")
         raise
 
 
