@@ -8,20 +8,21 @@ import { apiFetch } from "../lib/api";
 
 /* ── Digit input styles ──────────────────────────────────────────────────── */
 const digitStyle = (focused: boolean): React.CSSProperties => ({
-  width: 52,
-  height: 64,
+  width: "clamp(40px, 12vw, 52px)",
+  height: "clamp(52px, 14vw, 64px)",
   background: focused ? "rgba(124,58,237,0.1)" : "rgba(255,255,255,0.04)",
   border: `1.5px solid ${focused ? "rgba(124,58,237,0.6)" : "rgba(255,255,255,0.1)"}`,
   borderRadius: 14,
   color: "white",
   fontSize: 26,
   fontWeight: 800,
-  textAlign: "center",
+  textAlign: "center" as const,
   outline: "none",
   transition: "all 0.2s",
   caretColor: "#A855F7",
   boxShadow: focused ? "0 0 0 3px rgba(124,58,237,0.15)" : "none",
   fontFamily: "monospace",
+  flexShrink: 0,
 });
 
 function VerifyEmailInner() {

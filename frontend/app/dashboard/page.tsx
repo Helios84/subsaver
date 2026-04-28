@@ -521,18 +521,18 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-[1600px] px-6 lg:px-12 xl:px-16 py-10 space-y-16">
+      <div className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-12 xl:px-16 py-10 space-y-10">
 
         {/* Quick Actions */}
-        <div className="flex gap-3 mb-2 overflow-x-auto pb-2">
+        <div className="dashboard-quick-actions flex gap-3 mb-2">
           <button
             onClick={() => setShowServicePicker(true)}
-            className="liquid-btn flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0"
+            className="liquid-btn flex items-center gap-2.5 px-5 py-3"
           >
             <Plus className="w-5 h-5" />
             <span className="font-bold">Add Subscription</span>
           </button>
-          <Link href="/customize" className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3 rounded-xl shrink-0">
+          <Link href="/customize" className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3">
             <Layout className="w-5 h-5 text-fuchsia-400" />
             <span className="font-medium">Customize</span>
           </Link>

@@ -140,7 +140,7 @@ function LoginPageInner() {
     forgotStage === "password" ? handleResetPassword : onSubmit;
 
   return (
-    <main style={{ minHeight: "100vh", display: "flex", background: "#080B14", color: "white" }}>
+    <main style={{ height: "100vh", maxHeight: "100vh", overflow: "hidden", display: "flex", background: "#080B14", color: "white" }}>
 
       {/* ── LEFT: Art panel ── */}
       <div className="hidden lg:flex" style={{ flex: 1, position: "relative", overflow: "hidden", alignItems: "center", justifyContent: "center", background: "linear-gradient(160deg, #0D0A1E 0%, #120D2B 55%, #0a0d1a 100%)" }}>
@@ -188,7 +188,7 @@ function LoginPageInner() {
       </div>
 
       {/* ── RIGHT: Form panel ── */}
-      <div style={{ flex: 1, maxWidth: "520px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "3rem 2rem", position: "relative" }}>
+      <div style={{ flex: 1, maxWidth: "520px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2.5rem 2rem", position: "relative", overflowY: "auto" }}>
         {/* Soft glow behind form */}
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
           <div className="aurora-blob" style={{ width: 400, height: 400, background: "radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%)", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }} />
@@ -279,7 +279,9 @@ function LoginPageInner() {
                     extraStyle={{ paddingRight: "2.75rem" }}
                   />
                   <button type="button" onClick={() => setShowPw(!showPw)}
-                    style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1 }}>
+                    style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1, transition: "color 0.2s" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}>
                     {showPw ? <EyeOff style={{ width: 17, height: 17 }} /> : <Eye style={{ width: 17, height: 17 }} />}
                   </button>
                 </Field>
@@ -296,13 +298,17 @@ function LoginPageInner() {
                 <>
                   <Field label="New Password" icon={Lock}>
                     <StyledInput value={newPassword} onChange={(e) => setNewPassword(e.target.value)} type={showPw ? "text" : "password"} placeholder="Min. 8 characters" required minLength={8} extraStyle={{ paddingRight: "2.75rem" }} />
-                    <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1 }}>
+                    <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1, transition: "color 0.2s" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}>
                       {showPw ? <EyeOff style={{ width: 17, height: 17 }} /> : <Eye style={{ width: 17, height: 17 }} />}
                     </button>
                   </Field>
                   <Field label="Confirm Password" icon={Lock}>
                     <StyledInput value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} type={showPw2 ? "text" : "password"} placeholder="Verify password" required minLength={8} extraStyle={{ paddingRight: "2.75rem" }} />
-                    <button type="button" onClick={() => setShowPw2(!showPw2)} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1 }}>
+                    <button type="button" onClick={() => setShowPw2(!showPw2)} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1, transition: "color 0.2s" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}>
                       {showPw2 ? <EyeOff style={{ width: 17, height: 17 }} /> : <Eye style={{ width: 17, height: 17 }} />}
                     </button>
                   </Field>
@@ -335,7 +341,16 @@ function LoginPageInner() {
               {/* Submit button */}
               <button
                 type="submit" disabled={loading}
-                style={{ width: "100%", padding: "14px", marginTop: "0.25rem", borderRadius: "14px", background: loading ? "rgba(124,58,237,0.4)" : "linear-gradient(135deg,#7C3AED,#DB2777)", border: "none", color: "white", fontSize: "15px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", boxShadow: loading ? "none" : "0 4px 20px rgba(124,58,237,0.3)", transition: "box-shadow 0.2s, opacity 0.2s", opacity: loading ? 0.7 : 1 }}
+                className="hero-btn-primary"
+                style={{
+                  width: "100%", padding: "14px", marginTop: "0.25rem",
+                  fontSize: "15px", fontWeight: 700,
+                  cursor: loading ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                  opacity: loading ? 0.65 : 1,
+                  background: loading ? "rgba(124,58,237,0.4)" : undefined,
+                  boxShadow: loading ? "none" : undefined,
+                }}
               >
                 {loading ? (
                   <div style={{ width: 20, height: 20, border: "2px solid rgba(255,255,255,0.3)", borderTop: "2px solid white", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />

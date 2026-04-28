@@ -139,21 +139,12 @@ export default function NotFound() {
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <Link
             href="/dashboard"
+            className="hero-btn-primary"
             style={{
               display: "flex", alignItems: "center", gap: 9,
               padding: "13px 24px", borderRadius: 14,
-              background: "linear-gradient(135deg, #7C3AED, #D946EF)",
-              boxShadow: "0 4px 24px rgba(124,58,237,0.4)",
               color: "white", fontWeight: 700, fontSize: 14,
-              textDecoration: "none", transition: "transform 0.2s, box-shadow 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 8px 32px rgba(124,58,237,0.5)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 4px 24px rgba(124,58,237,0.4)";
+              textDecoration: "none",
             }}
           >
             <LayoutDashboard size={17} />
@@ -162,23 +153,12 @@ export default function NotFound() {
 
           <Link
             href="/"
+            className="hero-btn-ghost"
             style={{
               display: "flex", alignItems: "center", gap: 9,
               padding: "13px 24px", borderRadius: 14,
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.1)",
               color: "rgba(255,255,255,0.7)", fontWeight: 600, fontSize: 14,
-              textDecoration: "none", transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.09)";
-              e.currentTarget.style.color = "white";
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-              e.currentTarget.style.color = "rgba(255,255,255,0.7)";
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+              textDecoration: "none",
             }}
           >
             <Home size={17} />
@@ -202,7 +182,7 @@ export default function NotFound() {
         </button>
       </div>
 
-      {/* Float animation */}
+      {/* Float animation — uses global liquid-float, redefined here for isolation */}
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }

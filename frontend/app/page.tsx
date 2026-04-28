@@ -45,8 +45,8 @@ const CONTAINER_STYLE: React.CSSProperties = {
   maxWidth: "1024px",
   width: "100%",
   margin: "0 auto",
-  paddingLeft: "32px",
-  paddingRight: "32px",
+  paddingLeft: "clamp(20px, 5vw, 32px)",
+  paddingRight: "clamp(20px, 5vw, 32px)",
   boxSizing: "border-box",
 };
 
@@ -241,7 +241,7 @@ export default function Home() {
             flexDirection: "column",
             alignItems: "center",
             textAlign: "center",
-            padding: "144px 32px",
+            padding: "clamp(80px, 13vh, 144px) clamp(20px, 5vw, 32px)",
           }}
         >
           <div className="liquid-badge animate-pulse-glow mb-8">
@@ -272,7 +272,7 @@ export default function Home() {
             Find student discounts, split costs, and stop wasting money.
           </p>
 
-          <div className="flex gap-4 justify-center items-center flex-wrap mb-8">
+          <div className="hero-cta-group flex gap-4 justify-center items-center flex-wrap mb-8">
             {isAuthenticated ? (
               <Link href="/dashboard" className="hero-btn-primary text-base font-bold px-9 py-4 flex items-center gap-2.5">
                 <BarChart3 className="w-5 h-5" />
@@ -284,9 +284,10 @@ export default function Home() {
                   <Zap className="w-5 h-5" style={{ fill: "currentColor" }} />
                   Start Saving Free
                 </Link>
-                <Link href="/register" className="hero-btn-ghost text-base font-semibold px-9 py-4 flex items-center gap-2.5">
+                {/* Second CTA leads to Login, not Register */}
+                <Link href="/login" className="hero-btn-ghost text-base font-semibold px-9 py-4 flex items-center gap-2.5">
                   <BarChart3 className="w-5 h-5" />
-                  Get Started Free
+                  Log In
                 </Link>
               </>
             )}
