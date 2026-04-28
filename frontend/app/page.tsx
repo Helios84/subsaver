@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   DollarSign, BarChart3, Shield, Zap, Bell,
   GraduationCap, CheckCircle2, Sparkles,
-  Users, TrendingDown, Star
+  Users, TrendingDown, Star, ArrowRight
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
 
@@ -271,21 +271,65 @@ export default function Home() {
             Find student discounts, split costs, and stop wasting money.
           </p>
 
-          <div className="hero-cta-group flex gap-4 justify-center items-center flex-wrap mb-8">
+          <div className="hero-cta-group flex gap-3 justify-center items-stretch flex-wrap mb-8">
             {isAuthenticated ? (
-              <Link href="/dashboard" className="hero-btn-primary text-base font-bold px-9 py-4 flex items-center gap-2.5">
-                <BarChart3 className="w-5 h-5" />
+              <Link
+                href="/dashboard"
+                className="hero-btn-primary"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px",
+                  padding: "15px 36px",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  height: "54px",
+                  boxSizing: "border-box",
+                }}
+              >
+                <BarChart3 style={{ width: 18, height: 18 }} />
                 Go to Dashboard
               </Link>
             ) : (
               <>
-                <Link href="/register" className="hero-btn-primary text-base font-bold px-9 py-4 flex items-center gap-2.5">
-                  <Zap className="w-5 h-5" style={{ fill: "currentColor" }} />
+                <Link
+                  href="/register"
+                  className="hero-btn-primary"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "10px",
+                    padding: "15px 36px",
+                    fontSize: "15px",
+                    fontWeight: 700,
+                    height: "54px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <Zap style={{ width: 18, height: 18, fill: "currentColor" }} />
                   Start Saving Free
                 </Link>
-                {/* Second CTA leads to Login, not Register */}
-                <Link href="/login" className="hero-btn-ghost text-base font-semibold px-8 py-4 flex items-center gap-2">
-                  Log In →
+
+                <Link
+                  href="/login"
+                  className="hero-btn-ghost"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "10px",
+                    padding: "15px 36px",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    height: "54px",
+                    boxSizing: "border-box",
+                    color: "rgba(255,255,255,0.82)",
+                  }}
+                >
+                  Log In
+                  <ArrowRight style={{ width: 16, height: 16 }} />
                 </Link>
               </>
             )}
