@@ -86,16 +86,20 @@ function FeatureCard({ icon: Icon, title, desc, color, delay }: {
 }) {
   return (
     <div
-      className="liquid-card rounded-2xl p-8 group cursor-default flex flex-col items-center text-center gap-4"
-      style={{ animationDelay: delay }}
+      className="liquid-card rounded-2xl p-8 group cursor-default flex flex-col items-center text-center gap-4 transition-all duration-300 hover:translate-y-[-4px]"
+      style={{
+        animationDelay: delay,
+        borderColor: "rgba(255,255,255,0.07)",
+      }}
     >
       <div
-        className="flex items-center justify-center shrink-0 rounded-2xl transition-transform duration-300 group-hover:scale-110"
+        className="flex items-center justify-center shrink-0 rounded-2xl transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg"
         style={{
-          width: "52px", height: "52px",
-          minWidth: "52px", minHeight: "52px",
-          background: `${color}15`,
-          border: `1px solid ${color}35`,
+          width: "56px", height: "56px",
+          minWidth: "56px", minHeight: "56px",
+          background: `${color}18`,
+          border: `1px solid ${color}38`,
+          boxShadow: `0 0 0 0 ${color}30`,
         }}
       >
         <Icon style={{ width: "24px", height: "24px", color, flexShrink: 0 }} />
@@ -190,14 +194,9 @@ export default function Home() {
                 <>
                   <Link
                     href="/login"
-                    className="group relative text-sm font-bold px-4 md:px-5 py-2.5 flex items-center justify-center rounded-xl overflow-hidden transition-all duration-300"
-                    style={{
-                      color: "rgba(255,255,255,0.8)",
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.08)"
-                    }}
+                    className="group relative text-sm font-bold px-4 md:px-5 py-2.5 flex items-center justify-center rounded-xl overflow-hidden transition-all duration-300 liquid-btn-ghost"
+                    style={{ color: "rgba(255,255,255,0.85)" }}
                   >
-                    <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <span className="relative z-10 group-hover:text-white transition-colors">Log in</span>
                   </Link>
                   <Link href="/register" className="hero-btn-primary text-sm font-bold px-4 md:px-5 py-2.5 flex items-center justify-center">
@@ -267,7 +266,7 @@ export default function Home() {
             <span className="gradient-text-animate">Savings.</span>
           </h1>
 
-          <p style={{ fontSize: "18px", color: "rgba(255,255,255,0.5)", maxWidth: "520px", lineHeight: 1.7, marginBottom: "48px", textAlign: "center" }}>
+          <p style={{ fontSize: "17px", color: "rgba(255,255,255,0.5)", maxWidth: "500px", lineHeight: 1.7, marginBottom: "36px", textAlign: "center" }}>
             The intelligent subscription manager built for campus life.
             Find student discounts, split costs, and stop wasting money.
           </p>
@@ -285,9 +284,8 @@ export default function Home() {
                   Start Saving Free
                 </Link>
                 {/* Second CTA leads to Login, not Register */}
-                <Link href="/login" className="hero-btn-ghost text-base font-semibold px-9 py-4 flex items-center gap-2.5">
-                  <BarChart3 className="w-5 h-5" />
-                  Log In
+                <Link href="/login" className="hero-btn-ghost text-base font-semibold px-8 py-4 flex items-center gap-2">
+                  Log In →
                 </Link>
               </>
             )}
@@ -378,8 +376,8 @@ export default function Home() {
                   {/* Label */}
                   <p
                     style={{
-                      fontSize: "clamp(9px, 1vw, 11px)",
-                      color: "rgba(255,255,255,0.4)",
+                      fontSize: "clamp(10px, 1.1vw, 12px)",
+                      color: "rgba(255,255,255,0.45)",
                       fontWeight: 600,
                       letterSpacing: "0.05em",
                       textTransform: "uppercase",
@@ -399,7 +397,7 @@ export default function Home() {
       <div className="section-divider" />
 
       {/* ─── FEATURES ─── */}
-      <section id="features" style={{ width: "100%", padding: "112px 0" }}>
+      <section id="features" style={{ width: "100%", padding: "80px 0" }}>
         <div style={CONTAINER_STYLE}>
           {/* Centred heading */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: "64px", width: "100%" }}>
@@ -433,9 +431,13 @@ export default function Home() {
       <div className="section-divider" />
 
       {/* ─── TESTIMONIALS ─── */}
-      <section id="testimonials" style={{ width: "100%", padding: "112px 0" }}>
+      <section id="testimonials" style={{ width: "100%", padding: "80px 0" }}>
         <div style={CONTAINER_STYLE}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: "64px", width: "100%" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: "56px", width: "100%" }}>
+            <div className="liquid-badge mb-5">
+              <Star className="w-3.5 h-3.5 text-amber-400" />
+              <span>Student Reviews</span>
+            </div>
             <h2
               className="text-4xl lg:text-5xl font-black text-white mb-4"
               style={{ fontFamily: "var(--font-syne, sans-serif)" }}
@@ -451,7 +453,7 @@ export default function Home() {
               { name: "Sarah M.", school: "Stanford", text: "The split cost feature alone saved me $30/month sharing Netflix and Spotify with my roommates. Love this app.", stars: 5 },
               { name: "James T.", school: "NYU", text: "Finally an app that understands student budgets. Renewal reminders have saved me from so many surprise charges.", stars: 5 },
             ].map((t, i) => (
-              <div key={i} className="liquid-card rounded-2xl p-7 flex flex-col gap-5">
+              <div key={i} className="liquid-card rounded-2xl p-7 flex flex-col gap-5 transition-all duration-300 hover:translate-y-[-3px]" style={{ minHeight: "220px" }}>
                 <div className="flex gap-0.5">
                   {[...Array(t.stars)].map((_, j) => (
                     <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
@@ -519,7 +521,7 @@ export default function Home() {
                   className="font-black text-white mb-4 leading-[1.08]"
                   style={{
                     fontFamily: "var(--font-syne, sans-serif)",
-                    fontSize: "clamp(28px, 5vw, 52px)",
+                    fontSize: "clamp(28px, 4vw, 48px)",
                   }}
                 >
                   Ready to Stack<br />Your Savings?
