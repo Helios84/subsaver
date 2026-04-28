@@ -121,6 +121,7 @@ function FeatureCard({ icon: Icon, title, desc, color, delay }: {
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -146,67 +147,260 @@ export default function Home() {
       {/* ─── HEADER ─── */}
       <header className="glass-header sticky top-0 z-50" style={{ width: "100%" }}>
         <div style={CONTAINER_STYLE}>
-          <div className="py-4 relative flex items-center justify-between w-full">
-            {/* LEFT: Logo */}
-            <div className="flex-1 flex justify-start">
-              <Link href="/" className="flex items-center gap-2.5 group">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl blur-md opacity-50 group-hover:opacity-80 transition-opacity" />
-                  <div className="relative bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl p-1.5 shadow-lg">
-                    <Image src="/logo.png" alt="SubSaver Logo" width={28} height={28} className="w-7 h-7 rounded-lg" />
-                  </div>
-                </div>
-                <span className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>
-                  Sub<span className="gradient-text">Saver</span>
-                </span>
-              </Link>
-            </div>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            height: "64px",
+            position: "relative",
+          }}>
 
-            {/* CENTER: Navigation */}
-            <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden lg:flex items-center gap-8">
-              <a href="#features" className="text-sm text-white/50 hover:text-white transition-colors cursor-pointer font-medium">Features</a>
-              <a href="#stats" className="text-sm text-white/50 hover:text-white transition-colors cursor-pointer font-medium">Why Us</a>
-              <a href="#testimonials" className="text-sm text-white/50 hover:text-white transition-colors cursor-pointer font-medium">Students</a>
+            {/* LEFT: Logo */}
+            <Link href="/" className="group" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", flexShrink: 0 }}>
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #7C3AED, #D946EF)", borderRadius: "10px", filter: "blur(8px)", opacity: 0.5 }} className="group-hover:opacity-80 transition-opacity" />
+                <div style={{ position: "relative", background: "linear-gradient(135deg, #7C3AED, #D946EF)", borderRadius: "10px", padding: "6px", boxShadow: "0 4px 12px rgba(124,58,237,0.4)" }}>
+                  <Image src="/logo.png" alt="SubSaver" width={24} height={24} style={{ width: 24, height: 24, borderRadius: "6px", display: "block" }} />
+                </div>
+              </div>
+              <span style={{ fontFamily: "var(--font-syne, sans-serif)", fontSize: "18px", fontWeight: 800, letterSpacing: "-0.01em", color: "white" }}>
+                Sub<span className="gradient-text">Saver</span>
+              </span>
+            </Link>
+
+            {/* CENTER: Nav — desktop only */}
+            <nav style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              display: "flex",
+              alignItems: "center",
+              gap: "32px",
+            }} className="hidden lg:flex">
+              {[
+                { label: "Features", href: "#features" },
+                { label: "Why Us", href: "#stats" },
+                { label: "Students", href: "#testimonials" },
+              ].map(({ label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(255,255,255,0.55)",
+                    textDecoration: "none",
+                    transition: "color 0.2s",
+                    cursor: "pointer",
+                    paddingBottom: "2px",
+                    borderBottom: "1px solid transparent",
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLAnchorElement).style.color = "white";
+                    (e.currentTarget as HTMLAnchorElement).style.borderBottomColor = "rgba(167,139,250,0.6)";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.55)";
+                    (e.currentTarget as HTMLAnchorElement).style.borderBottomColor = "transparent";
+                  }}
+                >
+                  {label}
+                </a>
+              ))}
             </nav>
 
             {/* RIGHT: Actions */}
-            <div className="flex-1 flex items-center justify-end gap-3 lg:gap-4">
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
               {isAuthenticated ? (
-                <div className="flex items-center gap-3">
+                <>
                   {user && (
-                    <div className="hidden lg:flex flex-col items-end mr-2">
-                      <span className="text-xs text-white/40 font-medium tracking-wide uppercase">Logged in as</span>
-                      <span className="text-sm text-white/80 font-semibold">{user.email}</span>
-                    </div>
+                    <span className="hidden lg:block" style={{ fontSize: "13px", color: "rgba(255,255,255,0.45)", marginRight: "4px" }}>
+                      {user.email}
+                    </span>
                   )}
                   <button
                     onClick={handleLogout}
-                    className="hidden md:flex items-center justify-center text-sm font-semibold px-4 py-2.5 rounded-xl border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                    className="hidden md:flex"
+                    style={{
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: "38px",
+                      padding: "0 18px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "rgba(255,255,255,0.6)",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.10)",
+                      borderRadius: "10px",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      boxSizing: "border-box",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "white"; e.currentTarget.style.background = "rgba(255,255,255,0.09)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.6)"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
                   >
                     Log out
                   </button>
-                  <Link href="/dashboard" className="hero-btn-primary text-sm font-bold px-4 md:px-5 py-2.5 flex items-center justify-center group relative overflow-hidden">
-                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <span className="relative z-10">Dashboard</span>
+                  <Link
+                    href="/dashboard"
+                    className="hero-btn-primary"
+                    style={{ height: "38px", padding: "0 18px", fontSize: "13px", fontWeight: 700, gap: "6px" }}
+                  >
+                    Dashboard
                   </Link>
-                </div>
+                </>
               ) : (
                 <>
+                  {/* Log in — ghost button, visible border */}
                   <Link
                     href="/login"
-                    className="group relative text-sm font-bold px-4 md:px-5 py-2.5 flex items-center justify-center rounded-xl overflow-hidden transition-all duration-300 liquid-btn-ghost"
-                    style={{ color: "rgba(255,255,255,0.85)" }}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: "38px",
+                      padding: "0 18px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "rgba(255,255,255,0.80)",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      borderRadius: "10px",
+                      textDecoration: "none",
+                      transition: "all 0.2s",
+                      boxSizing: "border-box",
+                      whiteSpace: "nowrap",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "white"; e.currentTarget.style.background = "rgba(255,255,255,0.09)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.22)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.80)"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; }}
                   >
-                    <span className="relative z-10 group-hover:text-white transition-colors">Log in</span>
+                    Log in
                   </Link>
-                  <Link href="/register" className="hero-btn-primary text-sm font-bold px-4 md:px-5 py-2.5 flex items-center justify-center">
+
+                  {/* Get Started — primary */}
+                  <Link
+                    href="/register"
+                    className="hero-btn-primary"
+                    style={{ height: "38px", padding: "0 18px", fontSize: "13px", fontWeight: 700, whiteSpace: "nowrap" }}
+                  >
                     Get Started
                   </Link>
                 </>
               )}
+
+              {/* Mobile hamburger */}
+              <button
+                id="mobile-menu-btn"
+                onClick={() => setMobileMenuOpen(o => !o)}
+                className="flex lg:hidden"
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "38px",
+                  height: "38px",
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "10px",
+                  cursor: "pointer",
+                  flexDirection: "column",
+                  gap: "5px",
+                  padding: 0,
+                  flexShrink: 0,
+                }}
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? (
+                  <>
+                    <span style={{ display: "block", width: "16px", height: "1.5px", background: "white", borderRadius: "2px", transform: "rotate(45deg) translateY(4.5px)" }} />
+                    <span style={{ display: "block", width: "16px", height: "1.5px", background: "white", borderRadius: "2px", transform: "rotate(-45deg) translateY(-4.5px)" }} />
+                  </>
+                ) : (
+                  <>
+                    <span style={{ display: "block", width: "16px", height: "1.5px", background: "rgba(255,255,255,0.7)", borderRadius: "2px" }} />
+                    <span style={{ display: "block", width: "12px", height: "1.5px", background: "rgba(255,255,255,0.7)", borderRadius: "2px" }} />
+                    <span style={{ display: "block", width: "16px", height: "1.5px", background: "rgba(255,255,255,0.7)", borderRadius: "2px" }} />
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
+
+        {/* Mobile nav dropdown */}
+        {mobileMenuOpen && (
+          <div style={{
+            background: "rgba(8,11,20,0.97)",
+            backdropFilter: "blur(24px)",
+            borderTop: "1px solid rgba(255,255,255,0.07)",
+            padding: "20px",
+          }}>
+            <nav style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "20px" }}>
+              {[
+                { label: "Features", href: "#features" },
+                { label: "Why Us", href: "#stats" },
+                { label: "Students", href: "#testimonials" },
+              ].map(({ label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    display: "block",
+                    padding: "12px 16px",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    color: "rgba(255,255,255,0.65)",
+                    textDecoration: "none",
+                    borderRadius: "10px",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "white"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.65)"; }}
+                >
+                  {label}
+                </a>
+              ))}
+            </nav>
+            {!isAuthenticated && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    height: "46px", borderRadius: "12px",
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    color: "rgba(255,255,255,0.85)",
+                    fontSize: "15px", fontWeight: 600,
+                    textDecoration: "none",
+                  }}
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="hero-btn-primary"
+                  style={{ height: "46px", fontSize: "15px", fontWeight: 700 }}
+                >
+                  Get Started Free
+                </Link>
+              </div>
+            )}
+            {isAuthenticated && (
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="hero-btn-primary"
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "46px", fontSize: "15px", fontWeight: 700, textDecoration: "none" }}
+              >
+                Go to Dashboard
+              </Link>
+            )}
+          </div>
+        )}
       </header>
 
       {/* ─── HERO ─── */}
