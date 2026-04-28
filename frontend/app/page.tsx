@@ -243,12 +243,14 @@ export default function Home() {
             padding: "clamp(80px, 13vh, 144px) clamp(20px, 5vw, 32px)",
           }}
         >
-          <div className="liquid-badge animate-pulse-glow mb-8">
+          {/* Badge */}
+          <div className="liquid-badge animate-pulse-glow" style={{ marginBottom: "28px" }}>
             <GraduationCap className="w-3.5 h-3.5 text-violet-400" />
             <span>The #1 Finance App for Students</span>
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
           </div>
 
+          {/* Headline */}
           <h1
             style={{
               fontFamily: "var(--font-syne, sans-serif)",
@@ -256,7 +258,7 @@ export default function Home() {
               fontWeight: 900,
               letterSpacing: "-0.03em",
               lineHeight: 0.93,
-              marginBottom: "32px",
+              marginBottom: "36px",
               maxWidth: "900px",
               textAlign: "center",
             }}
@@ -266,29 +268,47 @@ export default function Home() {
             <span className="gradient-text-animate">Savings.</span>
           </h1>
 
-          <p style={{ fontSize: "17px", color: "rgba(255,255,255,0.5)", maxWidth: "500px", lineHeight: 1.7, marginBottom: "36px", textAlign: "center" }}>
+          {/* Subtitle */}
+          <p
+            style={{
+              fontSize: "17px",
+              color: "rgba(255,255,255,0.5)",
+              maxWidth: "500px",
+              lineHeight: 1.7,
+              marginBottom: "44px",
+              textAlign: "center",
+            }}
+          >
             The intelligent subscription manager built for campus life.
             Find student discounts, split costs, and stop wasting money.
           </p>
 
-          <div className="hero-cta-group flex gap-3 justify-center items-stretch flex-wrap mb-8">
+          {/* CTA Buttons */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "12px",
+              flexWrap: "wrap",
+              marginBottom: "20px",
+            }}
+          >
             {isAuthenticated ? (
               <Link
                 href="/dashboard"
                 className="hero-btn-primary"
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                   gap: "10px",
-                  padding: "15px 36px",
+                  padding: "0 36px",
                   fontSize: "15px",
                   fontWeight: 700,
-                  height: "54px",
-                  boxSizing: "border-box",
+                  height: "52px",
+                  letterSpacing: "0.01em",
                 }}
               >
-                <BarChart3 style={{ width: 18, height: 18 }} />
+                <BarChart3 style={{ width: 18, height: 18, flexShrink: 0 }} />
                 Go to Dashboard
               </Link>
             ) : (
@@ -297,18 +317,15 @@ export default function Home() {
                   href="/register"
                   className="hero-btn-primary"
                   style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
                     gap: "10px",
-                    padding: "15px 36px",
+                    padding: "0 36px",
                     fontSize: "15px",
                     fontWeight: 700,
-                    height: "54px",
-                    boxSizing: "border-box",
+                    height: "52px",
+                    letterSpacing: "0.01em",
                   }}
                 >
-                  <Zap style={{ width: 18, height: 18, fill: "currentColor" }} />
+                  <Zap style={{ width: 18, height: 18, flexShrink: 0, fill: "currentColor" }} />
                   Start Saving Free
                 </Link>
 
@@ -316,32 +333,37 @@ export default function Home() {
                   href="/login"
                   className="hero-btn-ghost"
                   style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
                     gap: "10px",
-                    padding: "15px 36px",
+                    padding: "0 36px",
                     fontSize: "15px",
                     fontWeight: 600,
-                    height: "54px",
-                    boxSizing: "border-box",
-                    color: "rgba(255,255,255,0.82)",
+                    height: "52px",
+                    letterSpacing: "0.01em",
                   }}
                 >
                   Log In
-                  <ArrowRight style={{ width: 16, height: 16 }} />
+                  <ArrowRight style={{ width: 16, height: 16, flexShrink: 0 }} />
                 </Link>
               </>
             )}
           </div>
 
-          <div className="flex justify-center gap-8 text-sm text-white/30 font-medium">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-green-500/60" />
+          {/* Trust row */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "28px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "rgba(255,255,255,0.32)", fontWeight: 500 }}>
+              <CheckCircle2 style={{ width: 15, height: 15, color: "rgba(74,222,128,0.6)", flexShrink: 0 }} />
               No credit card required
             </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-green-500/60" />
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "rgba(255,255,255,0.32)", fontWeight: 500 }}>
+              <CheckCircle2 style={{ width: 15, height: 15, color: "rgba(74,222,128,0.6)", flexShrink: 0 }} />
               Free for students
             </div>
           </div>

@@ -483,6 +483,7 @@ body {
   justify-content: center;
   line-height: 1;
   text-decoration: none;
+  box-sizing: border-box;
   background: linear-gradient(145deg, #7C3AED 0%, #A855F7 50%, #D946EF 100%);
   color: white;
   border-radius: 14px;
@@ -533,12 +534,13 @@ body {
   align-items: center;
   justify-content: center;
   line-height: 1;
+  box-sizing: border-box;
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.85);
   border-radius: 14px;
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   cursor: pointer;
   text-decoration: none;
   transition: all 0.22s cubic-bezier(0.23, 1, 0.32, 1);
