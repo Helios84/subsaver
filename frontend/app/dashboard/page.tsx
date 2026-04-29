@@ -544,7 +544,7 @@ export default function DashboardPage() {
       {/* ── HEADER ── */}
       <header className="glass-header sticky top-0 z-20">
         {/* Main header row */}
-        <div className="mx-auto max-w-[1600px] px-6 lg:px-12 py-0">
+        <div className="mx-auto max-w-[1440px]" style={{ padding: "0 clamp(1.25rem, 3vw, 3rem)" }}>
           <div className="flex items-center justify-between h-16">
 
             {/* Left: Logo + greeting */}
@@ -571,7 +571,7 @@ export default function DashboardPage() {
 
 
             {/* Right: Desktop nav */}
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-4">
               {/* Verification badge */}
               {user && (
                 <div className="mr-2">
@@ -683,26 +683,26 @@ export default function DashboardPage() {
       {/* ── PAGE CONTENT ── */}
       <div
         className="relative z-10 mx-auto max-w-[1440px]"
-        style={{ padding: "2.5rem clamp(1.25rem, 4vw, 5rem)", display: "flex", flexDirection: "column", gap: "2rem" }}
+        style={{ padding: "2rem clamp(1.25rem, 3vw, 3rem)", display: "flex", flexDirection: "column", gap: "2rem" }}
       >
 
         {/* Quick Actions */}
         <div className="dashboard-quick-actions flex flex-wrap items-center gap-3">
           <button
             onClick={() => setShowServicePicker(true)}
-            className="liquid-btn flex items-center gap-2.5 px-6 py-3"
+            className="liquid-btn flex items-center gap-2.5 px-7 py-3.5"
           >
             <Plus className="w-4 h-4" />
             <span className="font-bold text-sm">Add Subscription</span>
           </button>
-          <Link href="/customize" className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3">
+          <Link href="/customize" className="liquid-btn-ghost flex items-center gap-2.5 px-6 py-3.5">
             <Layout className="w-4 h-4 text-fuchsia-400" />
             <span className="font-medium text-sm">Customize</span>
           </Link>
           {subs.length > 0 && (
             <button
               onClick={exportCSV}
-              className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3"
+              className="liquid-btn-ghost flex items-center gap-2.5 px-6 py-3.5"
               title="Export subscriptions as CSV"
             >
               <Download className="w-4 h-4 text-emerald-400" />
