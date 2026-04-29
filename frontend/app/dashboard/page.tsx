@@ -682,7 +682,7 @@ export default function DashboardPage() {
 
       {/* ── PAGE CONTENT ── */}
       <div
-        className="relative z-10 mx-auto max-w-[1440px]"
+        className="relative z-10"
         style={{ padding: "1.75rem clamp(1rem, 1.5vw, 1.5rem)", display: "flex", flexDirection: "column", gap: "2rem" }}
       >
 
@@ -690,23 +690,23 @@ export default function DashboardPage() {
         <div className="dashboard-quick-actions flex flex-wrap items-center gap-3">
           <button
             onClick={() => setShowServicePicker(true)}
-            className="liquid-btn flex items-center gap-2.5 px-7 py-4"
+            className="liquid-btn flex items-center gap-3 px-8 py-5"
           >
-            <Plus className="w-4 h-4" />
-            <span className="font-bold text-sm">Add Subscription</span>
+            <Plus className="w-[18px] h-[18px]" />
+            <span className="font-bold text-[15px]">Add Subscription</span>
           </button>
-          <Link href="/customize" className="liquid-btn-ghost flex items-center gap-2.5 px-6 py-4">
-            <Layout className="w-4 h-4 text-fuchsia-400" />
-            <span className="font-medium text-sm">Customize</span>
+          <Link href="/customize" className="liquid-btn-ghost flex items-center gap-3 px-7 py-5">
+            <Layout className="w-[18px] h-[18px] text-fuchsia-400" />
+            <span className="font-semibold text-[15px]">Customize</span>
           </Link>
           {subs.length > 0 && (
             <button
               onClick={exportCSV}
-              className="liquid-btn-ghost flex items-center gap-2.5 px-6 py-4"
+              className="liquid-btn-ghost flex items-center gap-3 px-7 py-5"
               title="Export subscriptions as CSV"
             >
-              <Download className="w-4 h-4 text-emerald-400" />
-              <span className="font-medium text-sm hidden sm:inline">Export CSV</span>
+              <Download className="w-[18px] h-[18px] text-emerald-400" />
+              <span className="font-semibold text-[15px] hidden sm:inline">Export CSV</span>
             </button>
           )}
         </div>

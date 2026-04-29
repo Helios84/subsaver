@@ -63,8 +63,7 @@
 html {
   scroll-behavior: smooth;
   width: 100%;
-  /* scrollbar-gutter keeps layout stable when scrollbar appears/disappears */
-  scrollbar-gutter: stable;
+  overflow-y: scroll; /* Always-visible scrollbar — eliminates right-side asymmetry from gutter */
 }
 
 body {
