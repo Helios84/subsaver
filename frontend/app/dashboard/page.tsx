@@ -561,29 +561,14 @@ export default function DashboardPage() {
                   Sub<span className="gradient-text">Saver</span>
                 </h1>
                 {user && (
-                  <p className="text-[11px] text-white/40 mt-0.5 leading-none">
-                    Hey, <span className="text-white/65 font-medium">{user.email?.split('@')[0] ?? 'there'}</span> 👋
+                  <p className="text-xs text-white/45 mt-0.5 leading-none">
+                    Hey, <span className="text-white/70 font-semibold">{user.email?.split('@')[0] ?? 'there'}</span> 👋
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Center: Quick spend summary (desktop only) */}
-            {subs.length > 0 && (
-              <div className="hidden lg:flex items-center gap-5">
-                <div className="flex items-center gap-3 px-4 py-2 rounded-xl" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.18)' }}>
-                  <div className="text-center">
-                    <div className="text-[11px] text-white/40 uppercase tracking-wider font-bold leading-none mb-0.5">Monthly</div>
-                    <div className="text-base font-black text-white tabular-nums leading-none">{totalMonthly}</div>
-                  </div>
-                  <div className="w-px h-7 bg-white/10" />
-                  <div className="text-center">
-                    <div className="text-[11px] text-white/40 uppercase tracking-wider font-bold leading-none mb-0.5">Active</div>
-                    <div className="text-base font-black text-emerald-400 tabular-nums leading-none">{totalActive}</div>
-                  </div>
-                </div>
-              </div>
-            )}
+
 
             {/* Right: Desktop nav */}
             <div className="hidden md:flex items-center gap-2">
@@ -696,7 +681,10 @@ export default function DashboardPage() {
       </header>
 
       {/* ── PAGE CONTENT ── */}
-      <div className="relative z-10 mx-auto max-w-[1600px] px-5 sm:px-8 lg:px-14 xl:px-20 py-8 sm:py-10 space-y-8">
+      <div
+        className="relative z-10 mx-auto max-w-[1440px]"
+        style={{ padding: "2.5rem clamp(1.25rem, 4vw, 5rem)", display: "flex", flexDirection: "column", gap: "2rem" }}
+      >
 
         {/* Quick Actions */}
         <div className="dashboard-quick-actions flex flex-wrap items-center gap-3">
@@ -722,7 +710,6 @@ export default function DashboardPage() {
             </button>
           )}
         </div>
-
         {/* Verify Student prompt */}
         {user && !user.is_verified && (
           <button
