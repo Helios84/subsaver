@@ -5,8 +5,6 @@ from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime
 import logging
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -46,10 +44,10 @@ class ReminderScheduler:
     
     def start(self):
         """Start the scheduler."""
-        # Run every day at 9:00 AM
+        # Run every day at 9:00 AM UTC (S-8 fix: timezone explicitly set)
         self.scheduler.add_job(
             self.check_and_send_reminders,
-            CronTrigger(hour=9, minute=0),
+            CronTrigger(hour=9, minute=0, timezone="UTC"),
             id="daily_reminder_check",
             name="Check and send subscription reminders",
             replace_existing=True

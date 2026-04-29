@@ -58,10 +58,10 @@ def update_reminder_settings(
         current_user.reminder_enabled = settings.reminder_enabled
     
     if settings.reminder_days_before is not None:
-        if settings.reminder_days_before not in [3, 7, 14]:
+        if not (1 <= settings.reminder_days_before <= 30):
             raise HTTPException(
                 status_code=400,
-                detail="reminder_days_before must be 3, 7, or 14"
+                detail="reminder_days_before must be between 1 and 30"
             )
         current_user.reminder_days_before = settings.reminder_days_before
     

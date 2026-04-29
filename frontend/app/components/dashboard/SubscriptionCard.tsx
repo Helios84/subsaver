@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit2, Activity, Trash2, GraduationCap, Calendar } from "lucide-react";
+import { Edit2, Activity, Trash2, GraduationCap, Calendar, Copy } from "lucide-react";
 import { getServiceIcon } from "../../dashboard/serviceIcons";
 import type { Sub, StudentDiscount } from "../../types/index";
 import { CATEGORIES } from "../../lib/categories";
@@ -62,6 +62,7 @@ type Props = {
   onCancelDelete: () => void;
   onExecuteDelete: (id: number) => void;
   onDiscountClick: (d: StudentDiscount) => void;
+  onDuplicate?: (s: Sub) => void;
   layoutCompact?: boolean;
   currency?: Currency;
   fxRates?: Record<string, number>;
@@ -80,6 +81,7 @@ export default function SubscriptionCard({
   onCancelDelete,
   onExecuteDelete,
   onDiscountClick,
+  onDuplicate,
   layoutCompact,
   currency = "USD",
   fxRates = { USD: 1, EUR: 0.92, GBP: 0.79 },
@@ -158,14 +160,19 @@ export default function SubscriptionCard({
         {/* Actions */}
         {!isDeleting ? (
           <div className="flex items-center gap-1 shrink-0 pl-1">
-            <button onClick={() => onStartEdit(s)} className="p-2 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all" title="Edit">
+            <button onClick={() => onStartEdit(s)} className="p-2 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all" title="Edit" aria-label={`Edit ${s.name}`}>
               <Edit2 className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => onToggleStatus(s)} className="p-2 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all" title={s.status === "active" ? "Pause" : "Resume"}>
+            <button onClick={() => onToggleStatus(s)} className="p-2 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all" title={s.status === "active" ? "Pause" : "Resume"} aria-label={s.status === "active" ? `Pause ${s.name}` : `Resume ${s.name}`}>
               <Activity className="w-3.5 h-3.5" />
             </button>
+            {onDuplicate && (
+              <button onClick={() => onDuplicate(s)} className="p-2 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all" title="Duplicate" aria-label={`Duplicate ${s.name}`}>
+                <Copy className="w-3.5 h-3.5" />
+              </button>
+            )}
             <div className="w-px h-4 bg-white/10 mx-0.5" />
-            <button onClick={() => onConfirmDelete(s.id)} className="p-2 rounded-lg text-red-500/40 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Delete">
+            <button onClick={() => onConfirmDelete(s.id)} className="p-2 rounded-lg text-red-500/40 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Delete" aria-label={`Delete ${s.name}`}>
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -322,6 +329,7 @@ export default function SubscriptionCard({
               onClick={() => onStartEdit(s)}
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl transition-all text-white/40 hover:text-white hover:bg-white/[0.07]"
               title="Edit"
+              aria-label={`Edit ${s.name}`}
             >
               <Edit2 className="w-3.5 h-3.5" />
               <span>Edit</span>
@@ -334,10 +342,23 @@ export default function SubscriptionCard({
                   : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20"
                 }`}
               title={s.status === "active" ? "Pause" : "Resume"}
+              aria-label={s.status === "active" ? `Pause ${s.name}` : `Resume ${s.name}`}
             >
               <Activity className="w-3.5 h-3.5" />
               <span>{s.status === "active" ? "Pause" : "Resume"}</span>
             </button>
+
+            {onDuplicate && (
+              <button
+                onClick={() => onDuplicate(s)}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl transition-all text-white/40 hover:text-violet-300 hover:bg-violet-500/[0.08]"
+                title="Duplicate"
+                aria-label={`Duplicate ${s.name}`}
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Duplicate</span>
+              </button>
+            )}
 
             {/* Visual separator before destructive action */}
             <div className="w-px h-4 bg-white/10 mx-1" />
@@ -346,6 +367,7 @@ export default function SubscriptionCard({
               onClick={() => onConfirmDelete(s.id)}
               className="p-2 text-xs rounded-xl transition-all text-red-500/40 hover:text-red-400 hover:bg-red-500/[0.08]"
               title="Delete"
+              aria-label={`Delete ${s.name}`}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>

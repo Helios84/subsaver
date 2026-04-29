@@ -154,6 +154,7 @@ def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)
 
 
 @router.post("/auth/token", response_model=TokenResponse)
+@limiter.limit("10/minute")
 def token(request: Request, form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """OAuth2 Password Flow (for Swagger Authorize)."""
     email = form.username.strip().lower()
@@ -186,6 +187,7 @@ def forgot_password(request: Request, payload: ForgotPasswordRequest, db: Sessio
 
 
 @router.post("/auth/verify-reset-code")
+@limiter.limit("5/minute")
 def verify_reset_code(request: Request, payload: VerifyResetCodeRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
@@ -199,6 +201,7 @@ def verify_reset_code(request: Request, payload: VerifyResetCodeRequest, db: Ses
 
 
 @router.post("/auth/reset-password")
+@limiter.limit("5/minute")
 def reset_password(request: Request, payload: ResetPasswordRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
@@ -334,11 +337,20 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+class DeleteAccountRequest(BaseModel):
+    password: str
+
+
 @router.delete("/users/me", status_code=204)
 def delete_account(
+    payload: DeleteAccountRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Permanently delete the current user's account and all associated data."""
+    """Permanently delete the current user's account and all associated data.
+    Requires password confirmation to prevent accidental/unauthorized deletion.
+    """
+    if not verify_password(payload.password, current_user.password_hash):
+        raise HTTPException(status_code=403, detail="Incorrect password")
     db.delete(current_user)
     db.commit()

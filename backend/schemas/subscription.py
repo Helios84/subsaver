@@ -6,7 +6,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, field_validator
 
 BILLING_CYCLES = {"monthly", "yearly"}
-STATUSES = {"active", "cancelled"}
+STATUSES = {"active", "cancelled", "trial", "paused"}
 CATEGORIES = {
     "Entertainment", "Productivity", "Gaming",
     "Health", "Education", "Finance", "Other",
@@ -39,6 +39,8 @@ class SubscriptionCreate(BaseModel):
     def price_non_negative(cls, v: int) -> int:
         if v < 0:
             raise ValueError("price_cents must be >= 0")
+        if v > 10_000_000:
+            raise ValueError("price_cents must be <= 10000000 (~$100,000)")
         return v
 
     @field_validator("billing_cycle")
@@ -95,6 +97,8 @@ class SubscriptionUpdate(BaseModel):
     def price_non_negative(cls, v: Optional[int]) -> Optional[int]:
         if v is not None and v < 0:
             raise ValueError("price_cents must be >= 0")
+        if v is not None and v > 10_000_000:
+            raise ValueError("price_cents must be <= 10000000 (~$100,000)")
         return v
 
     @field_validator("billing_cycle")

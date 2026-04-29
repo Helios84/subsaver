@@ -7,7 +7,7 @@ import { CATEGORIES } from "../lib/categories";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type BillingCycle = "monthly" | "yearly";
-type Status = "active" | "cancelled";
+type Status = "active" | "cancelled" | "trial" | "paused";
 
 export type EditState = {
   name: string;
@@ -115,6 +115,7 @@ export default function EditSubscriptionModal({ sub, editState, saving = false, 
             style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: 8, cursor: "pointer", color: "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", transition: "all 0.15s" }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "white"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; }}
+            aria-label="Close edit modal"
           >
             <X style={{ width: 16, height: 16 }} />
           </button>
@@ -175,6 +176,8 @@ export default function EditSubscriptionModal({ sub, editState, saving = false, 
               onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
             >
               <option value="active" style={{ background: "#0F1220" }}>Active</option>
+              <option value="trial" style={{ background: "#0F1220" }}>Trial</option>
+              <option value="paused" style={{ background: "#0F1220" }}>Paused</option>
               <option value="cancelled" style={{ background: "#0F1220" }}>Cancelled</option>
             </select>
           </Field>

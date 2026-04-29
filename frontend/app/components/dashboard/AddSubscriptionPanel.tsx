@@ -15,6 +15,8 @@ type Props = {
   onSuggestionSelect: (service: any) => void;
   currency?: string;
   currencySymbol?: string;
+  isSubmitting?: boolean;
+  autocompleteContainerRef?: React.RefObject<HTMLDivElement | null>;
   formState: {
     name: string;
     price: string;
@@ -58,7 +60,7 @@ const fieldStyle: React.CSSProperties = {
 export default function AddSubscriptionPanel({
   msg, onSubmit, onOpenPicker, suggestions, showSuggestions,
   onNameChange, onSuggestionSelect, formState, onFormChange,
-  currency, currencySymbol,
+  currency, currencySymbol, isSubmitting, autocompleteContainerRef,
 }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -114,7 +116,7 @@ export default function AddSubscriptionPanel({
               </div>
 
               {showSuggestions && (
-                <div style={{
+                <div ref={autocompleteContainerRef} style={{
                   position: "absolute", top: "calc(100% + 4px)", left: 0, right: 48,
                   background: "#161B27", border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.5)", zIndex: 50,
@@ -249,16 +251,20 @@ export default function AddSubscriptionPanel({
           {/* Submit */}
           <button
             type="submit"
+            disabled={isSubmitting}
             style={{
-              width: "100%", padding: "13px", borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: "pointer",
-              background: "linear-gradient(135deg, #7C3AED, #D946EF)",
-              boxShadow: "0 4px 20px rgba(124,58,237,0.35)", color: "white", border: "none",
+              width: "100%", padding: "13px", borderRadius: 14, fontSize: 15, fontWeight: 700,
+              cursor: isSubmitting ? "not-allowed" : "pointer",
+              background: isSubmitting ? "rgba(124,58,237,0.4)" : "linear-gradient(135deg, #7C3AED, #D946EF)",
+              boxShadow: isSubmitting ? "none" : "0 4px 20px rgba(124,58,237,0.35)",
+              color: "white", border: "none",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 4,
               transition: "opacity 0.2s",
+              opacity: isSubmitting ? 0.7 : 1,
             }}
           >
             <Plus style={{ width: 18, height: 18 }} />
-            Add Subscription
+            {isSubmitting ? "Adding…" : "Add Subscription"}
           </button>
 
           {msg && (

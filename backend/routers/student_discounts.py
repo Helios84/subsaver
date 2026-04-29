@@ -78,15 +78,16 @@ async def get_all_student_discounts(db: Session = Depends(get_db)):
     """
     try:
         from models.student_discount import StudentDiscount
-        
         discounts = db.query(StudentDiscount).filter(
             StudentDiscount.is_active == True
         ).all()
-        
         return [discount.to_dict() for discount in discounts]
     except Exception as e:
-        # If table doesn't exist yet, return empty list
-        return []
+        # Only swallow the error if the table doesn't exist yet (fresh deploy)
+        err_str = str(e).lower()
+        if "no such table" in err_str or "relation" in err_str and "does not exist" in err_str:
+            return []
+        raise
 
 
 @router.get("/check/{subscription_id}")
@@ -165,12 +166,10 @@ async def mark_discount_applied(
         if not discount:
             raise HTTPException(status_code=404, detail="No student discount found for this service")
         
-        # Update subscription
+        # Update subscription — apply student price to actual subscription cost (F-9 fix)
         subscription.student_discount_applied = True
         subscription.discount_applied_date = datetime.now(timezone.utc).replace(tzinfo=None)
-        
-        # Optionally update the price to student price
-        # subscription.price_cents = discount.student_price_cents
+        subscription.price_cents = discount.student_price_cents
         
         db.commit()
         db.refresh(subscription)

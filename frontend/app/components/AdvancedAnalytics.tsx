@@ -55,7 +55,8 @@ export default function AdvancedAnalytics({
   const [insights, setInsights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // H-D fix: re-fetch analytics when subscriptions change
+  // H-D fix: re-fetch analytics when subscriptions change (B-5: watch prices+ids, not just count)
+  const subsHash = (allSubscriptions ?? []).map(s => `${s.id}:${s.price_cents}:${s.status}`).join(',');
   useEffect(() => {
     async function load() {
       try {
@@ -72,7 +73,7 @@ export default function AdvancedAnalytics({
       }
     }
     load();
-  }, [(allSubscriptions ?? []).length]); // re-fetch when subscription count changes
+  }, [subsHash]); // re-fetch when any subscription data changes
 
   // Determine the ordered list of analytics widgets to render
   const orderedIds: WidgetId[] = widgetOrder
@@ -107,13 +108,7 @@ export default function AdvancedAnalytics({
   }
 
   if (loading) return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '1.25rem',
-      }}
-    >
+    <div className="analytics-grid">
       <div style={{ gridColumn: 'span 1' }}><SkeletonLoader /></div>
       <div style={{ gridColumn: 'span 2' }}><ChartSkeleton /></div>
       <div style={{ gridColumn: 'span 1' }}><SkeletonLoader /></div>
@@ -122,21 +117,15 @@ export default function AdvancedAnalytics({
   );
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '1.25rem',
-      }}
-    >
+    <div className="analytics-grid">
       {orderedIds.map(id => {
         if (!widgets[id]) return null;
         const span = getSpan(id);
         return (
           <div
             key={id}
+            className={`analytics-widget-span-${span}`}
             style={{
-              gridColumn: `span ${span}`,
               transition: 'all 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
             }}
           >

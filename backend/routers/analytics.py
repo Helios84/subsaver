@@ -9,8 +9,10 @@ from models.db import User, Subscription
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 
+
 def get_month_name(dt: datetime) -> str:
     return dt.strftime("%b")
+
 
 @router.get("/trends")
 async def get_spending_trends(
@@ -20,6 +22,7 @@ async def get_spending_trends(
     """
     Get monthly spending trends for the last 6 months.
     Uses cancelled_at to accurately include subscriptions only during their active period.
+    Accounts for split_with to show user's actual share.
     """
     subs = db.query(Subscription).filter(
         Subscription.user_id == current_user.id,
@@ -31,7 +34,6 @@ async def get_spending_trends(
     # 1. Monthly Trends (Last 6 Months) — accurate with cancelled_at
     trends = []
     for i in range(5, -1, -1):
-        # Correctly subtract months by working from first-of-month and going back
         month_offset = first_of_this_month.month - i
         year = first_of_this_month.year + (month_offset - 1) // 12
         month = ((month_offset - 1) % 12) + 1
@@ -50,16 +52,19 @@ async def get_spending_trends(
             if sub.cancelled_at is not None and sub.cancelled_at < start_of_month:
                 continue
 
+            # B-6 fix: divide by split_with to get user's actual share
+            split = max(1, sub.split_with or 1)
+
             # Sub is considered active in this month
             if sub.billing_cycle == "monthly":
-                monthly_total_cents += sub.price_cents
+                monthly_total_cents += sub.price_cents // split
             else:
                 # Yearly: only count if billing date falls in this month
                 if sub.next_billing_date and sub.next_billing_date.month == month:
-                    monthly_total_cents += sub.price_cents
+                    monthly_total_cents += sub.price_cents // split
                 else:
                     # Amortize yearly cost as monthly
-                    monthly_total_cents += sub.price_cents // 12
+                    monthly_total_cents += (sub.price_cents // split) // 12
 
         trends.append({
             "month": get_month_name(start_of_month),
@@ -67,13 +72,14 @@ async def get_spending_trends(
             "total_cents": monthly_total_cents
         })
 
-    # 2. Category Breakdown (current active only)
+    # 2. Category Breakdown (current active only) — also accounting for split_with
     active_subs = [s for s in subs if s.status == "active"]
     category_totals: Dict[str, int] = {}
     total_spend_cents = 0
 
     for sub in active_subs:
-        monthly_cost = sub.price_cents if sub.billing_cycle == "monthly" else sub.price_cents // 12
+        split = max(1, sub.split_with or 1)
+        monthly_cost = (sub.price_cents // split) if sub.billing_cycle == "monthly" else (sub.price_cents // split) // 12
         cat = sub.category or "Other"
         category_totals[cat] = category_totals.get(cat, 0) + monthly_cost
         total_spend_cents += monthly_cost
@@ -102,6 +108,7 @@ async def get_insights(
 ):
     """
     Generate insights and recommendations.
+    UI-7 fix: amounts are formatted as dollars, not raw cents.
     """
     subs = db.query(Subscription).filter(
         Subscription.user_id == current_user.id,
@@ -119,27 +126,28 @@ async def get_insights(
             days = (sub.next_billing_date - today).days
             if 0 <= days <= 7:
                 upcoming_count += 1
-                upcoming_cost_cents += sub.price_cents
+                split = max(1, sub.split_with or 1)
+                upcoming_cost_cents += sub.price_cents // split
 
     if upcoming_count > 0:
+        # UI-7 fix: format as dollars, not raw cents
+        amount_dollars = upcoming_cost_cents / 100
         insights.append({
             "type": "warning",
             "title": "Upcoming Renewals",
-            "message": f"You have {upcoming_count} subscriptions renewing this week totaling {upcoming_cost_cents} cents.",
+            "message": f"You have {upcoming_count} subscription{'s' if upcoming_count > 1 else ''} renewing this week totaling ${amount_dollars:.2f}.",
             "amount_cents": upcoming_cost_cents,
             "action": "Review"
         })
 
     # Insight 2: Category Domination
-    category_counts = {}
     category_costs = {}
     total_cost = 0
 
     for sub in subs:
         cat = sub.category or "Other"
-        monthly_cost = sub.price_cents if sub.billing_cycle == "monthly" else sub.price_cents // 12
-        
-        category_counts[cat] = category_counts.get(cat, 0) + 1
+        split = max(1, sub.split_with or 1)
+        monthly_cost = (sub.price_cents // split) if sub.billing_cycle == "monthly" else (sub.price_cents // split) // 12
         category_costs[cat] = category_costs.get(cat, 0) + monthly_cost
         total_cost += monthly_cost
 
@@ -155,12 +163,12 @@ async def get_insights(
     # Insight 3: Switch to Yearly
     potential_yearly_savings = 0
     count_switchable = 0
-    
+
     for sub in subs:
         if sub.billing_cycle == "monthly":
             # Heuristic: 20% saving on yearly
             saving = sub.price_cents * 12 * 0.20
-            if saving > 2000: # Save more than $20
+            if saving > 2000:  # Save more than $20
                 potential_yearly_savings += saving
                 count_switchable += 1
 
@@ -168,7 +176,7 @@ async def get_insights(
         insights.append({
             "type": "success",
             "title": "Annual Plan Savings",
-            "message": f"Switching {count_switchable} services to annual plans could save you ~${round(potential_yearly_savings / 100):.0f}/year.",
+            "message": f"Switching {count_switchable} service{'s' if count_switchable > 1 else ''} to annual plans could save you ~${round(potential_yearly_savings / 100):.0f}/year.",
             "amount_cents": int(potential_yearly_savings),
             "action": "View Options"
         })

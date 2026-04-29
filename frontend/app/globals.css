@@ -1182,3 +1182,82 @@ a:focus-visible {
     padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
 }
+
+/* ═══════════════════════════════════════════════
+   UI-1: RESPONSIVE ANALYTICS GRID
+   4-col desktop → 2-col tablet → 1-col mobile
+   ═══════════════════════════════════════════════ */
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+/* Widget spans — collapse gracefully on smaller screens */
+.analytics-widget-span-1 { grid-column: span 1; }
+.analytics-widget-span-2 { grid-column: span 2; }
+.analytics-widget-span-3 { grid-column: span 3; }
+.analytics-widget-span-4 { grid-column: span 4; }
+
+/* Tablet: 2-column grid, max span = 2 */
+@media (max-width: 1024px) {
+  .analytics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .analytics-widget-span-1 { grid-column: span 1; }
+  .analytics-widget-span-2 { grid-column: span 2; }
+  .analytics-widget-span-3 { grid-column: span 2; }
+  .analytics-widget-span-4 { grid-column: span 2; }
+}
+
+/* Mobile: single column */
+@media (max-width: 640px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .analytics-widget-span-1,
+  .analytics-widget-span-2,
+  .analytics-widget-span-3,
+  .analytics-widget-span-4 {
+    grid-column: span 1;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   UI-11: GRADIENT TEXT — Cross-browser (Safari fix)
+   ═══════════════════════════════════════════════ */
+
+.gradient-text {
+  background: linear-gradient(135deg, #9D5FF3 0%, #D946EF 50%, #F9A8D4 100%);
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent;
+}
+
+.gradient-text-animate {
+  background: linear-gradient(270deg, #7C3AED, #D946EF, #9D5FF3, #4F46E5);
+  background-size: 300% 300%;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent;
+  animation: gradient-spin 6s ease infinite;
+}
+
+/* ═══════════════════════════════════════════════
+   ACCESSIBILITY: Reduced Motion
+   ═══════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+

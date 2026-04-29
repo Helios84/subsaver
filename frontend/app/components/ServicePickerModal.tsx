@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, X, Sparkles, Tag, TrendingDown, Star, Zap } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { apiFetch } from "../lib/api";
 import { getServiceIcon } from "../dashboard/serviceIcons";
 
@@ -61,6 +61,19 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
         return (s.service_name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q))
             && (activeCategory === "All" || s.category === activeCategory);
     }), [services, search, activeCategory]);
+
+    // UI-6: Escape key closes modal
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    }, [onClose]);
+
+    // Lock scroll while open
+    useEffect(() => {
+        document.body.style.overflow = "hidden";
+        return () => { document.body.style.overflow = ""; };
+    }, []);
 
     // Top 3 by discount — only show when no active filter
     const topPicks = useMemo(() =>
@@ -139,7 +152,9 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
                             </div>
                             <button onClick={onClose}
                                 className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all flex-shrink-0 mt-0.5"
-                                style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+                                style={{ border: "1px solid rgba(255,255,255,0.07)" }}
+                                aria-label="Close service picker"
+                            >
                                 <X className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
                             </button>
                         </div>

@@ -7,6 +7,7 @@ but the server starts normally. No crashes on missing credentials.
 import os
 import logging
 import smtplib
+import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
@@ -56,7 +57,8 @@ class EmailService:
 
             with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10) as server:
                 server.ehlo()
-                server.starttls()
+                context = ssl.create_default_context()
+                server.starttls(context=context)
                 server.ehlo()
                 server.login(self.smtp_user, self.smtp_password)
                 server.send_message(msg)

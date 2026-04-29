@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../lib/api";
 import {
   LogOut, Plus, BadgeCheck, GraduationCap, Layout, CreditCard,
-  Search, SlidersHorizontal, X as XIcon,
+  Search, SlidersHorizontal, X as XIcon, Menu, Download, Copy,
 } from "lucide-react";
 import VerificationModal from "../components/VerificationModal";
 import StudentDiscountModal from "../components/StudentDiscountModal";
@@ -26,7 +26,7 @@ import type { Sub, StudentDiscount, UserOut as User } from "../types/index";
 
 // ─── Local aliases ────────────────────────────────────────────────────────────
 type BillingCycle = "monthly" | "yearly";
-type Status = "active" | "cancelled";
+type Status = "active" | "cancelled" | "trial" | "paused";
 
 // CATEGORIES imported from lib/categories (see import above)
 
@@ -87,14 +87,32 @@ export default function DashboardPage() {
     dashSettings.widgets.find((w) => w.id === id)?.enabled ?? true;
 
   // ── Autocomplete
-  const [allServices, setAllServices] = useState<any[]>([]);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [allServices, setAllServices] = useState<StudentDiscount[]>([]);
+  const [suggestions, setSuggestions] = useState<StudentDiscount[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const autocompleteRef = useRef<HTMLDivElement>(null); // UI-5: click outside
+
+  // ── Mobile menu (UI-3)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // ── Add form loading state (UI-4)
+  const [addingSubscription, setAddingSubscription] = useState(false);
 
   useEffect(() => {
     apiFetch("/api/student-discounts")
       .then((data) => { if (Array.isArray(data)) setAllServices(data); })
       .catch((err) => console.error("Failed to fetch autocomplete services", err));
+  }, []);
+
+  // UI-5: Close autocomplete when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // ── Filter / Search state
@@ -226,9 +244,11 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  // ── Add subscription
+  // ── Add subscription (UI-4: loading guard prevents double-submit)
   async function createSub(e: React.FormEvent) {
     e.preventDefault();
+    if (addingSubscription) return;
+    setAddingSubscription(true);
     try {
       const body: any = {
         name: formState.name.trim(),
@@ -245,6 +265,8 @@ export default function DashboardPage() {
       fetchSubs();
     } catch (err: any) {
       toast(err?.message ?? "Create failed", "error");
+    } finally {
+      setAddingSubscription(false);
     }
   }
 
@@ -386,6 +408,48 @@ export default function DashboardPage() {
     return result;
   }, [subs, searchQuery, filterStatus, filterCategory, sortBy]);
 
+  // ── F-12: Duplicate subscription
+  async function duplicateSub(s: Sub) {
+    try {
+      const body = {
+        name: `${s.name} (copy)`,
+        price_cents: s.price_cents,
+        billing_cycle: s.billing_cycle,
+        status: "active",
+        category: s.category,
+        split_with: s.split_with ?? 1,
+      };
+      await apiFetch("/subscriptions", { method: "POST", body: JSON.stringify(body) });
+      await fetchSubs();
+      toast(`"${s.name}" duplicated!`, "success");
+    } catch (err: any) {
+      toast(err?.message ?? "Duplicate failed", "error");
+    }
+  }
+
+  // ── F-4: Export subscriptions as CSV
+  function exportCSV() {
+    const headers = ["Name", "Price", "Billing Cycle", "Status", "Category", "Next Billing Date", "Split With"];
+    const rows = subs.map(s => [
+      `"${s.name.replace(/"/g, '""')}"`,
+      (s.price_cents / 100).toFixed(2),
+      s.billing_cycle,
+      s.status,
+      s.category,
+      s.next_billing_date ? s.next_billing_date.split("T")[0] : "",
+      String(s.split_with ?? 1),
+    ]);
+    const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `subsaver-subscriptions-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("Subscriptions exported as CSV!", "success");
+  }
+
   const hasActiveFilters = searchQuery || filterStatus !== "all" || filterCategory !== "all" || sortBy !== "date";
 
   function clearFilters() {
@@ -404,10 +468,11 @@ export default function DashboardPage() {
   } = useMemo(() => {
     const activeSubs = subs.filter((s) => s.status === "active");
     const sumMonthly = activeSubs.reduce((acc, s) => {
-      return acc + (s.billing_cycle === "monthly" ? s.price_cents : Math.round(s.price_cents / 12));
+      const split = Math.max(1, s.split_with ?? 1);
+      return acc + (s.billing_cycle === "monthly" ? Math.round(s.price_cents / split) : Math.round(s.price_cents / split / 12));
     }, 0);
     const avgPerSubscription = activeSubs.length > 0 ? sumMonthly / activeSubs.length : 0;
-    const today = new Date();
+    // UI-9 fix: removed unused `today` variable
     const upcoming = activeSubs
       .filter((s) => s.next_billing_date)
       .map((s) => ({ ...s, daysUntil: calculateDaysUntilRenewal(s.next_billing_date) }))
@@ -491,9 +556,10 @@ export default function DashboardPage() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-5">
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-5">
             {user && (
-              <div className="hidden md:flex items-center">
+              <div className="flex items-center">
                 {user.is_verified ? (
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", color: "#34D399" }}>
                     <BadgeCheck size={14} />
@@ -518,13 +584,44 @@ export default function DashboardPage() {
               Logout
             </button>
           </div>
+
+          {/* Mobile hamburger (UI-3) */}
+          <button
+            className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl transition-all"
+            style={{ background: mobileMenuOpen ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <XIcon className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
+
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-white/[0.06] px-6 py-4 flex flex-col gap-3"
+            style={{ background: "rgba(8,11,20,0.95)", backdropFilter: "blur(20px)" }}
+          >
+            {user && !user.is_verified && (
+              <button
+                onClick={() => { setShowVerificationModal(true); setMobileMenuOpen(false); }}
+                className="flex items-center gap-2 text-sm font-semibold py-2 text-violet-300"
+              >
+                <GraduationCap size={16} /> Verify Student Email
+              </button>
+            )}
+            <Link className="text-sm text-white/75 hover:text-white font-medium py-2" href="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+            <Link className="text-sm text-white/75 hover:text-white font-medium py-2" href="/settings" onClick={() => setMobileMenuOpen(false)}>Settings</Link>
+            <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="flex items-center gap-2 text-sm text-white/75 hover:text-white font-medium py-2 text-left">
+              <LogOut className="w-4 h-4" /> Logout
+            </button>
+          </div>
+        )}
       </header>
 
       <div className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-12 xl:px-16 py-10 space-y-10">
 
         {/* Quick Actions */}
-        <div className="dashboard-quick-actions flex gap-3 mb-2">
+        <div className="dashboard-quick-actions flex flex-wrap gap-3 mb-2">
           <button
             onClick={() => setShowServicePicker(true)}
             className="liquid-btn flex items-center gap-2.5 px-5 py-3"
@@ -536,6 +633,16 @@ export default function DashboardPage() {
             <Layout className="w-5 h-5 text-fuchsia-400" />
             <span className="font-medium">Customize</span>
           </Link>
+          {subs.length > 0 && (
+            <button
+              onClick={exportCSV}
+              className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3"
+              title="Export subscriptions as CSV"
+            >
+              <Download className="w-5 h-5 text-emerald-400" />
+              <span className="font-medium hidden sm:inline">Export CSV</span>
+            </button>
+          )}
         </div>
 
         {/* Verify Student prompt */}
@@ -782,8 +889,10 @@ export default function DashboardPage() {
                             onConfirmDelete={confirmDelete}
                             onCancelDelete={cancelDelete}
                             onExecuteDelete={executeDelete}
+                            onDuplicate={duplicateSub}
                             onDiscountClick={(d) => { setSelectedDiscount(d); setShowDiscountModal(true); }}
                           />
+
                         ))}
                       </div>
                     )}
@@ -802,8 +911,11 @@ export default function DashboardPage() {
                   onNameChange={handleNameChange}
                   onSuggestionSelect={handleServiceSelect}
                   formState={formState}
+                  isSubmitting={addingSubscription}
+                  autocompleteContainerRef={autocompleteRef}
                   onFormChange={(patch) => setFormState((prev) => ({ ...prev, ...patch }))}
                 />
+
               </div>
             </div>
           </div>
