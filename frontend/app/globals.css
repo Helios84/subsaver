@@ -1261,3 +1261,23 @@ a:focus-visible {
   }
 }
 
+
+/* =======================================
+   SUBSCRIPTION CARD action button visibility
+   Desktop: reveal on hover | Touch: always visible
+   ======================================= */
+
+.card-actions-hover {
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.group:hover .card-actions-hover {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .card-actions-hover {
+    opacity: 1 !important;
+  }
+}

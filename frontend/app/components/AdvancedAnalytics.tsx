@@ -19,18 +19,23 @@ export const WIDGET_H = 260;
 
 // Ordered list of analytics-zone widget IDs (excludes stats, subscriptions, top_expenses)
 export const ANALYTICS_WIDGET_IDS: WidgetId[] = [
-  'savings_card', 'spending_trends', 'category_breakdown',
+  'spending_trends', 'savings_card', 'category_breakdown',
   'insights', 'renewals', 'billing_calendar',
 ];
 
 // Default spans in the new 4-col grid
+// Key invariant: spans per row must sum to 4 for zero dead space.
+// Row 1: spending_trends(4)            = 4 ✓
+// Row 2: category_breakdown(2) + insights(1) + renewals(1) = 4 ✓
+// Row 3: billing_calendar(4)           = 4 ✓ (if enabled)
+// If savings_card enabled: savings(2) + category(2) | insights(1)+renewals(1)+[2 bonus space]
 export const DEFAULT_SPANS: Partial<Record<WidgetId, WidgetSpan>> = {
-  savings_card: 1,
-  spending_trends: 2,
-  category_breakdown: 2,
-  insights: 1,
-  renewals: 1,
-  billing_calendar: 4,
+  spending_trends: 4,    // Full-width trend chart — most important widget
+  savings_card: 2,       // Half width (was 1)
+  category_breakdown: 2, // Half width
+  insights: 1,           // Quarter
+  renewals: 1,           // Quarter
+  billing_calendar: 4,   // Full width
 };
 
 export default function AdvancedAnalytics({

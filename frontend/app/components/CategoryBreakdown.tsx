@@ -80,7 +80,7 @@ export default function CategoryBreakdown({
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="text-center">
                             <p className="text-[9px] text-gray-400 uppercase tracking-wider">Total</p>
-                            <p className="text-base font-black text-white">${total.toFixed(0)}</p>
+                            <p className="text-base font-black text-white">{fxFormat(total * 100, currency, fxRates)}</p>
                             <p className="text-[9px] text-gray-500">/mo</p>
                         </div>
                     </div>

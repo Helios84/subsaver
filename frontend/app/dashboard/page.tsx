@@ -781,14 +781,11 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="flex flex-col items-center px-3 py-1.5 rounded-xl" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                          <div className="text-xl font-black text-white font-mono tabular-nums leading-none">{subs.length}</div>
-                          <div className="text-[10px] text-white/35 uppercase tracking-wider mt-0.5">Total</div>
-                        </div>
-                        <div className="flex flex-col items-center px-3 py-1.5 rounded-xl" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)" }}>
-                          <div className="text-xl font-black text-emerald-400 font-mono tabular-nums leading-none">{totalActive}</div>
-                          <div className="text-[10px] text-emerald-500/60 uppercase tracking-wider mt-0.5">Active</div>
-                        </div>
+                        {hasActiveFilters && (
+                          <span className="text-xs text-white/40 font-medium">
+                            {filteredSubs.length} of {subs.length} shown
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -887,7 +884,7 @@ export default function DashboardPage() {
                             className="liquid-select"
                             style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "#0F1220", color: "rgba(255,255,255,0.7)", fontSize: 12, outline: "none" }}
                           >
-                            <option value="date">Date Added</option>
+                            <option value="date">Recently Added</option>
                             <option value="name">Name A–Z</option>
                             <option value="price_asc">Price ↑</option>
                             <option value="price_desc">Price ↓</option>
