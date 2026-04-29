@@ -683,26 +683,26 @@ export default function DashboardPage() {
       {/* ── PAGE CONTENT ── */}
       <div
         className="relative z-10 mx-auto max-w-[1440px]"
-        style={{ padding: "2rem clamp(1.25rem, 3vw, 3rem)", display: "flex", flexDirection: "column", gap: "2rem" }}
+        style={{ padding: "1.75rem clamp(1rem, 1.5vw, 1.5rem)", display: "flex", flexDirection: "column", gap: "2rem" }}
       >
 
         {/* Quick Actions */}
         <div className="dashboard-quick-actions flex flex-wrap items-center gap-3">
           <button
             onClick={() => setShowServicePicker(true)}
-            className="liquid-btn flex items-center gap-2.5 px-7 py-3.5"
+            className="liquid-btn flex items-center gap-2.5 px-7 py-4"
           >
             <Plus className="w-4 h-4" />
             <span className="font-bold text-sm">Add Subscription</span>
           </button>
-          <Link href="/customize" className="liquid-btn-ghost flex items-center gap-2.5 px-6 py-3.5">
+          <Link href="/customize" className="liquid-btn-ghost flex items-center gap-2.5 px-6 py-4">
             <Layout className="w-4 h-4 text-fuchsia-400" />
             <span className="font-medium text-sm">Customize</span>
           </Link>
           {subs.length > 0 && (
             <button
               onClick={exportCSV}
-              className="liquid-btn-ghost flex items-center gap-2.5 px-6 py-3.5"
+              className="liquid-btn-ghost flex items-center gap-2.5 px-6 py-4"
               title="Export subscriptions as CSV"
             >
               <Download className="w-4 h-4 text-emerald-400" />
