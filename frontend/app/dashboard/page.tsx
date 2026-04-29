@@ -541,97 +541,175 @@ export default function DashboardPage() {
         <div className="aurora-blob animate-aurora-3" style={{ width: "400px", height: "400px", background: "radial-gradient(circle, rgba(79,70,229,0.08) 0%, transparent 70%)", top: "40%", left: "40%" }} />
       </div>
 
-      {/* Header */}
+      {/* ── HEADER ── */}
       <header className="glass-header sticky top-0 z-20">
-        <div className="mx-auto max-w-[1600px] px-6 lg:px-10 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl blur-md opacity-40" />
-              <div className="relative bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl p-1.5">
-                <img src="/logo.png" alt="SubSaver" className="w-7 h-7 rounded-lg" />
+        {/* Main header row */}
+        <div className="mx-auto max-w-[1600px] px-6 lg:px-12 py-0">
+          <div className="flex items-center justify-between h-16">
+
+            {/* Left: Logo + greeting */}
+            <div className="flex items-center gap-4">
+              {/* Logo */}
+              <div className="relative flex-shrink-0">
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl blur-md opacity-40" />
+                <div className="relative bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl p-1.5">
+                  <img src="/logo.png" alt="SubSaver" className="w-7 h-7 rounded-lg" />
+                </div>
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-bold tracking-tight leading-none" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>
+                  Sub<span className="gradient-text">Saver</span>
+                </h1>
+                {user && (
+                  <p className="text-[11px] text-white/40 mt-0.5 leading-none">
+                    Hey, <span className="text-white/65 font-medium">{user.email?.split('@')[0] ?? 'there'}</span> 👋
+                  </p>
+                )}
               </div>
             </div>
-            <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>
-              Sub<span className="gradient-text">Saver</span>
-            </h1>
-          </div>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-5">
-            {user && (
-              <div className="flex items-center">
-                {user.is_verified ? (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)", color: "#34D399" }}>
-                    <BadgeCheck size={14} />
-                    <span>Student Verified</span>
+            {/* Center: Quick spend summary (desktop only) */}
+            {subs.length > 0 && (
+              <div className="hidden lg:flex items-center gap-5">
+                <div className="flex items-center gap-3 px-4 py-2 rounded-xl" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.18)' }}>
+                  <div className="text-center">
+                    <div className="text-[11px] text-white/40 uppercase tracking-wider font-bold leading-none mb-0.5">Monthly</div>
+                    <div className="text-base font-black text-white tabular-nums leading-none">{totalMonthly}</div>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setShowVerificationModal(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all hover:scale-105"
-                    style={{ background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.25)", color: "#A78BFA" }}
-                  >
-                    <GraduationCap size={14} />
-                    <span>Verify Student</span>
-                  </button>
+                  <div className="w-px h-7 bg-white/10" />
+                  <div className="text-center">
+                    <div className="text-[11px] text-white/40 uppercase tracking-wider font-bold leading-none mb-0.5">Active</div>
+                    <div className="text-base font-black text-emerald-400 tabular-nums leading-none">{totalActive}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Right: Desktop nav */}
+            <div className="hidden md:flex items-center gap-2">
+              {/* Verification badge */}
+              {user && (
+                <div className="mr-2">
+                  {user.is_verified ? (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', color: '#34D399' }}>
+                      <BadgeCheck size={13} />
+                      <span>Verified</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowVerificationModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all hover:scale-105 active:scale-95"
+                      style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.25)', color: '#A78BFA' }}
+                    >
+                      <GraduationCap size={13} />
+                      <span>Verify Student</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Nav links */}
+              <Link
+                className="px-3 py-2 rounded-lg text-sm text-white/55 hover:text-white hover:bg-white/[0.06] font-medium transition-all"
+                href="/"
+              >Home</Link>
+              <Link
+                className="px-3 py-2 rounded-lg text-sm text-white/55 hover:text-white hover:bg-white/[0.06] font-medium transition-all"
+                href="/settings"
+              >Settings</Link>
+
+              {/* Divider */}
+              <div className="w-px h-5 bg-white/10 mx-1" />
+
+              {/* Logout */}
+              <button
+                onClick={logout}
+                className="group flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/55 hover:text-red-400 hover:bg-red-500/[0.08] font-medium transition-all"
+              >
+                <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                <span>Logout</span>
+              </button>
+
+              {/* User avatar */}
+              {user && (
+                <div
+                  className="ml-1 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #7C3AED, #D946EF)', boxShadow: '0 0 0 2px rgba(124,58,237,0.3)' }}
+                  title={user.email}
+                >
+                  {(user.email?.[0] ?? 'U').toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            {/* Mobile hamburger */}
+            <button
+              className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl transition-all active:scale-95"
+              style={{ background: mobileMenuOpen ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <XIcon className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile dropdown */}
+        {mobileMenuOpen && (
+          <div
+            className="md:hidden border-t border-white/[0.06] px-6 py-4 flex flex-col gap-1"
+            style={{ background: 'rgba(8,11,20,0.97)', backdropFilter: 'blur(24px)' }}
+          >
+            {/* User info row */}
+            {user && (
+              <div className="flex items-center gap-3 p-3 mb-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #7C3AED, #D946EF)' }}>
+                  {(user.email?.[0] ?? 'U').toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">{user.email?.split('@')[0]}</p>
+                  <p className="text-[11px] text-white/40">{user.email}</p>
+                </div>
+                {user.is_verified && (
+                  <div className="ml-auto flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.12)', color: '#34D399', border: '1px solid rgba(16,185,129,0.2)' }}>
+                    <BadgeCheck size={11} /> Verified
+                  </div>
                 )}
               </div>
             )}
-            <Link className="text-sm text-white/65 hover:text-white font-medium transition-colors" href="/">Home</Link>
-            <Link className="text-sm text-white/65 hover:text-white font-medium transition-colors" href="/settings">Settings</Link>
-            <button onClick={logout} className="group flex items-center gap-2 text-sm text-white/65 hover:text-white font-medium transition-colors">
-              <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              Logout
-            </button>
-          </div>
-
-          {/* Mobile hamburger (UI-3) */}
-          <button
-            className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl transition-all"
-            style={{ background: mobileMenuOpen ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <XIcon className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-
-        {/* Mobile dropdown menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/[0.06] px-6 py-4 flex flex-col gap-3"
-            style={{ background: "rgba(8,11,20,0.95)", backdropFilter: "blur(20px)" }}
-          >
             {user && !user.is_verified && (
               <button
                 onClick={() => { setShowVerificationModal(true); setMobileMenuOpen(false); }}
-                className="flex items-center gap-2 text-sm font-semibold py-2 text-violet-300"
+                className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-violet-300 rounded-xl transition-all hover:bg-violet-500/10"
               >
                 <GraduationCap size={16} /> Verify Student Email
               </button>
             )}
-            <Link className="text-sm text-white/75 hover:text-white font-medium py-2" href="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
-            <Link className="text-sm text-white/75 hover:text-white font-medium py-2" href="/settings" onClick={() => setMobileMenuOpen(false)}>Settings</Link>
-            <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="flex items-center gap-2 text-sm text-white/75 hover:text-white font-medium py-2 text-left">
+            <Link className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/70 hover:text-white font-medium rounded-xl hover:bg-white/[0.05] transition-all" href="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+            <Link className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/70 hover:text-white font-medium rounded-xl hover:bg-white/[0.05] transition-all" href="/settings" onClick={() => setMobileMenuOpen(false)}>Settings</Link>
+            <div className="h-px bg-white/[0.06] my-1" />
+            <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400/70 hover:text-red-400 font-medium rounded-xl hover:bg-red-500/[0.08] transition-all text-left">
               <LogOut className="w-4 h-4" /> Logout
             </button>
           </div>
         )}
       </header>
 
-      <div className="relative z-10 mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-12 xl:px-16 py-10 space-y-10">
+      {/* ── PAGE CONTENT ── */}
+      <div className="relative z-10 mx-auto max-w-[1600px] px-5 sm:px-8 lg:px-14 xl:px-20 py-8 sm:py-10 space-y-8">
 
         {/* Quick Actions */}
-        <div className="dashboard-quick-actions flex flex-wrap gap-3 mb-2">
+        <div className="dashboard-quick-actions flex flex-wrap items-center gap-3">
           <button
             onClick={() => setShowServicePicker(true)}
-            className="liquid-btn flex items-center gap-2.5 px-5 py-3"
+            className="liquid-btn flex items-center gap-2.5 px-6 py-3"
           >
-            <Plus className="w-5 h-5" />
-            <span className="font-bold">Add Subscription</span>
+            <Plus className="w-4 h-4" />
+            <span className="font-bold text-sm">Add Subscription</span>
           </button>
           <Link href="/customize" className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3">
-            <Layout className="w-5 h-5 text-fuchsia-400" />
-            <span className="font-medium">Customize</span>
+            <Layout className="w-4 h-4 text-fuchsia-400" />
+            <span className="font-medium text-sm">Customize</span>
           </Link>
           {subs.length > 0 && (
             <button
@@ -639,8 +717,8 @@ export default function DashboardPage() {
               className="liquid-btn-ghost flex items-center gap-2.5 px-5 py-3"
               title="Export subscriptions as CSV"
             >
-              <Download className="w-5 h-5 text-emerald-400" />
-              <span className="font-medium hidden sm:inline">Export CSV</span>
+              <Download className="w-4 h-4 text-emerald-400" />
+              <span className="font-medium text-sm hidden sm:inline">Export CSV</span>
             </button>
           )}
         </div>
