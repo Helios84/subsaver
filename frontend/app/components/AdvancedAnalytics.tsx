@@ -91,12 +91,75 @@ export default function AdvancedAnalytics({
     return widgetSizes[id] ?? DEFAULT_SPANS[id] ?? 2;
   }
 
-  // Calculate placeholder span: if partial-width widgets don't fill full rows,
-  // show a dashed '+' card in the leftover columns so nothing looks broken.
-  const partialEnabled = orderedIds.filter(id => widgets[id] && !FULL_WIDTH_WIDGETS.has(id));
-  const totalPartialSpan = partialEnabled.reduce((s, id) => s + getSpan(id), 0);
+  // ── Split widgets into 3 render groups for correct placeholder position ──
+  // Group 1: spending_trends (always-first full-width)
+  // Group 2: partial-width widgets + '+' placeholder
+  // Group 3: billing_calendar (always-last full-width)
+  // This ensures the placeholder fills gaps in group 2, not after group 3.
+  const FIRST_FULL: WidgetId[] = ['spending_trends'];
+  const LAST_FULL: WidgetId[] = ['billing_calendar'];
+
+  const group1 = orderedIds.filter(id => widgets[id] && FIRST_FULL.includes(id));
+  const group2 = orderedIds.filter(id => widgets[id] && !FULL_WIDTH_WIDGETS.has(id));
+  const group3 = orderedIds.filter(id => widgets[id] && LAST_FULL.includes(id));
+
+  // Placeholder: fills remaining columns in the last partial row
+  const totalPartialSpan = group2.reduce((s, id) => s + getSpan(id), 0);
   const remainder = totalPartialSpan % 4;
   const placeholderSpan: WidgetSpan | null = remainder > 0 ? (4 - remainder) as WidgetSpan : null;
+
+  function renderItem(id: WidgetId) {
+    const span = getSpan(id);
+    return (
+      <div
+        key={id}
+        className={`analytics-widget-span-${span}`}
+        style={{ transition: 'all 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' }}
+      >
+        {renderWidget(id, span)}
+      </div>
+    );
+  }
+
+  function renderPlaceholder(span: WidgetSpan) {
+    return (
+      <div key="placeholder" className={`analytics-widget-span-${span}`}>
+        <Link
+          href="/customize"
+          className="flex flex-col items-center justify-center gap-3 w-full rounded-2xl group"
+          style={{
+            height: WIDGET_H,
+            border: '2px dashed rgba(255,255,255,0.10)',
+            background: 'rgba(255,255,255,0.015)',
+            backdropFilter: 'blur(8px)',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(124,58,237,0.45)';
+            (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.06)';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.10)';
+            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.015)';
+          }}
+        >
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{
+              background: 'rgba(124,58,237,0.12)',
+              border: '1px solid rgba(124,58,237,0.25)',
+            }}
+          >
+            <Plus className="w-5 h-5 text-violet-400/70 group-hover:text-violet-300 transition-colors" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-white/30 group-hover:text-white/60 transition-colors leading-none">Add Widget</p>
+            <p className="text-xs text-white/20 group-hover:text-white/40 transition-colors mt-1">Open Customize</p>
+          </div>
+        </Link>
+      </div>
+    );
+  }
 
   function renderWidget(id: WidgetId, span: WidgetSpan): React.ReactNode {
     switch (id) {
@@ -131,59 +194,15 @@ export default function AdvancedAnalytics({
 
   return (
     <div className="analytics-grid">
-      {orderedIds.map(id => {
-        if (!widgets[id]) return null;
-        const span = getSpan(id);
-        return (
-          <div
-            key={id}
-            className={`analytics-widget-span-${span}`}
-            style={{ transition: 'all 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' }}
-          >
-            {renderWidget(id, span)}
-          </div>
-        );
-      })}
+      {/* Group 1: spending_trends (full-width, always first) */}
+      {group1.map(id => renderItem(id))}
 
-      {/* ── '+' Add Widget placeholder fills leftover grid columns ── */}
-      {placeholderSpan && (
-        <div className={`analytics-widget-span-${placeholderSpan}`}>
-          <Link
-            href="/customize"
-            className="flex flex-col items-center justify-center gap-3 w-full rounded-2xl group"
-            style={{
-              height: WIDGET_H,
-              border: '2px dashed rgba(255,255,255,0.10)',
-              background: 'rgba(255,255,255,0.015)',
-              backdropFilter: 'blur(8px)',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(124,58,237,0.45)';
-              (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.06)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.10)';
-              (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.015)';
-            }}
-          >
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{
-                background: 'rgba(124,58,237,0.12)',
-                border: '1px solid rgba(124,58,237,0.25)',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <Plus className="w-5 h-5 text-violet-400/70 group-hover:text-violet-300 transition-colors" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-semibold text-white/30 group-hover:text-white/60 transition-colors leading-none">Add Widget</p>
-              <p className="text-xs text-white/20 group-hover:text-white/40 transition-colors mt-1">Open Customize</p>
-            </div>
-          </Link>
-        </div>
-      )}
+      {/* Group 2: partial widgets + placeholder fills any leftover columns */}
+      {group2.map(id => renderItem(id))}
+      {placeholderSpan && renderPlaceholder(placeholderSpan)}
+
+      {/* Group 3: billing_calendar (full-width, always last) */}
+      {group3.map(id => renderItem(id))}
     </div>
   );
 }
