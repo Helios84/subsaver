@@ -38,56 +38,6 @@ export const DEFAULT_SPANS: Partial<Record<WidgetId, WidgetSpan>> = {
   billing_calendar: 4,   // Full width
 };
 
-/**
- * Adaptive span computation — ensures each row of the 4-col analytics grid
- * is completely filled, with ZERO dead whitespace on the right.
- *
- * Algorithm:
- *  1. Collect enabled "partial" widgets (not spending_trends / billing_calendar).
- *  2. Sum their default spans.
- *  3. If the total is not divisible by 4, expand the LAST widget in the list
- *     by the remainder needed to reach the next multiple of 4.
- *  4. User-customized sizes are respected and exempt from adjustment.
- *
- * Examples (with default spans):
- *  category(2) + insights(1) only → total 3, remainder 1 → insights becomes 2  ✓ row: 2+2=4
- *  category(2) + insights(1) + renewals(1) → total 4, no change                ✓ row: 2+1+1=4
- *  savings(2) + category(2) → total 4, no change                               ✓ row: 2+2=4
- *  insights(1) only → total 1, remainder 3 → insights becomes 4                ✓ row: 4
- */
-function computeAdaptiveSpans(
-  orderedIds: WidgetId[],
-  widgets: Record<string, boolean>,
-  customSizes: Partial<Record<WidgetId, WidgetSpan>>,
-): Record<string, WidgetSpan> {
-  // Collect enabled partial-width widgets in render order
-  const partialEnabled = orderedIds.filter(
-    id => widgets[id] && !FULL_WIDTH_WIDGETS.has(id),
-  );
-
-  // Build initial span map: custom > default > 2
-  const spans: Record<string, WidgetSpan> = {};
-  for (const id of partialEnabled) {
-    spans[id] = customSizes[id] ?? DEFAULT_SPANS[id] ?? 2;
-  }
-
-  // Skip adaptive logic if user has explicitly customized ANY widget size
-  const anyCustom = partialEnabled.some(id => customSizes[id] !== undefined);
-  if (anyCustom || partialEnabled.length === 0) return spans;
-
-  // Compute how many extra columns needed to reach a multiple-of-4 total
-  const total = partialEnabled.reduce((s, id) => s + spans[id], 0);
-  const remainder = total % 4;
-
-  if (remainder !== 0) {
-    const extra = 4 - remainder;
-    const lastId = partialEnabled[partialEnabled.length - 1];
-    // Clamp to 4 (full-width max)
-    spans[lastId] = Math.min(4, spans[lastId] + extra) as WidgetSpan;
-  }
-
-  return spans;
-}
 
 export default function AdvancedAnalytics({
   upcomingRenewals,
