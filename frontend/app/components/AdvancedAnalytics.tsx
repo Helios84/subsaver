@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import SpendingTrendsChart from './SpendingTrendsChart';
 import CategoryBreakdown from './CategoryBreakdown';
@@ -134,15 +136,17 @@ export default function AdvancedAnalytics({
     ? widgetOrder.filter(id => ANALYTICS_WIDGET_IDS.includes(id))
     : ANALYTICS_WIDGET_IDS;
 
-  // Compute adaptive spans — eliminates right-side dead space
-  const adaptiveSpans = computeAdaptiveSpans(orderedIds, widgets, widgetSizes);
-
+  // Keep original (non-expanded) spans — empty space is filled with a '+' placeholder
   function getSpan(id: WidgetId): WidgetSpan {
-    // Full-width widgets always span 4
-    if (FULL_WIDTH_WIDGETS.has(id)) return widgetSizes[id] ?? DEFAULT_SPANS[id] ?? 4;
-    // Partial widgets use adaptive span (or custom override)
-    return widgetSizes[id] ?? adaptiveSpans[id] ?? DEFAULT_SPANS[id] ?? 2;
+    return widgetSizes[id] ?? DEFAULT_SPANS[id] ?? 2;
   }
+
+  // Calculate placeholder span: if partial-width widgets don't fill full rows,
+  // show a dashed '+' card in the leftover columns so nothing looks broken.
+  const partialEnabled = orderedIds.filter(id => widgets[id] && !FULL_WIDTH_WIDGETS.has(id));
+  const totalPartialSpan = partialEnabled.reduce((s, id) => s + getSpan(id), 0);
+  const remainder = totalPartialSpan % 4;
+  const placeholderSpan: WidgetSpan | null = remainder > 0 ? (4 - remainder) as WidgetSpan : null;
 
   function renderWidget(id: WidgetId, span: WidgetSpan): React.ReactNode {
     switch (id) {
@@ -190,6 +194,46 @@ export default function AdvancedAnalytics({
           </div>
         );
       })}
+
+      {/* ── '+' Add Widget placeholder fills leftover grid columns ── */}
+      {placeholderSpan && (
+        <div className={`analytics-widget-span-${placeholderSpan}`}>
+          <Link
+            href="/customize"
+            className="flex flex-col items-center justify-center gap-3 w-full rounded-2xl group"
+            style={{
+              height: WIDGET_H,
+              border: '2px dashed rgba(255,255,255,0.10)',
+              background: 'rgba(255,255,255,0.015)',
+              backdropFilter: 'blur(8px)',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(124,58,237,0.45)';
+              (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.06)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.10)';
+              (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.015)';
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{
+                background: 'rgba(124,58,237,0.12)',
+                border: '1px solid rgba(124,58,237,0.25)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Plus className="w-5 h-5 text-violet-400/70 group-hover:text-violet-300 transition-colors" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-white/30 group-hover:text-white/60 transition-colors leading-none">Add Widget</p>
+              <p className="text-xs text-white/20 group-hover:text-white/40 transition-colors mt-1">Open Customize</p>
+            </div>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

@@ -69,6 +69,10 @@ export default function DashboardPage() {
   // ── Onboarding
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // ── Show all subscription cards (default: 3 rows = 9 cards)
+  const [showAllSubs, setShowAllSubs] = useState(false);
+  const CARDS_PER_PAGE = 9; // 3 rows × 3 cols
+
   useEffect(() => {
     setDashSettings(loadDashboardSettings());
     const onFocus = () => setDashSettings(loadDashboardSettings());
@@ -690,26 +694,29 @@ export default function DashboardPage() {
         <div className="dashboard-quick-actions flex flex-wrap items-center gap-3">
           <button
             onClick={() => setShowServicePicker(true)}
-            className="liquid-btn flex items-center gap-3 px-8 py-5"
+            className="liquid-btn flex items-center justify-center gap-2.5 px-8 py-[14px]"
           >
-            <Plus className="w-[18px] h-[18px]" />
-            <span className="font-bold text-[15px]">Add Subscription</span>
+            <Plus className="w-[18px] h-[18px] shrink-0" />
+            <span className="font-bold text-[15px] leading-none">Add Subscription</span>
           </button>
-          <Link href="/customize" className="liquid-btn-ghost flex items-center gap-3 px-7 py-5">
-            <Layout className="w-[18px] h-[18px] text-fuchsia-400" />
-            <span className="font-semibold text-[15px]">Customize</span>
+          <Link href="/customize" className="liquid-btn-ghost flex items-center justify-center gap-2.5 px-7 py-[14px]">
+            <Layout className="w-[18px] h-[18px] shrink-0 text-fuchsia-400" />
+            <span className="font-semibold text-[15px] leading-none">Customize</span>
           </Link>
           {subs.length > 0 && (
             <button
               onClick={exportCSV}
-              className="liquid-btn-ghost flex items-center gap-3 px-7 py-5"
+              className="liquid-btn-ghost flex items-center justify-center gap-2.5 px-7 py-[14px]"
               title="Export subscriptions as CSV"
             >
-              <Download className="w-[18px] h-[18px] text-emerald-400" />
-              <span className="font-semibold text-[15px] hidden sm:inline">Export CSV</span>
+              <Download className="w-[18px] h-[18px] shrink-0 text-emerald-400" />
+              <span className="font-semibold text-[15px] leading-none hidden sm:inline">Export CSV</span>
             </button>
           )}
         </div>
+
+        {/* Subtle divider between actions and content */}
+        <div style={{ height: 1, background: "rgba(255,255,255,0.05)", margin: "-0.5rem 0" }} />
         {/* Verify Student prompt */}
         {user && !user.is_verified && (
           <button
@@ -936,7 +943,7 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       <div className={layoutCompact ? "flex flex-col gap-2" : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"}>
-                        {filteredSubs.map((s) => (
+                        {(showAllSubs ? filteredSubs : filteredSubs.slice(0, CARDS_PER_PAGE)).map((s) => (
                           <SubscriptionCard
                             key={s.id}
                             sub={s}
@@ -954,9 +961,21 @@ export default function DashboardPage() {
                             onDuplicate={duplicateSub}
                             onDiscountClick={(d) => { setSelectedDiscount(d); setShowDiscountModal(true); }}
                           />
-
                         ))}
                       </div>
+                    )}
+                    {/* Show more / less toggle */}
+                    {!layoutCompact && filteredSubs.length > CARDS_PER_PAGE && (
+                      <button
+                        onClick={() => setShowAllSubs(v => !v)}
+                        className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white/50 hover:text-white transition-all"
+                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+                      >
+                        {showAllSubs
+                          ? <><XIcon className="w-4 h-4" /> Show less</>  
+                          : <><Plus className="w-4 h-4" /> Show {filteredSubs.length - CARDS_PER_PAGE} more</> 
+                        }
+                      </button>
                     )}
                   </div>
                 </section>
