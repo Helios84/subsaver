@@ -77,7 +77,7 @@ export default function DashboardPage() {
     setDashSettings(loadDashboardSettings());
     const onFocus = () => setDashSettings(loadDashboardSettings());
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "dashboard_settings_v4") setDashSettings(loadDashboardSettings());
+      if (e.key === "dashboard_settings_v5") setDashSettings(loadDashboardSettings());
     };
     window.addEventListener("focus", onFocus);
     window.addEventListener("storage", onStorage);

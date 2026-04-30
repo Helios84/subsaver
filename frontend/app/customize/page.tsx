@@ -86,8 +86,8 @@ const ANALYTICS_WIDGET_IDS: WidgetId[] = [
 ];
 
 const DEFAULT_WIDGET_SIZES: Partial<Record<WidgetId, WidgetSpan>> = {
-  savings_card:       1,
-  spending_trends:    2,
+  savings_card:       2,  // half-width  (was 1 — mismatch with AdvancedAnalytics)
+  spending_trends:    4,  // full-width  (was 2 — mismatch with AdvancedAnalytics)
   category_breakdown: 2,
   insights:           1,
   renewals:           1,
@@ -106,7 +106,8 @@ const DEFAULT_WIDGETS: WidgetConfig[] = [
   { id: "subscriptions",      label: "Subscriptions List", description: "Your full subscription list and management section", icon: CreditCard,    enabled: true, color: "#6366F1" },
 ];
 
-const STORAGE_KEY = "dashboard_settings_v4";
+// v5: bumped to clear old default_widget_sizes mismatch (spending_trends was 2, now 4)
+const STORAGE_KEY = "dashboard_settings_v5";
 
 type SavedSettings = {
   widgets: { id: WidgetId; enabled: boolean }[];

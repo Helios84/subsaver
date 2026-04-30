@@ -91,21 +91,16 @@ export default function AdvancedAnalytics({
     return widgetSizes[id] ?? DEFAULT_SPANS[id] ?? 2;
   }
 
-  // ── Split widgets into 3 render groups for correct placeholder position ──
-  // Group 1: spending_trends (always-first full-width)
-  // Group 2: partial-width widgets + '+' placeholder
-  // Group 3: billing_calendar (always-last full-width)
-  // This ensures the placeholder fills gaps in group 2, not after group 3.
-  const FIRST_FULL: WidgetId[] = ['spending_trends'];
-  const LAST_FULL: WidgetId[] = ['billing_calendar'];
+  // ── Render groups:
+  //   mainWidgets: everything except billing_calendar (in user's order)
+  //   calendarWidget: billing_calendar always last (span-4, doesn't affect row gaps)
+  //   placeholder: fills leftover columns in last partial row of mainWidgets
+  const mainWidgets = orderedIds.filter(id => widgets[id] && id !== 'billing_calendar');
+  const calendarWidget = orderedIds.filter(id => widgets[id] && id === 'billing_calendar');
 
-  const group1 = orderedIds.filter(id => widgets[id] && FIRST_FULL.includes(id));
-  const group2 = orderedIds.filter(id => widgets[id] && !FULL_WIDTH_WIDGETS.has(id));
-  const group3 = orderedIds.filter(id => widgets[id] && LAST_FULL.includes(id));
-
-  // Placeholder: fills remaining columns in the last partial row
-  const totalPartialSpan = group2.reduce((s, id) => s + getSpan(id), 0);
-  const remainder = totalPartialSpan % 4;
+  // Total span of all main widgets — placeholder fills remainder to next row-of-4
+  const totalSpan = mainWidgets.reduce((s, id) => s + getSpan(id), 0);
+  const remainder = totalSpan % 4;
   const placeholderSpan: WidgetSpan | null = remainder > 0 ? (4 - remainder) as WidgetSpan : null;
 
   function renderItem(id: WidgetId) {
@@ -194,15 +189,14 @@ export default function AdvancedAnalytics({
 
   return (
     <div className="analytics-grid">
-      {/* Group 1: spending_trends (full-width, always first) */}
-      {group1.map(id => renderItem(id))}
+      {/* Main widgets: spending_trends, savings_card, category_breakdown, insights, renewals (in order) */}
+      {mainWidgets.map(id => renderItem(id))}
 
-      {/* Group 2: partial widgets + placeholder fills any leftover columns */}
-      {group2.map(id => renderItem(id))}
+      {/* '+' placeholder fills any leftover columns in the last partial row */}
       {placeholderSpan && renderPlaceholder(placeholderSpan)}
 
-      {/* Group 3: billing_calendar (full-width, always last) */}
-      {group3.map(id => renderItem(id))}
+      {/* billing_calendar always last — full-width, doesn't affect row gaps above */}
+      {calendarWidget.map(id => renderItem(id))}
     </div>
   );
 }
