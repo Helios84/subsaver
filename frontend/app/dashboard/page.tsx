@@ -64,7 +64,11 @@ export default function DashboardPage() {
   const [dashSettings, setDashSettings] = useState<DashboardSettings>(loadDashboardSettings);
 
   // ── Real FX rates for currency conversion
-  const [fxRates, setFxRates] = useState<Record<string, number>>({ USD: 1, EUR: 0.92, GBP: 0.79 });
+  const [fxRates, setFxRates] = useState<Record<string, number>>({ USD: 1, EUR: 0.93, GBP: 0.79 });
+
+  // ── Analytics data (from /api/dashboard/summary — no separate fetch needed)
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [insightsData, setInsightsData] = useState<any[]>([]);
 
   // ── Onboarding
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -176,6 +180,9 @@ export default function DashboardPage() {
       const summary = await apiFetch("/api/dashboard/summary");
       setUser(summary.user);
       setSubs(summary.subscriptions);
+      // Analytics data from summary — no extra requests needed
+      if (summary.analytics) setAnalyticsData(summary.analytics);
+      if (summary.insights)  setInsightsData(summary.insights);
       // Also load student discounts for active subs
       const activeIds = summary.subscriptions
         .filter((s: Sub) => s.status === "active")
@@ -787,6 +794,8 @@ export default function DashboardPage() {
                 widgetSizes={dashSettings.widgetSizes ?? {}}
                 currency={currency}
                 fxRates={fxRates}
+                trendsDataProp={analyticsData}
+                insightsProp={insightsData}
               />
             )}
 
@@ -1041,7 +1050,7 @@ export default function DashboardPage() {
         <VerificationModal
           isOpen={showVerificationModal}
           onClose={() => setShowVerificationModal(false)}
-          onSuccess={() => fetchUser()}
+          onSuccess={() => fetchDashboard()}
         />
         {showServicePicker && (
           <ServicePickerModal

@@ -302,7 +302,7 @@ function RealDashboardPreview({ settings, subs, user, onWidgetReorder }: {
 }) {
   const [trendsData, setTrendsData] = useState<any>(null);
   const [insights, setInsights] = useState<any[]>([]);
-  const [fxRates, setFxRates] = useState<Record<string, number>>({ USD: 1, EUR: 0.92, GBP: 0.79 });
+  const [fxRates, setFxRates] = useState<Record<string, number>>({ USD: 1, EUR: 0.93, GBP: 0.79 });
   useEffect(() => {
     apiFetch('/api/analytics/trends').then(setTrendsData).catch(() => {});
     apiFetch('/api/analytics/insights').then(setInsights).catch(() => {});
@@ -643,14 +643,39 @@ export default function CustomizePage() {
     });
   }
   function handleSave() {
+    // Always save to localStorage first (instant, no network)
     saveDashboardSettings(settings);
     setSaved(true); setIsDirty(false); setChangedIds(new Set()); setUndoStack([]);
     setTimeout(() => setSaved(false), 2500);
+    // M-8: Also sync to backend so settings persist across devices
+    const token = typeof window !== "undefined" ? localStorage.getItem("subsaver_token") : null;
+    if (token) {
+      apiFetch("/users/me/preferences", {
+        method: "PATCH",
+        body: JSON.stringify({ preferences: JSON.stringify({
+          widgets: settings.widgets.map(w => ({ id: w.id, enabled: w.enabled })),
+          layout: settings.layout,
+          currency: settings.currency,
+          density: settings.density,
+          showQuickActions: settings.showQuickActions,
+          statsCards: settings.statsCards,
+          widgetSizes: settings.widgetSizes,
+        }) }),
+      }).catch(() => { /* Non-critical: backend sync failed, localStorage still saved */ });
+    }
   }
   function handleReset() {
     const d = getDefaults();
     setSettings(d); saveDashboardSettings(d); setIsDirty(false);
     setUndoStack([]); setChangedIds(new Set());
+    // Sync reset to backend too
+    const token = typeof window !== "undefined" ? localStorage.getItem("subsaver_token") : null;
+    if (token) {
+      apiFetch("/users/me/preferences", {
+        method: "PATCH",
+        body: JSON.stringify({ preferences: "" }),
+      }).catch(() => {});
+    }
   }
 
   // ── Layout Presets ──────────────────────────────────────────────────────────

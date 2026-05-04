@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { apiFetch } from '../lib/api';
@@ -46,7 +45,10 @@ export default function AdvancedAnalytics({
   widgetOrder,
   widgetSizes = {},
   currency = "USD",
-  fxRates = { USD: 1, EUR: 0.92, GBP: 0.79 },
+  fxRates = { USD: 1, EUR: 0.93, GBP: 0.79 },
+  // H-7: accept pre-loaded data from dashboard/summary to avoid duplicate requests
+  trendsDataProp,
+  insightsProp,
 }: {
   upcomingRenewals: any[];
   widgets: Record<string, boolean>;
@@ -55,15 +57,28 @@ export default function AdvancedAnalytics({
   widgetSizes?: Partial<Record<WidgetId, WidgetSpan>>;
   currency?: import("../lib/currency").Currency;
   fxRates?: Record<string, number>;
+  trendsDataProp?: any;       // analytics data from /api/dashboard/summary
+  insightsProp?: any[];       // insights from /api/dashboard/summary
 }) {
-  const router = useRouter();
-  const [trendsData, setTrendsData] = useState<any>(null);
-  const [insights, setInsights] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [trendsData, setTrendsData] = useState<any>(trendsDataProp ?? null);
+  const [insights, setInsights] = useState<any[]>(insightsProp ?? []);
+  const [loading, setLoading] = useState(!trendsDataProp);
 
-  // Re-fetch analytics when subscriptions change
+  // Sync when parent passes updated data (e.g. after subscription mutation)
+  useEffect(() => {
+    if (trendsDataProp) {
+      setTrendsData(trendsDataProp);
+      setLoading(false);
+    }
+    if (insightsProp) setInsights(insightsProp);
+  }, [trendsDataProp, insightsProp]);
+
+  // Re-fetch analytics only when subscriptions change AND props are NOT provided
   const subsHash = (allSubscriptions ?? []).map(s => `${s.id}:${s.price_cents}:${s.status}`).join(',');
   useEffect(() => {
+    // Skip internal fetch if data was provided by parent (H-7 optimization)
+    if (trendsDataProp) return;
+
     async function load() {
       try {
         const [t, i] = await Promise.all([
@@ -79,7 +94,7 @@ export default function AdvancedAnalytics({
       }
     }
     load();
-  }, [subsHash]);
+  }, [subsHash, trendsDataProp]);
 
   // Ordered widget IDs
   const orderedIds: WidgetId[] = widgetOrder
@@ -121,6 +136,7 @@ export default function AdvancedAnalytics({
       <div key="placeholder" className={`analytics-widget-span-${span}`}>
         <Link
           href="/customize"
+          aria-label="Open dashboard customization settings"
           className="flex flex-col items-center justify-center gap-3 w-full rounded-2xl group"
           style={{
             height: WIDGET_H,

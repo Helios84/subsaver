@@ -279,6 +279,7 @@ function LoginPageInner() {
                     extraStyle={{ paddingRight: "2.75rem" }}
                   />
                   <button type="button" onClick={() => setShowPw(!showPw)}
+                    aria-label={showPw ? "Hide password" : "Show password"}
                     style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1, transition: "color 0.2s" }}
                     onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
                     onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}>
@@ -298,7 +299,9 @@ function LoginPageInner() {
                 <>
                   <Field label="New Password" icon={Lock}>
                     <StyledInput value={newPassword} onChange={(e) => setNewPassword(e.target.value)} type={showPw ? "text" : "password"} placeholder="Min. 8 characters" required minLength={8} extraStyle={{ paddingRight: "2.75rem" }} />
-                    <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1, transition: "color 0.2s" }}
+                    <button type="button" onClick={() => setShowPw(!showPw)}
+                      aria-label={showPw ? "Hide new password" : "Show new password"}
+                      style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1, transition: "color 0.2s" }}
                       onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
                       onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}>
                       {showPw ? <EyeOff style={{ width: 17, height: 17 }} /> : <Eye style={{ width: 17, height: 17 }} />}
@@ -306,7 +309,9 @@ function LoginPageInner() {
                   </Field>
                   <Field label="Confirm Password" icon={Lock}>
                     <StyledInput value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} type={showPw2 ? "text" : "password"} placeholder="Verify password" required minLength={8} extraStyle={{ paddingRight: "2.75rem" }} />
-                    <button type="button" onClick={() => setShowPw2(!showPw2)} style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1, transition: "color 0.2s" }}
+                    <button type="button" onClick={() => setShowPw2(!showPw2)}
+                      aria-label={showPw2 ? "Hide confirm password" : "Show confirm password"}
+                      style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", background: "none", border: "none", cursor: "pointer", zIndex: 1, transition: "color 0.2s" }}
                       onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
                       onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}>
                       {showPw2 ? <EyeOff style={{ width: 17, height: 17 }} /> : <Eye style={{ width: 17, height: 17 }} />}
