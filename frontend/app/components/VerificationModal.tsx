@@ -56,12 +56,13 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
                 method: "POST",
                 body: JSON.stringify({ edu_email: eduEmail }),
             });
-            // Dev mode: code returned in response (SMTP not configured)
-            if (res.dev_code) {
+            // C-2: Only show dev_code in development — never expose in production
+            if (res.dev_code && process.env.NODE_ENV === "development") {
                 setDevCode(res.dev_code);
             }
             setStep("code");
             setCountdown(60); // allow resend after 60s
+
         } catch (err: any) {
             setError(err.message || "Failed to send code. Please try again.");
         } finally {
@@ -101,12 +102,14 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
         setLoading(true);
         setError(null);
         setDevCode(null);
+        setCode(""); // M-7: clear stale code so user can't accidentally submit it
         try {
             const res = await apiFetch("/auth/verify-edu", {
                 method: "POST",
                 body: JSON.stringify({ edu_email: eduEmail }),
             });
-            if (res.dev_code) setDevCode(res.dev_code);
+            // C-2: Only show dev_code in development
+            if (res.dev_code && process.env.NODE_ENV === "development") setDevCode(res.dev_code);
             setCountdown(60);
         } catch (err: any) {
             setError(err.message || "Failed to resend. Please try again.");

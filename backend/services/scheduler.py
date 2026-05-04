@@ -47,9 +47,11 @@ class ReminderScheduler:
         if not self.db_session_maker:
             return
         from models.db import RevokedToken
+        from datetime import timezone as _tz
         db = self.db_session_maker()
         try:
-            now = datetime.now()
+            # L-4: Use UTC explicitly — server timezone must not affect cleanup
+            now = datetime.now(_tz.utc).replace(tzinfo=None)
             deleted = db.query(RevokedToken).filter(RevokedToken.expires_at < now).delete()
             db.commit()
             if deleted:
@@ -58,6 +60,7 @@ class ReminderScheduler:
             logger.error(f"❌ Error during token cleanup: {str(e)}")
         finally:
             db.close()
+
     
     def start(self):
         """Start the scheduler."""

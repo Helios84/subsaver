@@ -1,9 +1,14 @@
 const API_BASE = "/backend_api";
 
-type ApiFetchOptions = RequestInit & { skipAuth?: boolean };
+type ApiFetchOptions = RequestInit & { skipAuth?: boolean; timeoutMs?: number };
 
 export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+
+  // C-4 / H-9: AbortController with configurable timeout (default 15s)
+  const controller = new AbortController();
+  const timeoutMs = opts.timeoutMs ?? 15000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const headers = new Headers(opts.headers || {});
   if (!headers.has("Content-Type") && opts.body) {
@@ -19,7 +24,10 @@ export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
     const res = await fetch(url, {
       ...opts,
       headers,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     // Auto logout on 401
     if (res.status === 401) {
@@ -32,11 +40,9 @@ export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
 
     if (!res.ok) {
       // Pydantic v2 returns detail as array of objects [{type, loc, msg, ...}]
-      // We need to always convert to a string
       const rawDetail = data?.detail ?? data?.message;
       let msg: string;
       if (Array.isArray(rawDetail)) {
-        // Pydantic validation error — pick the first meaningful message
         msg = rawDetail.map((e: any) => e?.msg ?? JSON.stringify(e)).join(", ");
       } else if (typeof rawDetail === "string") {
         msg = rawDetail;
@@ -48,6 +54,13 @@ export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
 
     return data;
   } catch (err) {
+    clearTimeout(timeoutId);
+
+    // C-4: Friendly timeout error
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("Request timed out. Please check your connection and try again.");
+    }
+
     if (process.env.NODE_ENV === "development") {
       console.error("[API] Fetch Error:", err);
     }

@@ -172,10 +172,12 @@ export default function RegisterPage() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      if (res.dev_code) {
+      // C-2: Only propagate dev_code in development — never in production
+      if (res.dev_code && process.env.NODE_ENV === "development") {
         sessionStorage.setItem("register_dev_code", res.dev_code);
       }
       router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+
     } catch (err: unknown) {
       setMsg((err as Error)?.message ?? "Network error. Please try again.");
     } finally {

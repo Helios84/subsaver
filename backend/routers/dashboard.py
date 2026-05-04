@@ -8,6 +8,8 @@ from typing import List, Dict, Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from fastapi import Request
+from limiter import limiter
 
 from dependencies import get_db, get_current_user
 from models.db import User, Subscription
@@ -26,7 +28,9 @@ def _monthly_cost(sub: Subscription) -> int:
 
 
 @router.get("/summary")
+@limiter.limit("60/minute")  # H-1: protect heavy 4-SQL endpoint
 async def get_dashboard_summary(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -96,8 +100,11 @@ async def get_dashboard_summary(
             days = (sub.next_billing_date - today).days
             if 0 <= days <= 7:
                 upcoming_count += 1
-                upcoming_cost += _monthly_cost(sub)
+                split = max(1, sub.split_with or 1)
+                # C-3: Use actual renewal cost (full period price), not monthly amortization
+                upcoming_cost += sub.price_cents // split
     if upcoming_count > 0:
+        # C-3: Use actual renewal price (what the user pays on that date), not monthly amortization
         insights.append({
             "type": "warning",
             "title": "Upcoming Renewals",

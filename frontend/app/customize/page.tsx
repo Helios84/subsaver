@@ -584,10 +584,39 @@ export default function CustomizePage() {
   useEffect(() => {
     const t = localStorage.getItem("subsaver_token");
     if (!t) { router.push("/login"); return; }
+    // Start with localStorage (instant, no flicker)
     setSettings(loadDashboardSettings());
     apiFetch("/subscriptions").then(setSubs).catch(console.error);
     apiFetch("/users/me").then(setUser).catch(console.error);
+    // M-5: Load preferences from backend and merge (cross-device sync)
+    apiFetch("/users/me/preferences")
+      .then((data: any) => {
+        if (data?.preferences) {
+          try {
+            const backendPrefs = JSON.parse(data.preferences) as Partial<SavedSettings>;
+            if (backendPrefs && typeof backendPrefs === "object") {
+              // Apply backend prefs on top of defaults (they're more authoritative)
+              const local = loadDashboardSettings();
+              const merged = { ...local };
+              if (backendPrefs.currency) merged.currency = backendPrefs.currency;
+              if (backendPrefs.density) merged.density = backendPrefs.density;
+              if (backendPrefs.layout) merged.layout = backendPrefs.layout;
+              if (typeof backendPrefs.showQuickActions === "boolean") merged.showQuickActions = backendPrefs.showQuickActions;
+              if (backendPrefs.statsCards?.length) merged.statsCards = backendPrefs.statsCards;
+              if (backendPrefs.widgetSizes) merged.widgetSizes = backendPrefs.widgetSizes;
+              if (backendPrefs.widgets?.length) {
+                const enabledMap: Record<string, boolean> = {};
+                for (const w of backendPrefs.widgets) enabledMap[w.id] = w.enabled;
+                merged.widgets = merged.widgets.map(w => ({ ...w, enabled: enabledMap[w.id] ?? w.enabled }));
+              }
+              setSettings(merged);
+            }
+          } catch { /* malformed backend prefs — keep localStorage */ }
+        }
+      })
+      .catch(() => { /* non-critical — localStorage already loaded */ });
   }, [router]);
+
 
   function mark(updater: (prev: DashboardSettings) => DashboardSettings, changedWidgetId?: WidgetId) {
     setSettings(prev => {

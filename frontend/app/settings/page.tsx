@@ -352,9 +352,13 @@ function SecurityTab({ user, toast }: { user: UserProfile | null; toast: Functio
         method: "POST",
         body: JSON.stringify({ email: user.email, code, new_password: newPw }),
       });
-      toast("Password changed successfully!", "success");
+      toast("Password changed! Please log in again.", "success");
       setStep("done");
       setCode(""); setNewPw(""); setConfirmPw("");
+      // H-6: Revoke current JWT after password reset — security best practice
+      try { await apiFetch("/auth/logout", { method: "POST" }); } catch { /* ignore */ }
+      localStorage.removeItem("subsaver_token");
+      setTimeout(() => window.location.href = "/login", 1500);
     } catch (err: any) {
       toast(err?.message ?? "Failed to reset password", "error");
       setStep("newpw");
@@ -509,6 +513,7 @@ function SecurityTab({ user, toast }: { user: UserProfile | null; toast: Functio
                 <button
                   type="button"
                   onClick={() => setShowPw(!showPw)}
+                  aria-label={showPw ? "Hide password" : "Show password"}
                   style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", display: "flex" }}
                 >
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -912,6 +917,7 @@ function NotificationsTab({ toast }: { toast: Function }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function DangerTab({ router, toast }: { router: any; toast: Function }) {
   const [confirmText, setConfirmText] = useState("");
+  const [password, setPassword] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const CONFIRM_PHRASE = "DELETE MY ACCOUNT";
@@ -920,9 +926,14 @@ function DangerTab({ router, toast }: { router: any; toast: Function }) {
     if (confirmText !== CONFIRM_PHRASE) {
       toast(`Type "${CONFIRM_PHRASE}" to confirm`, "warning"); return;
     }
+    if (!password) {
+      toast("Please enter your password to confirm deletion", "warning"); return;
+    }
     setDeleting(true);
     try {
-      await apiFetch("/users/me", { method: "DELETE" });
+      // C-1: Revoke JWT on backend BEFORE deleting account
+      try { await apiFetch("/auth/logout", { method: "POST" }); } catch { /* ignore */ }
+      await apiFetch("/users/me", { method: "DELETE", body: JSON.stringify({ password }) });
       localStorage.removeItem("subsaver_token");
       toast("Account deleted. Goodbye! 👋", "info");
       router.push("/");
@@ -993,8 +1004,23 @@ function DangerTab({ router, toast }: { router: any; toast: Function }) {
                 fontFamily: "monospace",
                 letterSpacing: "0.05em",
                 color: confirmText === CONFIRM_PHRASE ? "#F87171" : "white",
+                marginBottom: 10,
               }}
               maxLength={CONFIRM_PHRASE.length}
+            />
+            <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "rgba(255,255,255,0.4)", marginBottom: 8 }}>
+              Your Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your current password"
+              aria-label="Password confirmation for account deletion"
+              style={{
+                ...inputStyle(false),
+                borderColor: "rgba(239,68,68,0.2)",
+              }}
             />
             <div style={{ display: "flex", gap: 10 }}>
               <button

@@ -183,11 +183,11 @@ export default function DashboardPage() {
       // Analytics data from summary — no extra requests needed
       if (summary.analytics) setAnalyticsData(summary.analytics);
       if (summary.insights)  setInsightsData(summary.insights);
-      // Also load student discounts for active subs
+      // Also load student discounts for active subs (H-8: skip if user not verified)
       const activeIds = summary.subscriptions
         .filter((s: Sub) => s.status === "active")
         .map((s: Sub) => s.id);
-      if (activeIds.length > 0) {
+      if (activeIds.length > 0 && summary.user?.is_verified) {
         try {
           const result = await apiFetch("/api/student-discounts/batch-check", {
             method: "POST",

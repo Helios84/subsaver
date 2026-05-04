@@ -50,11 +50,15 @@ function VerifyEmailInner() {
     }
     setTimeout(() => setMounted(true), 50);
     inputRefs.current[0]?.focus();
-    // Read dev_code from sessionStorage if register page saved it
-    const saved = sessionStorage.getItem("register_dev_code");
-    if (saved) {
-      setDevCode(saved);
-      sessionStorage.removeItem("register_dev_code");
+    // C-2: Read dev_code from sessionStorage only in development
+    if (process.env.NODE_ENV === "development") {
+      const saved = sessionStorage.getItem("register_dev_code");
+      if (saved) {
+        setDevCode(saved);
+        sessionStorage.removeItem("register_dev_code");
+      }
+    } else {
+      sessionStorage.removeItem("register_dev_code"); // clean up even in production
     }
   }, [email, router]);
 
@@ -135,7 +139,8 @@ function VerifyEmailInner() {
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      if (res.dev_code) {
+      // C-2: Only show dev_code in development environment
+      if (res.dev_code && process.env.NODE_ENV === "development") {
         setDevCode(res.dev_code);
         setResendMsg("Dev mode: SMTP offline, use the code shown above.");
       } else {
