@@ -80,11 +80,6 @@ export const DEFAULT_STATS_CARDS: StatCardId[] = [
   "total_savings", "cancelled_count", "most_expensive", "next_renewal_days",
 ];
 
-// Analytics widgets (sortable + resizable)
-const ANALYTICS_WIDGET_IDS: WidgetId[] = [
-  "savings_card", "spending_trends", "category_breakdown",
-  "insights", "renewals", "billing_calendar",
-];
 
 const DEFAULT_WIDGET_SIZES: Partial<Record<WidgetId, WidgetSpan>> = {
   savings_card:       2,  // half-width  (was 1 — mismatch with AdvancedAnalytics)
