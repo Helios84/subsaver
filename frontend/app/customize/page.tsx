@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+
+// Force dynamic rendering — this page requires auth and uses window APIs
+export const dynamic = "force-dynamic";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
   useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay,
@@ -568,8 +571,8 @@ function RealDashboardPreview({ settings, subs, user, onWidgetReorder }: {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CustomizePage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const focusWidgetId = searchParams?.get("focus") as WidgetId | null;
+  // Read ?focus=widgetId from URL client-side only (avoids useSearchParams + Suspense requirement)
+  const [focusWidgetId, setFocusWidgetId] = useState<WidgetId | null>(null);
   const [settings, setSettings] = useState<DashboardSettings>(getDefaults());
   const [saved, setSaved] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -591,6 +594,10 @@ export default function CustomizePage() {
   useEffect(() => {
     const t = localStorage.getItem("subsaver_token");
     if (!t) { router.push("/login"); return; }
+    // Read ?focus=widgetId from URL (client-side only)
+    const params = new URLSearchParams(window.location.search);
+    const focus = params.get("focus") as WidgetId | null;
+    if (focus) setFocusWidgetId(focus);
     // Start with localStorage (instant, no flicker)
     setSettings(loadDashboardSettings());
     apiFetch("/subscriptions").then(setSubs).catch(console.error);
