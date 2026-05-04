@@ -123,17 +123,14 @@ export default function AdvancedAnalytics({
     return widgetSizes[id] ?? DEFAULT_SPANS[id] ?? 2;
   }
 
-  // ── Render groups:
-  //   mainWidgets: everything except billing_calendar (in user's order)
-  //   calendarWidget: billing_calendar always last (span-4, doesn't affect row gaps)
-  //   placeholder: fills leftover columns in last partial row of mainWidgets
-  const mainWidgets = orderedIds.filter(id => widgets[id] && id !== 'billing_calendar');
-  const calendarWidget = orderedIds.filter(id => widgets[id] && id === 'billing_calendar');
+  // ── ALL enabled analytics widgets in user's order (billing_calendar is NOT special)
+  //    billing_calendar is span=4 but counts toward the 12-unit limit just like any other widget
+  const allWidgets = orderedIds.filter(id => widgets[id]);
 
-  // Total span of all main widgets
-  const totalSpan = mainWidgets.reduce((s, id) => s + getSpan(id), 0);
+  // Total span of ALL enabled analytics widgets (including billing_calendar)
+  const totalSpan = allWidgets.reduce((s, id) => s + getSpan(id), 0);
   const remainder = totalSpan % 4;
-  // Only show placeholder if there's leftover space AND total is under MAX_GRID_SPAN
+  // Show '+' placeholder only if there's leftover space AND total is under MAX_GRID_SPAN
   const placeholderSpan: WidgetSpan | null = remainder > 0 && totalSpan < MAX_GRID_SPAN
     ? (4 - remainder) as WidgetSpan
     : null;
@@ -304,14 +301,11 @@ export default function AdvancedAnalytics({
 
   return (
     <div className="analytics-grid">
-      {/* Main widgets: spending_trends, savings_card, category_breakdown, insights, renewals (in order) */}
-      {mainWidgets.map(id => renderItem(id))}
+      {/* All enabled analytics widgets in user order — billing_calendar participates in the 12-unit limit */}
+      {allWidgets.map(id => renderItem(id))}
 
       {/* '+' placeholder fills any leftover columns in the last partial row */}
       {placeholderSpan && renderPlaceholder(placeholderSpan)}
-
-      {/* billing_calendar always last — full-width, doesn't affect row gaps above */}
-      {calendarWidget.map(id => renderItem(id))}
     </div>
   );
 }
