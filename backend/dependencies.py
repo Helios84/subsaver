@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from config import settings
 from database import SessionLocal
-from models.db import User
+from models.db import User, RevokedToken
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +25,22 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def get_current_email(token: str = Depends(oauth2_scheme)) -> str:
-    """Decode JWT and extract the user email (sub claim)."""
+def get_current_email(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> str:
+    """Decode JWT, check blacklist, and extract the user email (sub claim)."""
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_alg])
         email: str | None = payload.get("sub")
+        jti: str | None = payload.get("jti")
         if not email:
             raise HTTPException(status_code=401, detail="Invalid token")
+
+        # C-1: Reject blacklisted tokens
+        if jti and db.query(RevokedToken).filter(RevokedToken.jti == jti).first():
+            raise HTTPException(status_code=401, detail="Token has been revoked")
+
         return email
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")

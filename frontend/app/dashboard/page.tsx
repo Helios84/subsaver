@@ -105,7 +105,7 @@ export default function DashboardPage() {
   useEffect(() => {
     apiFetch("/api/student-discounts")
       .then((data) => { if (Array.isArray(data)) setAllServices(data); })
-      .catch((err) => console.error("Failed to fetch autocomplete services", err));
+      .catch(() => { /* Non-critical autocomplete — fail silently */ });
   }, []);
 
   // UI-5: Close autocomplete when clicking outside
@@ -160,51 +160,73 @@ export default function DashboardPage() {
   useEffect(() => {
     const t = localStorage.getItem("subsaver_token");
     if (!t) router.push("/login");
-    fetchSubs();
-    fetchUser();
-    // Load real FX rates
-    getExchangeRates().then(setFxRates).catch(console.warn);
-    // Show onboarding for first-time visitors
-    if (shouldShowOnboarding()) setShowOnboarding(true);
+    else {
+      fetchDashboard();
+      // Load real FX rates (now served from backend cache)
+      getExchangeRates().then(setFxRates).catch(console.warn);
+      // Show onboarding for first-time visitors
+      if (shouldShowOnboarding()) setShowOnboarding(true);
+    }
   }, [router]);
 
-  async function fetchUser() {
-    try {
-      const data = await apiFetch("/users/me");
-      setUser(data);
-    } catch (err) {
-      console.error("Failed to fetch user profile", err);
-    }
-  }
-
-  async function fetchSubs() {
+  // H-7: single summary call instead of 5-6 separate requests
+  async function fetchDashboard() {
     setLoading(true);
     try {
-      const data = await apiFetch("/subscriptions", { method: "GET" });
-      setSubs(data);
-      await loadStudentDiscounts(data);
+      const summary = await apiFetch("/api/dashboard/summary");
+      setUser(summary.user);
+      setSubs(summary.subscriptions);
+      // Also load student discounts for active subs
+      const activeIds = summary.subscriptions
+        .filter((s: Sub) => s.status === "active")
+        .map((s: Sub) => s.id);
+      if (activeIds.length > 0) {
+        try {
+          const result = await apiFetch("/api/student-discounts/batch-check", {
+            method: "POST",
+            body: JSON.stringify({ subscription_ids: activeIds }),
+          });
+          const discountMap = new Map<number, StudentDiscount>();
+          for (const [idStr, discount] of Object.entries(result)) {
+            if (discount) discountMap.set(Number(idStr), discount as StudentDiscount);
+          }
+          setStudentDiscounts(discountMap);
+        } catch {
+          // Non-critical — discounts will just not show
+        }
+      } else {
+        setStudentDiscounts(new Map());
+      }
     } catch (err: any) {
-      toast(err?.message ?? "Failed to load subscriptions", "error");
+      toast(err?.message ?? "Failed to load dashboard", "error");
     } finally {
       setLoading(false);
     }
   }
 
-  async function loadStudentDiscounts(subscriptions: Sub[]) {
+  // Keep fetchSubs for post-mutation refresh (add/edit/delete) — still needed
+  async function fetchSubs() {
     try {
-      const ids = subscriptions.filter((s) => s.status === "active").map((s) => s.id);
-      if (ids.length === 0) { setStudentDiscounts(new Map()); return; }
-      const result = await apiFetch("/api/student-discounts/batch-check", {
-        method: "POST",
-        body: JSON.stringify({ subscription_ids: ids }),
-      });
-      const discountMap = new Map<number, StudentDiscount>();
-      for (const [idStr, discount] of Object.entries(result)) {
-        if (discount) discountMap.set(Number(idStr), discount as StudentDiscount);
+      const data = await apiFetch("/subscriptions");
+      setSubs(data);
+      const ids = data.filter((s: Sub) => s.status === "active").map((s: Sub) => s.id);
+      if (ids.length > 0) {
+        try {
+          const result = await apiFetch("/api/student-discounts/batch-check", {
+            method: "POST",
+            body: JSON.stringify({ subscription_ids: ids }),
+          });
+          const discountMap = new Map<number, StudentDiscount>();
+          for (const [idStr, discount] of Object.entries(result)) {
+            if (discount) discountMap.set(Number(idStr), discount as StudentDiscount);
+          }
+          setStudentDiscounts(discountMap);
+        } catch {
+          // Non-critical
+        }
       }
-      setStudentDiscounts(discountMap);
-    } catch (err) {
-      console.error("Failed to load student discounts:", err);
+    } catch (err: any) {
+      toast(err?.message ?? "Failed to reload subscriptions", "error");
     }
   }
 
@@ -243,7 +265,13 @@ export default function DashboardPage() {
     }
   }
 
-  function logout() {
+  // C-1: Revoke JWT on the backend before clearing localStorage
+  async function logout() {
+    try {
+      await apiFetch("/auth/logout", { method: "POST" });
+    } catch {
+      // Even if revocation fails, still clear locally
+    }
     localStorage.removeItem("subsaver_token");
     router.push("/login");
   }

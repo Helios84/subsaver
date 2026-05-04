@@ -3,7 +3,7 @@ ORM models for User and Subscription.
 Extracted from main.py so all modules can import without circular imports.
 """
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -24,8 +24,12 @@ class User(Base):
     # Student Verification
     is_verified = Column(Boolean, default=False)
     edu_email = Column(String, nullable=True)
+    # Email-confirmation code (registration flow)
     verification_code = Column(String, nullable=True)
     verification_code_expires = Column(DateTime, nullable=True)
+    # EDU-verification code (.edu student status flow — separate to avoid conflicts)
+    edu_verification_code = Column(String, nullable=True)
+    edu_verification_code_expires = Column(DateTime, nullable=True)
 
     # Password Reset
     reset_code = Column(String, nullable=True)
@@ -33,6 +37,9 @@ class User(Base):
 
     # Email confirmation (required at registration)
     email_confirmed = Column(Boolean, default=False, nullable=False)
+
+    # Dashboard customization preferences (JSON blob synced from frontend)
+    dashboard_preferences = Column(Text, nullable=True)
 
     subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
 
@@ -60,3 +67,13 @@ class Subscription(Base):
     cancelled_at = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="subscriptions")
+
+
+class RevokedToken(Base):
+    """JWT blacklist — tokens added here are rejected even before expiry (C-1)."""
+    __tablename__ = "revoked_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    jti = Column(String, unique=True, index=True, nullable=False)  # JWT ID claim
+    revoked_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    expires_at = Column(DateTime, nullable=False)  # used for cleanup of expired entries

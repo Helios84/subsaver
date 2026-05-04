@@ -64,6 +64,8 @@ from routers.reminders import router as reminder_router
 from routers.student_discounts import router as student_discounts_router
 from routers.analytics import router as analytics_router
 from routers.categories import router as categories_router
+from routers.dashboard import router as dashboard_router
+from routers.rates import router as rates_router
 
 app.include_router(auth_router)
 app.include_router(subscriptions_router)
@@ -71,6 +73,8 @@ app.include_router(reminder_router)
 app.include_router(student_discounts_router)
 app.include_router(analytics_router)
 app.include_router(categories_router)
+app.include_router(dashboard_router)
+app.include_router(rates_router)
 
 
 # ── Health ────────────────────────────────────────────────────────────────────

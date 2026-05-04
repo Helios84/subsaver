@@ -5,11 +5,12 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
+from jose import jwt as _jwt, JWTError
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from dependencies import get_db, get_current_user
-from models.db import User
+from models.db import User, RevokedToken
 from schemas.auth import (
     RegisterRequest, LoginRequest, TokenResponse,
     ForgotPasswordRequest, VerifyResetCodeRequest, ResetPasswordRequest,
@@ -26,6 +27,25 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["auth"])
 
 
+# ─── Helper: revoke a token by jti ───────────────────────────────────────────
+def _revoke_token(token: str, db: Session) -> None:
+    """Decode token and add its jti to the revoked_tokens table (C-1)."""
+    try:
+        payload = _jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_alg])
+        jti = payload.get("jti")
+        exp = payload.get("exp")
+        if jti and exp:
+            expires_at = datetime.fromtimestamp(exp)
+            if not db.query(RevokedToken).filter(RevokedToken.jti == jti).first():
+                db.add(RevokedToken(jti=jti, expires_at=expires_at))
+                db.commit()
+    except JWTError:
+        pass  # token already invalid — no action needed
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# REGISTER
+# ═══════════════════════════════════════════════════════════════════════════════
 @router.post("/auth/register")
 @limiter.limit("10/minute")
 def register(request: Request, payload: RegisterRequest, db: Session = Depends(get_db)):
@@ -57,8 +77,6 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
             sent = email_service.send_email_confirmation(email, code)
             if not sent:
                 logger.warning(f"SMTP disabled. Re-registration code for {email}: {code}")
-                if settings.environment == "development":
-                    return {"message": "registered", "dev_code": code}
             return {"message": "registered"}
 
         # New user
@@ -76,8 +94,6 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
         sent = email_service.send_email_confirmation(email, code)
         if not sent:
             logger.warning(f"SMTP disabled. Email confirmation code for {email}: {code}")
-            if settings.environment == "development":
-                return {"message": "registered", "dev_code": code}
         return {"message": "registered"}
     except HTTPException:
         raise
@@ -86,6 +102,9 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
         raise HTTPException(status_code=500, detail="Registration failed")
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# EMAIL CONFIRMATION
+# ═══════════════════════════════════════════════════════════════════════════════
 @router.post("/auth/confirm-email")
 @limiter.limit("5/minute")
 def confirm_email(request: Request, payload: ConfirmEmailRequest, db: Session = Depends(get_db)):
@@ -129,11 +148,13 @@ def resend_confirmation(request: Request, payload: ForgotPasswordRequest, db: Se
     from services.email_service import email_service
     sent = email_service.send_email_confirmation(email, code)
     if not sent:
-        if settings.environment == "development":
-            return {"message": "Code sent", "dev_code": code}
+        logger.warning(f"SMTP disabled. Resend confirmation code for {email}: {code}")
     return {"message": "Confirmation code resent to your email"}
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# LOGIN / LOGOUT
+# ═══════════════════════════════════════════════════════════════════════════════
 @router.post("/auth/login", response_model=TokenResponse)
 @limiter.limit("5/minute")
 def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
@@ -167,6 +188,24 @@ def token(request: Request, form: OAuth2PasswordRequestForm = Depends(), db: Ses
     return {"access_token": create_access_token(email), "token_type": "bearer"}
 
 
+@router.post("/auth/logout")
+@limiter.limit("20/minute")
+def logout(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Revoke the current JWT so it can no longer be used (C-1)."""
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token_str = auth_header[7:]
+        _revoke_token(token_str, db)
+    return {"message": "Logged out successfully"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PASSWORD RESET
+# ═══════════════════════════════════════════════════════════════════════════════
 @router.post("/auth/forgot-password")
 @limiter.limit("3/minute")
 def forgot_password(request: Request, payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
@@ -182,8 +221,6 @@ def forgot_password(request: Request, payload: ForgotPasswordRequest, db: Sessio
     sent = email_service.send_password_reset_code(user.email, code)
     if not sent:
         logger.warning(f"SMTP disabled. Reset code for {user.email}: {code}")
-        if settings.environment == "development":
-            return {"message": "If that email exists, a reset code has been sent.", "dev_code": code}
     return {"message": "If that email exists, a reset code has been sent."}
 
 
@@ -224,7 +261,11 @@ def reset_password(request: Request, payload: ResetPasswordRequest, db: Session 
     return {"message": "Password has been successfully reset"}
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# STUDENT .EDU VERIFICATION (H-2: uses separate edu_verification_code fields)
+# ═══════════════════════════════════════════════════════════════════════════════
 @router.post("/auth/verify-registration")
+@limiter.limit("5/minute")
 def verify_registration(request: Request, payload: VerifyRegistrationRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
@@ -260,14 +301,14 @@ def resend_verification(request: Request, payload: ResendVerificationRequest, db
     if not user.edu_email:
         raise HTTPException(status_code=400, detail="No .edu email on file.")
     code = str(secrets.randbelow(900000) + 100000)
-    user.verification_code = code
-    user.verification_code_expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=15)
+    # H-2: use dedicated edu_verification_code fields
+    user.edu_verification_code = code
+    user.edu_verification_code_expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=15)
     db.commit()
     from services.email_service import email_service
     sent = email_service.send_verification_code(user.edu_email, code)
     if not sent:
-        if settings.environment == "development":
-            return {"message": "Code resent", "dev_code": code, "expires_in_minutes": 15}
+        logger.warning(f"SMTP disabled. Resend EDU verification code for {user.edu_email}: {code}")
     return {"message": f"Code resent to {user.edu_email}", "expires_in_minutes": 15}
 
 
@@ -285,8 +326,9 @@ async def request_verification_code(
         code = str(secrets.randbelow(900000) + 100000)
         expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=15)
         current_user.edu_email = req.edu_email
-        current_user.verification_code = code
-        current_user.verification_code_expires = expires_at
+        # H-2: use dedicated edu_verification_code fields (no conflict with registration code)
+        current_user.edu_verification_code = code
+        current_user.edu_verification_code_expires = expires_at
         db.commit()
         from services.email_service import email_service
         sent_edu = email_service.send_verification_code(req.edu_email, code)
@@ -294,10 +336,7 @@ async def request_verification_code(
         if current_user.email.lower() != req.edu_email.lower():
             sent_main = email_service.send_verification_code(current_user.email, code)
         if not (sent_edu or sent_main):
-            logger.warning(f"SMTP disabled. Verification code: {code}")
-            if settings.environment == "development":
-                return {"message": "SMTP not configured.", "dev_code": code, "expires_in_minutes": 15}
-            return {"message": f"Code sent to {req.edu_email}.", "expires_in_minutes": 15}
+            logger.warning(f"SMTP disabled. EDU verification code for {req.edu_email}: {code}")
         return {"message": f"Code sent to {req.edu_email}.", "expires_in_minutes": 15}
     except Exception as e:
         logger.exception("EDU verification error")
@@ -305,34 +344,35 @@ async def request_verification_code(
 
 
 @router.post("/auth/verify-edu/confirm")
+@limiter.limit("10/minute")
 async def confirm_verification_code(
+    request: Request,
     req: VerificationConfirmRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if current_user.is_verified:
         return {"message": "Already verified", "is_verified": True}
-    if not current_user.verification_code or not current_user.verification_code_expires:
+    # H-2: use dedicated edu_verification_code fields
+    if not current_user.edu_verification_code or not current_user.edu_verification_code_expires:
         raise HTTPException(status_code=400, detail="No verification code found.")
-    if datetime.now(timezone.utc).replace(tzinfo=None) > current_user.verification_code_expires:
-        current_user.verification_code = None
-        current_user.verification_code_expires = None
+    if datetime.now(timezone.utc).replace(tzinfo=None) > current_user.edu_verification_code_expires:
+        current_user.edu_verification_code = None
+        current_user.edu_verification_code_expires = None
         db.commit()
         raise HTTPException(status_code=400, detail="Verification code expired.")
-    if not secrets.compare_digest(current_user.verification_code, req.code):
+    if not secrets.compare_digest(current_user.edu_verification_code, req.code):
         raise HTTPException(status_code=400, detail="Invalid verification code.")
     current_user.is_verified = True
-    current_user.verification_code = None
-    current_user.verification_code_expires = None
+    current_user.edu_verification_code = None
+    current_user.edu_verification_code_expires = None
     db.commit()
     return {"message": "Student status verified successfully!", "is_verified": True}
 
 
-@router.get("/me")
-def me_email(current_user: User = Depends(get_current_user)):
-    return {"email": current_user.email}
-
-
+# ═══════════════════════════════════════════════════════════════════════════════
+# USER PROFILE
+# ═══════════════════════════════════════════════════════════════════════════════
 @router.get("/users/me", response_model=UserOut)
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
@@ -355,3 +395,28 @@ def delete_account(
         raise HTTPException(status_code=403, detail="Incorrect password")
     db.delete(current_user)
     db.commit()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# USER PREFERENCES (M-8)
+# ═══════════════════════════════════════════════════════════════════════════════
+class PreferencesPayload(BaseModel):
+    preferences: str  # JSON string from frontend
+
+
+@router.get("/users/me/preferences")
+def get_preferences(current_user: User = Depends(get_current_user)):
+    """Return saved dashboard preferences (JSON string)."""
+    return {"preferences": current_user.dashboard_preferences or ""}
+
+
+@router.patch("/users/me/preferences")
+def update_preferences(
+    payload: PreferencesPayload,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Save dashboard preferences JSON string to the database."""
+    current_user.dashboard_preferences = payload.preferences
+    db.commit()
+    return {"message": "Preferences saved"}

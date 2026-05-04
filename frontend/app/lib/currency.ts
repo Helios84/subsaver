@@ -1,8 +1,12 @@
 /**
  * currency.ts — Real currency conversion utility.
  *
- * Uses open.er-api.com (free, no key, 1500 req/month) to fetch live rates.
- * Rates are cached in localStorage for 1 hour to avoid hitting limits.
+ * M-5 fix: Rates are fetched from the backend (/api/rates) which caches them
+ * server-side for 1 hour. This avoids the 1500 req/month limit on open.er-api.com
+ * by sharing one upstream request across all users.
+ *
+ * Frontend still caches in localStorage for 30 min to avoid repeat fetches
+ * within the same session.
  */
 
 export type Currency = "USD" | "EUR" | "GBP";
@@ -20,7 +24,10 @@ export const CURRENCY_NAMES: Record<Currency, string> = {
 };
 
 const RATES_CACHE_KEY = "subsaver_fx_rates";
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 min client-side cache
+
+// Updated May 2026 fallback rates (L-8)
+const FALLBACK_RATES: Record<string, number> = { USD: 1, EUR: 0.93, GBP: 0.79 };
 
 interface RatesCache {
   rates: Record<string, number>;
@@ -28,10 +35,11 @@ interface RatesCache {
 }
 
 /**
- * Fetch USD-based exchange rates with 1-hour localStorage cache.
- * Falls back to { USD: 1, EUR: 0.92, GBP: 0.79 } if network fails.
+ * Fetch USD-based exchange rates from the backend (which caches them server-side).
+ * Falls back to hardcoded approximate rates if the backend is unavailable.
  */
 export async function getExchangeRates(): Promise<Record<string, number>> {
+  // 1. Try client-side localStorage cache first
   if (typeof window !== "undefined") {
     try {
       const cached = localStorage.getItem(RATES_CACHE_KEY);
@@ -42,18 +50,20 @@ export async function getExchangeRates(): Promise<Record<string, number>> {
         }
       }
     } catch {
-      // ignore parse errors — fetch fresh
+      // ignore parse errors
     }
   }
 
+  // 2. Fetch from backend (server caches for 1 hour)
   try {
-    const res = await fetch("https://open.er-api.com/v6/latest/USD", {
+    const res = await fetch("/backend_api/api/rates", {
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    const rates: Record<string, number> = data.rates ?? {};
+    const rates: Record<string, number> = data.rates ?? FALLBACK_RATES;
 
+    // Cache client-side for 30 min
     if (typeof window !== "undefined") {
       const toCache: RatesCache = { rates, cachedAt: Date.now() };
       localStorage.setItem(RATES_CACHE_KEY, JSON.stringify(toCache));
@@ -61,9 +71,8 @@ export async function getExchangeRates(): Promise<Record<string, number>> {
 
     return rates;
   } catch (err) {
-    console.warn("[currency] Failed to fetch exchange rates, using fallback:", err);
-    // Approximate fallback rates (April 2026)
-    return { USD: 1, EUR: 0.92, GBP: 0.79 };
+    console.warn("[currency] Failed to fetch rates from backend, using fallback:", err);
+    return FALLBACK_RATES;
   }
 }
 
@@ -83,7 +92,7 @@ export function convertFromUsdCents(
 
 /**
  * Format a USD-cents amount as a display string in the given currency.
- * Example: formatMoney(499, "EUR", rates) → "€4.59"
+ * Example: formatMoney(499, "EUR", rates) → "€4.64"
  */
 export function formatMoney(
   usdCents: number,

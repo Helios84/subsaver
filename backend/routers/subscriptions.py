@@ -17,11 +17,19 @@ router = APIRouter(tags=["subscriptions"])
 
 
 @router.get("/subscriptions", response_model=List[SubscriptionOut])
-def list_subscriptions(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def list_subscriptions(
+    limit: int = 200,
+    offset: int = 0,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List user's subscriptions with optional pagination (M-7)."""
     return (
         db.query(Subscription)
         .filter(Subscription.user_id == current_user.id)
         .order_by(Subscription.created_at.desc())
+        .offset(offset)
+        .limit(limit)
         .all()
     )
 

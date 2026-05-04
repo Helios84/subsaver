@@ -51,6 +51,14 @@ def needs_rehash(hashed: str) -> bool:
 
 
 def create_access_token(email: str) -> str:
+    """Create a JWT access token with a unique jti for blacklist support."""
     exp = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=settings.jwt_expires_min)
-    payload = {"sub": email, "exp": exp}
+    jti = secrets.token_hex(16)  # unique token ID — used for blacklist (C-1)
+    payload = {"sub": email, "exp": exp, "jti": jti}
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_alg)
+
+
+def decode_token(token: str) -> dict:
+    """Decode a JWT and return its payload dict. Raises JWTError on failure."""
+    from jose import jwt as _jwt
+    return _jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_alg])
