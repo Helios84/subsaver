@@ -1,6 +1,6 @@
 """API endpoints for reminder management."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 from dependencies import get_current_user, get_db
 from models.db import Subscription
+from limiter import limiter
 
 
 router = APIRouter(prefix="/reminders", tags=["reminders"])
@@ -113,9 +114,11 @@ def get_upcoming_renewals(
 
 
 @router.post("/send-now")
+@limiter.limit("5/hour")
 def send_reminders_now(
+    request: Request,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Manually trigger reminder check for current user only (not all users)."""
     from services.reminder_service import reminder_service
@@ -165,12 +168,11 @@ def send_reminders_now(
 
 
 @router.post("/test-email")
-def send_test_email(current_user=Depends(get_current_user)):
+@limiter.limit("3/hour")
+def send_test_email(request: Request, current_user=Depends(get_current_user)):
     """Send a test reminder email to the current user. Rate limited: 3/hour."""
     from services.email_service import email_service
-    from limiter import limiter
-    from fastapi import Request
-    
+
     # Send test email
     success = email_service.send_reminder_email(
         to_email=current_user.email,

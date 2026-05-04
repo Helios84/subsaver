@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timezone
@@ -7,6 +7,7 @@ import logging
 
 from dependencies import get_db, get_current_user
 from models.db import User, Subscription
+from limiter import limiter
 
 router = APIRouter(prefix="/api/student-discounts", tags=["student-discounts"])
 
@@ -16,7 +17,9 @@ class BatchCheckRequest(BaseModel):
 
 
 @router.post("/batch-check")
+@limiter.limit("30/minute")
 async def batch_check_discounts(
+    request: Request,
     payload: BatchCheckRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -71,7 +74,8 @@ async def batch_check_discounts(
 
 
 @router.get("")
-async def get_all_student_discounts(db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+async def get_all_student_discounts(request: Request, db: Session = Depends(get_db)):
     """
     Get all available student discounts.
     Public endpoint - no authentication required.
