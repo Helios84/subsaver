@@ -170,7 +170,22 @@ export default function AddSubscriptionPanel({
             <label style={labelStyle}>Billing Cycle</label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: 4 }}>
               {(["monthly", "yearly"] as BillingCycle[]).map((c) => (
-                <button key={c} type="button" onClick={() => onFormChange({ cycle: c })}
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => onFormChange({ cycle: c })}
+                  onMouseEnter={(e) => {
+                    if (formState.cycle !== c) {
+                      e.currentTarget.style.background = "rgba(124,58,237,0.15)";
+                      e.currentTarget.style.color = "rgba(255,255,255,0.7)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (formState.cycle !== c) {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = "rgba(255,255,255,0.35)";
+                    }
+                  }}
                   style={{
                     padding: "8px", borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: "pointer",
                     textTransform: "capitalize", transition: "all 0.2s", border: "none",
@@ -252,14 +267,14 @@ export default function AddSubscriptionPanel({
           <button
             type="submit"
             disabled={isSubmitting}
+            className="liquid-btn"
             style={{
               width: "100%", padding: "13px", borderRadius: 14, fontSize: 15, fontWeight: 700,
               cursor: isSubmitting ? "not-allowed" : "pointer",
-              background: isSubmitting ? "rgba(124,58,237,0.4)" : "linear-gradient(135deg, #7C3AED, #D946EF)",
-              boxShadow: isSubmitting ? "none" : "0 4px 20px rgba(124,58,237,0.35)",
+              background: isSubmitting ? "rgba(124,58,237,0.4)" : undefined,
+              boxShadow: isSubmitting ? "none" : undefined,
               color: "white", border: "none",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 4,
-              transition: "opacity 0.2s",
               opacity: isSubmitting ? 0.7 : 1,
             }}
           >

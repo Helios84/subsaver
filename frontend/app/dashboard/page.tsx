@@ -796,6 +796,9 @@ export default function DashboardPage() {
                 fxRates={fxRates}
                 trendsDataProp={analyticsData}
                 insightsProp={insightsData}
+                disabledWidgets={dashSettings.widgets
+                  .filter(w => !w.enabled && ["spending_trends","savings_card","category_breakdown","insights","renewals","billing_calendar"].includes(w.id))
+                  .map(w => ({ id: w.id as any, label: w.label, color: w.color }))}
               />
             )}
 

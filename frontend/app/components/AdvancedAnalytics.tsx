@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Plus, Sparkles } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import SpendingTrendsChart from './SpendingTrendsChart';
 import CategoryBreakdown from './CategoryBreakdown';
@@ -10,13 +11,16 @@ import UpcomingRenewals from './UpcomingRenewals';
 import StudentSavingsCard from './StudentSavingsCard';
 import SkeletonLoader, { ChartSkeleton } from './SkeletonLoader';
 import BillingCalendar from './BillingCalendar';
-import type { WidgetId } from '../customize/page';
+import type { WidgetId, WidgetConfig } from '../customize/page';
 
 // Widget span: 1 = 1/4, 2 = 2/4, 3 = 3/4, 4 = full width
 export type WidgetSpan = 1 | 2 | 3 | 4;
 
 // Universal widget height — ALL widgets share this height
 export const WIDGET_H = 260;
+
+// ── GRID LIMIT: 3 rows × 4 columns = 12 total span units
+export const MAX_GRID_SPAN = 12;
 
 // Ordered list of analytics-zone widget IDs (excludes stats, subscriptions, top_expenses)
 export const ANALYTICS_WIDGET_IDS: WidgetId[] = [
@@ -37,6 +41,15 @@ export const DEFAULT_SPANS: Partial<Record<WidgetId, WidgetSpan>> = {
   billing_calendar: 4,   // Full width
 };
 
+// Widget label map for chips in placeholder
+const WIDGET_LABELS: Partial<Record<WidgetId, { label: string; color: string; icon: string }>> = {
+  spending_trends:    { label: "Spending Trends",    color: "#06B6D4", icon: "📈" },
+  category_breakdown: { label: "Category Breakdown", color: "#D946EF", icon: "🥧" },
+  insights:           { label: "Insights",           color: "#F59E0B", icon: "💡" },
+  renewals:           { label: "Upcoming Renewals",  color: "#10B981", icon: "🔔" },
+  savings_card:       { label: "Student Savings",    color: "#EC4899", icon: "🎓" },
+  billing_calendar:   { label: "Billing Calendar",   color: "#06B6D4", icon: "📅" },
+};
 
 export default function AdvancedAnalytics({
   upcomingRenewals,
@@ -49,6 +62,8 @@ export default function AdvancedAnalytics({
   // H-7: accept pre-loaded data from dashboard/summary to avoid duplicate requests
   trendsDataProp,
   insightsProp,
+  // New: disabled widgets for placeholder chips
+  disabledWidgets = [],
 }: {
   upcomingRenewals: any[];
   widgets: Record<string, boolean>;
@@ -57,9 +72,11 @@ export default function AdvancedAnalytics({
   widgetSizes?: Partial<Record<WidgetId, WidgetSpan>>;
   currency?: import("../lib/currency").Currency;
   fxRates?: Record<string, number>;
-  trendsDataProp?: any;       // analytics data from /api/dashboard/summary
-  insightsProp?: any[];       // insights from /api/dashboard/summary
+  trendsDataProp?: any;
+  insightsProp?: any[];
+  disabledWidgets?: Array<{ id: WidgetId; label: string; color: string }>;
 }) {
+  const router = useRouter();
   const [trendsData, setTrendsData] = useState<any>(trendsDataProp ?? null);
   const [insights, setInsights] = useState<any[]>(insightsProp ?? []);
   const [loading, setLoading] = useState(!trendsDataProp);
@@ -113,10 +130,13 @@ export default function AdvancedAnalytics({
   const mainWidgets = orderedIds.filter(id => widgets[id] && id !== 'billing_calendar');
   const calendarWidget = orderedIds.filter(id => widgets[id] && id === 'billing_calendar');
 
-  // Total span of all main widgets — placeholder fills remainder to next row-of-4
+  // Total span of all main widgets
   const totalSpan = mainWidgets.reduce((s, id) => s + getSpan(id), 0);
   const remainder = totalSpan % 4;
-  const placeholderSpan: WidgetSpan | null = remainder > 0 ? (4 - remainder) as WidgetSpan : null;
+  // Only show placeholder if there's leftover space AND total is under MAX_GRID_SPAN
+  const placeholderSpan: WidgetSpan | null = remainder > 0 && totalSpan < MAX_GRID_SPAN
+    ? (4 - remainder) as WidgetSpan
+    : null;
 
   function renderItem(id: WidgetId) {
     const span = getSpan(id);
@@ -132,42 +152,121 @@ export default function AdvancedAnalytics({
   }
 
   function renderPlaceholder(span: WidgetSpan) {
+    // Up to 3 disabled analytics widgets shown as chips
+    const chips = disabledWidgets
+      .filter(w => ANALYTICS_WIDGET_IDS.includes(w.id))
+      .slice(0, 3);
+
     return (
       <div key="placeholder" className={`analytics-widget-span-${span}`}>
-        <Link
-          href="/customize"
-          aria-label="Open dashboard customization settings"
-          className="flex flex-col items-center justify-center gap-3 w-full rounded-2xl group"
+        <div
           style={{
             height: WIDGET_H,
-            border: '2px dashed rgba(255,255,255,0.10)',
-            background: 'rgba(255,255,255,0.015)',
+            borderRadius: 20,
+            border: '2px dashed rgba(124,58,237,0.20)',
+            background: 'rgba(124,58,237,0.025)',
             backdropFilter: 'blur(8px)',
-            transition: 'all 0.2s ease',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16,
+            padding: 20,
+            position: 'relative',
+            overflow: 'hidden',
+            transition: 'all 0.25s cubic-bezier(0.23,1,0.32,1)',
           }}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(124,58,237,0.45)';
-            (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.06)';
+            const el = e.currentTarget as HTMLElement;
+            el.style.borderColor = 'rgba(124,58,237,0.50)';
+            el.style.background = 'rgba(124,58,237,0.06)';
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.10)';
-            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.015)';
+            const el = e.currentTarget as HTMLElement;
+            el.style.borderColor = 'rgba(124,58,237,0.20)';
+            el.style.background = 'rgba(124,58,237,0.025)';
           }}
         >
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
+          {/* Ambient glow */}
+          <div style={{
+            position: 'absolute', top: -20, right: -20, width: 80, height: 80,
+            borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.15), transparent)',
+            pointerEvents: 'none',
+          }} />
+
+          {/* Top: icon + label */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 14,
+              background: 'rgba(124,58,237,0.14)',
+              border: '1px solid rgba(124,58,237,0.30)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Plus style={{ width: 18, height: 18, color: '#A78BFA' }} />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.55)', lineHeight: 1 }}>
+                Add Widget
+              </p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 3 }}>
+                {chips.length > 0 ? 'Quick-enable a widget below' : 'Open Customize to add widgets'}
+              </p>
+            </div>
+          </div>
+
+          {/* Disabled widget chips → click opens Customize with preselection */}
+          {chips.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', width: '100%' }}>
+              {chips.map(w => {
+                const meta = WIDGET_LABELS[w.id];
+                return (
+                  <button
+                    key={w.id}
+                    onClick={() => router.push(`/customize?focus=${w.id}`)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px',
+                      borderRadius: 100, fontSize: 11, fontWeight: 600,
+                      background: `${w.color}12`,
+                      border: `1px solid ${w.color}30`,
+                      color: `${w.color}CC` ,
+                      cursor: 'pointer',
+                      transition: 'all 0.18s',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = `${w.color}25`;
+                      e.currentTarget.style.borderColor = `${w.color}55`;
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = `${w.color}12`;
+                      e.currentTarget.style.borderColor = `${w.color}30`;
+                      e.currentTarget.style.transform = '';
+                    }}
+                  >
+                    <span style={{ fontSize: 12 }}>{meta?.icon ?? '📊'}</span>
+                    {meta?.label ?? w.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Customize link */}
+          <Link
+            href="/customize"
             style={{
-              background: 'rgba(124,58,237,0.12)',
-              border: '1px solid rgba(124,58,237,0.25)',
+              display: 'flex', alignItems: 'center', gap: 4, fontSize: 11,
+              color: 'rgba(167,139,250,0.55)', textDecoration: 'none',
+              transition: 'color 0.2s',
             }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'rgba(167,139,250,0.9)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(167,139,250,0.55)')}
           >
-            <Plus className="w-5 h-5 text-violet-400/70 group-hover:text-violet-300 transition-colors" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-semibold text-white/30 group-hover:text-white/60 transition-colors leading-none">Add Widget</p>
-            <p className="text-xs text-white/20 group-hover:text-white/40 transition-colors mt-1">Open Customize</p>
-          </div>
-        </Link>
+            <Sparkles style={{ width: 11, height: 11 }} />
+            Open Customize →
+          </Link>
+        </div>
       </div>
     );
   }

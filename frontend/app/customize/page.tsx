@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
   useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay,
@@ -19,6 +19,7 @@ import {
   Plus, BadgeCheck, Layout, Layers, ToggleLeft, Lock,
 } from "lucide-react";
 import type { WidgetSpan } from "../components/AdvancedAnalytics";
+import { MAX_GRID_SPAN, ANALYTICS_WIDGET_IDS, DEFAULT_SPANS } from "../components/AdvancedAnalytics";
 import { apiFetch } from "../lib/api";
 import StatsGrid from "../components/dashboard/StatsGrid";
 import AdvancedAnalytics from "../components/AdvancedAnalytics";
@@ -187,20 +188,23 @@ function formatMoney(cents: number, currency: Currency = "USD", rates?: Record<s
 }
 
 // ─── Sortable Widget Row (Analytics Only) ────────────────────────────────────
-function SortableWidgetRow({ widget, onToggle, onSpanChange, widgetSizes, index, hasUnsavedChange }: {
+function SortableWidgetRow({ widget, onToggle, onSpanChange, widgetSizes, index, hasUnsavedChange, totalGridSpan = 0 }: {
   widget: WidgetConfig;
   onToggle: (id: WidgetId) => void;
   onSpanChange: (id: WidgetId, span: WidgetSpan) => void;
   widgetSizes: Partial<Record<WidgetId, WidgetSpan>>;
   index: number;
   hasUnsavedChange?: boolean;
+  totalGridSpan?: number;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: widget.id });
   const Icon = widget.icon;
   const span: WidgetSpan = (widgetSizes[widget.id] as WidgetSpan) ?? 2;
+  const otherSpan = totalGridSpan - (widget.enabled ? span : 0);
 
   return (
     <div
+      id={`widget-row-${widget.id}`}
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0 : 1 }}
       className={`group flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-all duration-150 ${
@@ -223,23 +227,29 @@ function SortableWidgetRow({ widget, onToggle, onSpanChange, widgetSizes, index,
           <span title="Modified this session" style={{ width: 5, height: 5, borderRadius: "50%", background: "#F59E0B", flexShrink: 0, display: "inline-block" }} />
         )}
       </div>
-      {/* Span selector: [1] [2] [3] [4] */}
+      {/* Span selector: [1] [2] [3] [4] — disabled if would exceed MAX_GRID_SPAN */}
       {widget.enabled && (
         <div className="flex gap-0.5 shrink-0">
-          {([1, 2, 3, 4] as WidgetSpan[]).map(n => (
-            <button
-              key={n}
-              onClick={() => onSpanChange(widget.id, n)}
-              title={n === 1 ? "1/4 width" : n === 2 ? "2/4 width" : n === 3 ? "3/4 width" : "Full width"}
-              className={`w-5 h-4 rounded flex items-center justify-center text-[9px] font-bold transition-all ${
-                span === n
-                  ? "bg-violet-500/30 border border-violet-500/50 text-violet-300"
-                  : "bg-white/5 border border-white/10 text-white/25 hover:text-white/60"
-              }`}
-            >
-              {n}
-            </button>
-          ))}
+          {([1, 2, 3, 4] as WidgetSpan[]).map(n => {
+            const wouldExceed = otherSpan + n > MAX_GRID_SPAN;
+            return (
+              <button
+                key={n}
+                onClick={() => !wouldExceed && onSpanChange(widget.id, n)}
+                disabled={wouldExceed}
+                title={wouldExceed ? `Grid full — reduce another widget first` : n === 1 ? "1/4 width" : n === 2 ? "2/4 width" : n === 3 ? "3/4 width" : "Full width"}
+                className={`w-5 h-4 rounded flex items-center justify-center text-[9px] font-bold transition-all ${
+                  wouldExceed
+                    ? "bg-white/3 border border-white/5 text-white/12 cursor-not-allowed"
+                    : span === n
+                    ? "bg-violet-500/30 border border-violet-500/50 text-violet-300"
+                    : "bg-white/5 border border-white/10 text-white/25 hover:text-white/60"
+                }`}
+              >
+                {n}
+              </button>
+            );
+          })}
         </div>
       )}
       <button
@@ -563,6 +573,8 @@ function RealDashboardPreview({ settings, subs, user, onWidgetReorder }: {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CustomizePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const focusWidgetId = searchParams?.get("focus") as WidgetId | null;
   const [settings, setSettings] = useState<DashboardSettings>(getDefaults());
   const [saved, setSaved] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -617,6 +629,24 @@ export default function CustomizePage() {
       .catch(() => { /* non-critical — localStorage already loaded */ });
   }, [router]);
 
+  // Auto-scroll and highlight a widget row when ?focus=widgetId is in the URL
+  useEffect(() => {
+    if (!focusWidgetId) return;
+    const timer = setTimeout(() => {
+      // Scroll the sidebar to show the widget row
+      const el = document.getElementById(`widget-row-${focusWidgetId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.style.outline = "2px solid rgba(167,139,250,0.6)";
+        el.style.outlineOffset = "2px";
+        el.style.borderRadius = "12px";
+        el.style.transition = "outline 0.3s";
+        setTimeout(() => { el.style.outline = ""; }, 2500);
+      }
+    }, 600); // wait for settings to load
+    return () => clearTimeout(timer);
+  }, [focusWidgetId, settings.widgets.length]);
+
 
   function mark(updater: (prev: DashboardSettings) => DashboardSettings, changedWidgetId?: WidgetId) {
     setSettings(prev => {
@@ -649,10 +679,35 @@ export default function CustomizePage() {
     });
   }
   function handleToggle(id: WidgetId) {
-    mark(prev => ({ ...prev, widgets: prev.widgets.map(w => w.id === id ? { ...w, enabled: !w.enabled } : w) }), id);
+    mark(prev => {
+      const widget = prev.widgets.find(w => w.id === id);
+      // If enabling an analytics widget, check grid limit
+      if (widget && !widget.enabled && ANALYTICS_WIDGET_IDS.includes(id)) {
+        const currentSpan = ANALYTICS_WIDGET_IDS
+          .filter(wid => prev.widgets.find(w => w.id === wid)?.enabled)
+          .reduce((sum, wid) => sum + ((prev.widgetSizes[wid] as WidgetSpan) ?? DEFAULT_SPANS[wid] ?? 2), 0);
+        const addSpan = (prev.widgetSizes[id] as WidgetSpan) ?? DEFAULT_SPANS[id] ?? 2;
+        // If enabling would exceed limit, auto-reduce to span=1
+        if (currentSpan + addSpan > MAX_GRID_SPAN) {
+          return {
+            ...prev,
+            widgets: prev.widgets.map(w => w.id === id ? { ...w, enabled: true } : w),
+            widgetSizes: { ...prev.widgetSizes, [id]: 1 as WidgetSpan },
+          };
+        }
+      }
+      return { ...prev, widgets: prev.widgets.map(w => w.id === id ? { ...w, enabled: !w.enabled } : w) };
+    }, id);
   }
   function handleSpanChange(id: WidgetId, span: WidgetSpan) {
-    mark(prev => ({ ...prev, widgetSizes: { ...prev.widgetSizes, [id]: span } }), id);
+    mark(prev => {
+      // Calculate total span excluding this widget
+      const otherSpan = ANALYTICS_WIDGET_IDS
+        .filter(wid => wid !== id && prev.widgets.find(w => w.id === wid)?.enabled)
+        .reduce((sum, wid) => sum + ((prev.widgetSizes[wid] as WidgetSpan) ?? DEFAULT_SPANS[wid] ?? 2), 0);
+      if (otherSpan + span > MAX_GRID_SPAN) return prev; // silently reject — button is disabled visually
+      return { ...prev, widgetSizes: { ...prev.widgetSizes, [id]: span } };
+    }, id);
   }
   function handleStatCardToggle(id: StatCardId) {
     mark(prev => {
@@ -750,6 +805,13 @@ export default function CustomizePage() {
   const totalCount = settings.widgets.length;
   const activeWidget = settings.widgets.find(w => w.id === activeId) ?? null;
   const theme = BRAND;
+
+  // Compute current total grid span for analytics widgets
+  const totalGridSpan = ANALYTICS_WIDGET_IDS
+    .filter(id => settings.widgets.find(w => w.id === id)?.enabled)
+    .reduce((sum, id) => sum + ((settings.widgetSizes[id] as WidgetSpan) ?? DEFAULT_SPANS[id] ?? 2), 0);
+  const gridFull = totalGridSpan >= MAX_GRID_SPAN;
+  const gridPct = Math.min(100, Math.round((totalGridSpan / MAX_GRID_SPAN) * 100));
 
   return (
     <main className="min-h-screen text-white overflow-hidden" style={{ background: "linear-gradient(135deg, #09090f 0%, #0d0b1a 50%, #080B14 100%)" }}>
@@ -889,6 +951,35 @@ export default function CustomizePage() {
                   <span className="text-[9px] text-white/25 font-mono">{enabledCount}/{totalCount}</span>
                 </div>
               </div>
+
+              {/* Grid usage counter */}
+              <div className="mb-3 px-2.5 py-2 rounded-xl border" style={{
+                background: gridFull ? "rgba(239,68,68,0.06)" : "rgba(124,58,237,0.05)",
+                borderColor: gridFull ? "rgba(239,68,68,0.25)" : "rgba(124,58,237,0.18)",
+              }}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold" style={{ color: gridFull ? "#FCA5A5" : "rgba(167,139,250,0.8)" }}>
+                    {gridFull ? "⚠ Grid Full" : "Grid Usage"}
+                  </span>
+                  <span className="text-[10px] font-mono font-bold" style={{ color: gridFull ? "#FCA5A5" : "rgba(255,255,255,0.45)" }}>
+                    {totalGridSpan}/{MAX_GRID_SPAN}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <div className="h-full rounded-full transition-all duration-500" style={{
+                    width: `${gridPct}%`,
+                    background: gridFull
+                      ? "linear-gradient(90deg, #EF4444, #F97316)"
+                      : gridPct >= 75
+                      ? "linear-gradient(90deg, #F59E0B, #D946EF)"
+                      : `linear-gradient(90deg, ${theme.primary}, ${theme.secondary})`,
+                  }} />
+                </div>
+                <p className="text-[9px] mt-1.5" style={{ color: "rgba(255,255,255,0.22)" }}>
+                  {gridFull ? "Reduce a widget size to add more." : `${MAX_GRID_SPAN - totalGridSpan} units available · 3 rows × 4 cols`}
+                </p>
+              </div>
+
               <p className="text-[9px] text-white/20 mb-2">Drag to reorder · <span className="font-mono">[1][2][3]</span> = cell size</p>
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                 <SortableContext items={settings.widgets.filter(w => ANALYTICS_WIDGET_IDS.includes(w.id)).map(w => w.id)} strategy={rectSortingStrategy}>
@@ -913,6 +1004,7 @@ export default function CustomizePage() {
                         onToggle={handleToggle} onSpanChange={handleSpanChange}
                         widgetSizes={settings.widgetSizes}
                         hasUnsavedChange={changedIds.has(widget.id)}
+                        totalGridSpan={totalGridSpan}
                       />
                     ))}
                     {/* Separator */}
