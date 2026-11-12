@@ -172,7 +172,7 @@ export default function RegisterPage() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      // C-2: Only propagate dev_code in development — never in production
+      // Only propagate dev_code in development — never in production
       if (res.dev_code && process.env.NODE_ENV === "development") {
         sessionStorage.setItem("register_dev_code", res.dev_code);
       }
@@ -186,7 +186,7 @@ export default function RegisterPage() {
   }
 
   const perks = [
-    "Find student discounts automatically",
+    "Look up student prices for 60 services",
     "Track all subscriptions in one place",
     "Get renewal reminders before billing",
     "Split costs with roommates easily",
@@ -285,7 +285,7 @@ export default function RegisterPage() {
             }}
           >
             <GraduationCap style={{ width: 13, height: 13, color: "#A78BFA" }} />
-            <span style={{ fontSize: "11px", color: "#A78BFA", fontWeight: 700 }}>Join 10,000+ Students</span>
+            <span style={{ fontSize: "11px", color: "#A78BFA", fontWeight: 700 }}>Free student account</span>
           </div>
 
           <h2
@@ -298,10 +298,10 @@ export default function RegisterPage() {
               fontFamily: "var(--font-syne, sans-serif)",
             }}
           >
-            Start saving in under 2 minutes
+            Create your account
           </h2>
           <p style={{ color: "rgba(255,255,255,0.4)", marginBottom: "2rem", lineHeight: 1.7, fontSize: "15px" }}>
-            Free forever for students. No credit card needed.
+            Free to use. No credit card needed.
           </p>
 
           {/* Perk list */}
@@ -351,7 +351,7 @@ export default function RegisterPage() {
                 <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>
                   Verify your{" "}
                   <span style={{ color: "#A78BFA" }}>.edu email</span>{" "}
-                  after sign-up to unlock exclusive student discounts.
+                  after sign-up to mark your account as a student account.
                 </p>
               </div>
             </div>

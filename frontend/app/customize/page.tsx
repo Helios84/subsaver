@@ -602,7 +602,7 @@ export default function CustomizePage() {
     setSettings(loadDashboardSettings());
     apiFetch("/subscriptions").then(setSubs).catch(console.error);
     apiFetch("/users/me").then(setUser).catch(console.error);
-    // M-5: Load preferences from backend and merge (cross-device sync)
+    // Load preferences from backend and merge (cross-device sync)
     apiFetch("/users/me/preferences")
       .then((data: any) => {
         if (data?.preferences) {
@@ -733,7 +733,7 @@ export default function CustomizePage() {
     saveDashboardSettings(settings);
     setSaved(true); setIsDirty(false); setChangedIds(new Set()); setUndoStack([]);
     setTimeout(() => setSaved(false), 2500);
-    // M-8: Also sync to backend so settings persist across devices
+    // Also sync to backend so settings persist across devices
     const token = typeof window !== "undefined" ? localStorage.getItem("subsaver_token") : null;
     if (token) {
       apiFetch("/users/me/preferences", {

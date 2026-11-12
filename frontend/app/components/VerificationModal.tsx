@@ -56,7 +56,7 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
                 method: "POST",
                 body: JSON.stringify({ edu_email: eduEmail }),
             });
-            // C-2: Only show dev_code in development — never expose in production
+            // Only show dev_code in development — never expose in production
             if (res.dev_code && process.env.NODE_ENV === "development") {
                 setDevCode(res.dev_code);
             }
@@ -102,13 +102,13 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
         setLoading(true);
         setError(null);
         setDevCode(null);
-        setCode(""); // M-7: clear stale code so user can't accidentally submit it
+        setCode(""); // Clear stale code so user can't accidentally submit it
         try {
             const res = await apiFetch("/auth/verify-edu", {
                 method: "POST",
                 body: JSON.stringify({ edu_email: eduEmail }),
             });
-            // C-2: Only show dev_code in development
+            // Only show dev_code in development
             if (res.dev_code && process.env.NODE_ENV === "development") setDevCode(res.dev_code);
             setCountdown(60);
         } catch (err: any) {

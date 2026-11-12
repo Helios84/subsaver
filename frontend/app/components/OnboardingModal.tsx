@@ -12,9 +12,9 @@ const STEPS = [
     icon: "🎓",
     iconColor: "#A78BFA",
     title: "Welcome to SubSaver!",
-    subtitle: "Your smart savings hub",
+    subtitle: "Subscription tracker for students",
     description:
-      "Track all your subscriptions in one place, find student discounts automatically, and get renewal reminders before you're charged. Let's get you set up in 30 seconds.",
+      "Track all your subscriptions in one place, look up student prices, and get renewal reminders before you're charged.",
     cta: "Get Started",
     skip: null,
   },
@@ -23,9 +23,9 @@ const STEPS = [
     icon: GraduationCap,
     iconColor: "#34D399",
     title: "Unlock Student Discounts",
-    subtitle: "Up to 50% off popular apps",
+    subtitle: "Student prices for 60 services",
     description:
-      "Verify your .edu email to automatically find student pricing on Spotify, Adobe, Microsoft 365, and 50+ more services. Students save an average of $847/year.",
+      "Verify your .edu email, then check the catalog for student pricing on Spotify, Adobe, Microsoft 365 and other services.",
     cta: "Verify Student Status",
     ctaLink: "/settings?tab=student",
     skip: "Skip for now",
@@ -37,7 +37,7 @@ const STEPS = [
     title: "Add Your First Subscription",
     subtitle: "Start tracking today",
     description:
-      "Add the apps and services you're already paying for. We'll track renewal dates, find better prices, and remind you before you're billed.",
+      "Add the apps and services you're already paying for. SubSaver tracks renewal dates and reminds you before you're billed.",
     cta: "Close & Add Subscription",
     skip: "Maybe later",
   },

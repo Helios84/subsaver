@@ -170,7 +170,7 @@ async def mark_discount_applied(
         if not discount:
             raise HTTPException(status_code=404, detail="No student discount found for this service")
         
-        # Update subscription — apply student price to actual subscription cost (F-9 fix)
+        # Update subscription — apply student price to actual subscription cost
         subscription.student_discount_applied = True
         subscription.discount_applied_date = datetime.now(timezone.utc).replace(tzinfo=None)
         subscription.price_cents = discount.student_price_cents
@@ -179,7 +179,7 @@ async def mark_discount_applied(
         db.refresh(subscription)
         
         monthly_savings = discount.regular_price_cents - discount.student_price_cents
-        # M-E fix: for yearly subscriptions, savings are already annual — don't multiply
+        # For yearly subscriptions, savings are already annual — don't multiply
         if subscription.billing_cycle == "yearly":
             yearly_savings = monthly_savings  # already a yearly difference
             monthly_savings_display = monthly_savings // 12

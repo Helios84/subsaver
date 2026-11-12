@@ -37,7 +37,7 @@ def get_current_email(
         if not email:
             raise HTTPException(status_code=401, detail="Invalid token")
 
-        # C-1: Reject blacklisted tokens
+        # Reject blacklisted tokens
         if jti and db.query(RevokedToken).filter(RevokedToken.jti == jti).first():
             raise HTTPException(status_code=401, detail="Token has been revoked")
 

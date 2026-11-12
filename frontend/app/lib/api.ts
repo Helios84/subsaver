@@ -5,7 +5,7 @@ type ApiFetchOptions = RequestInit & { skipAuth?: boolean; timeoutMs?: number };
 export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
 
-  // C-4 / H-9: AbortController with configurable timeout (default 15s)
+  // AbortController with configurable timeout (default 15s)
   const controller = new AbortController();
   const timeoutMs = opts.timeoutMs ?? 15000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -56,7 +56,7 @@ export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
   } catch (err) {
     clearTimeout(timeoutId);
 
-    // C-4: Friendly timeout error
+    // Friendly timeout error
     if (err instanceof Error && err.name === "AbortError") {
       throw new Error("Request timed out. Please check your connection and try again.");
     }

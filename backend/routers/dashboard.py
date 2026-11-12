@@ -1,5 +1,5 @@
 """
-Dashboard summary endpoint — returns all data needed for the dashboard in one request (H-7).
+Dashboard summary endpoint — returns all data needed for the dashboard in one request.
 Reduces frontend roundtrips from 5-6 to 1.
 """
 import logging
@@ -23,12 +23,12 @@ def _monthly_cost(sub: Subscription) -> int:
     split = max(1, sub.split_with or 1)
     if sub.billing_cycle == "monthly":
         return sub.price_cents // split
-    # Yearly: amortise as monthly (M-1 fix: always amortise for consistency)
+    # Yearly: amortise as monthly (always amortise for consistency)
     return (sub.price_cents // split) // 12
 
 
 @router.get("/summary")
-@limiter.limit("60/minute")  # H-1: protect heavy 4-SQL endpoint
+@limiter.limit("60/minute")  # Protect heavy 4-SQL endpoint
 async def get_dashboard_summary(
     request: Request,
     current_user: User = Depends(get_current_user),
@@ -50,7 +50,7 @@ async def get_dashboard_summary(
     )
     active_subs = [s for s in all_subs if s.status == "active"]
 
-    # ── 2. Analytics: 6-month trends (M-1: always amortise yearly) ───────────
+    # ── 2. Analytics: 6-month trends (always amortise yearly) ───────────
     trends = []
     for i in range(5, -1, -1):
         month_offset = first_of_month.month - i
@@ -101,10 +101,10 @@ async def get_dashboard_summary(
             if 0 <= days <= 7:
                 upcoming_count += 1
                 split = max(1, sub.split_with or 1)
-                # C-3: Use actual renewal cost (full period price), not monthly amortization
+                # Use actual renewal cost (full period price), not monthly amortization
                 upcoming_cost += sub.price_cents // split
     if upcoming_count > 0:
-        # C-3: Use actual renewal price (what the user pays on that date), not monthly amortization
+        # Use actual renewal price (what the user pays on that date), not monthly amortization
         insights.append({
             "type": "warning",
             "title": "Upcoming Renewals",

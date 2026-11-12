@@ -167,14 +167,14 @@ function LoginPageInner() {
             Welcome back to your savings hub
           </h2>
           <p style={{ color: "rgba(255,255,255,0.4)", marginBottom: "2.5rem", lineHeight: 1.7, fontSize: "15px" }}>
-            Pick up where you left off. Your subscriptions and savings are waiting.
+            Pick up where you left off. Your subscriptions are waiting.
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
             {[
-              { icon: Shield, text: "Bank-grade encrypted data", color: "#10B981" },
-              { icon: Zap, text: "Real-time discount finder", color: "#F59E0B" },
-              { icon: Star, text: "Average $847 saved per year", color: "#A78BFA" },
+              { icon: Shield, text: "Passwords stored as bcrypt hashes", color: "#10B981" },
+              { icon: Zap, text: "Student prices for 60 services", color: "#F59E0B" },
+              { icon: Star, text: "Renewal reminders by email", color: "#A78BFA" },
             ].map(({ icon: Icon, text, color }) => (
               <div key={text} style={{ display: "flex", alignItems: "center", gap: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "14px", padding: "14px 16px" }}>
                 <div style={{ width: 34, height: 34, borderRadius: "10px", background: `${color}18`, border: `1px solid ${color}30`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

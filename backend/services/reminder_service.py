@@ -73,7 +73,7 @@ class ReminderService:
         for sub in overdue_subs:
             sub.reminder_sent = False
             sub.last_reminder_date = None
-            # H-4 fix: use next_billing_date as base, not created_at
+            # Use next_billing_date as base, not created_at
             sub.next_billing_date = self.calculate_next_billing_date(
                 sub.next_billing_date, sub.billing_cycle
             )
@@ -120,7 +120,7 @@ class ReminderService:
     ) -> datetime:
         """
         Calculate next billing date by advancing from current_billing_date.
-        H-4/H-5 fix: use current next_billing_date as base (not created_at),
+        Use current next_billing_date as base (not created_at),
         and use relativedelta for accurate month arithmetic.
         
         Args:
@@ -152,7 +152,7 @@ class ReminderService:
     def reset_reminder_for_next_cycle(self, subscription, db: Session):
         """
         Reset reminder flags when subscription renews.
-        H-4 fix: use next_billing_date as base, not created_at.
+        Use next_billing_date as base, not created_at.
         
         Args:
             subscription: Subscription object
@@ -160,7 +160,7 @@ class ReminderService:
         """
         subscription.reminder_sent = False
         subscription.last_reminder_date = None
-        # H-4 fix: use next_billing_date as base
+        # Use next_billing_date as base
         subscription.next_billing_date = self.calculate_next_billing_date(
             subscription.next_billing_date,
             subscription.billing_cycle

@@ -98,12 +98,12 @@ export default function DashboardPage() {
   const [allServices, setAllServices] = useState<StudentDiscount[]>([]);
   const [suggestions, setSuggestions] = useState<StudentDiscount[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const autocompleteRef = useRef<HTMLDivElement>(null); // UI-5: click outside
+  const autocompleteRef = useRef<HTMLDivElement>(null); // Click outside
 
-  // ── Mobile menu (UI-3)
+  // ── Mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // ── Add form loading state (UI-4)
+  // ── Add form loading state
   const [addingSubscription, setAddingSubscription] = useState(false);
 
   useEffect(() => {
@@ -112,7 +112,7 @@ export default function DashboardPage() {
       .catch(() => { /* Non-critical autocomplete — fail silently */ });
   }, []);
 
-  // UI-5: Close autocomplete when clicking outside
+  // Close autocomplete when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
@@ -173,7 +173,7 @@ export default function DashboardPage() {
     }
   }, [router]);
 
-  // H-7: single summary call instead of 5-6 separate requests
+  // Single summary call instead of 5-6 separate requests
   async function fetchDashboard() {
     setLoading(true);
     try {
@@ -183,7 +183,7 @@ export default function DashboardPage() {
       // Analytics data from summary — no extra requests needed
       if (summary.analytics) setAnalyticsData(summary.analytics);
       if (summary.insights)  setInsightsData(summary.insights);
-      // Also load student discounts for active subs (H-8: skip if user not verified)
+      // Also load student discounts for active subs (skip if user not verified)
       const activeIds = summary.subscriptions
         .filter((s: Sub) => s.status === "active")
         .map((s: Sub) => s.id);
@@ -272,7 +272,7 @@ export default function DashboardPage() {
     }
   }
 
-  // C-1: Revoke JWT on the backend before clearing localStorage
+  // Revoke JWT on the backend before clearing localStorage
   async function logout() {
     try {
       await apiFetch("/auth/logout", { method: "POST" });
@@ -283,7 +283,7 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  // ── Add subscription (UI-4: loading guard prevents double-submit)
+  // ── Add subscription (loading guard prevents double-submit)
   async function createSub(e: React.FormEvent) {
     e.preventDefault();
     if (addingSubscription) return;
@@ -447,7 +447,7 @@ export default function DashboardPage() {
     return result;
   }, [subs, searchQuery, filterStatus, filterCategory, sortBy]);
 
-  // ── F-12: Duplicate subscription
+  // ── Duplicate subscription
   async function duplicateSub(s: Sub) {
     try {
       const body = {
@@ -466,7 +466,7 @@ export default function DashboardPage() {
     }
   }
 
-  // ── F-4: Export subscriptions as CSV
+  // ── Export subscriptions as CSV
   function exportCSV() {
     const headers = ["Name", "Price", "Billing Cycle", "Status", "Category", "Next Billing Date", "Split With"];
     const rows = subs.map(s => [
@@ -511,7 +511,6 @@ export default function DashboardPage() {
       return acc + (s.billing_cycle === "monthly" ? Math.round(s.price_cents / split) : Math.round(s.price_cents / split / 12));
     }, 0);
     const avgPerSubscription = activeSubs.length > 0 ? sumMonthly / activeSubs.length : 0;
-    // UI-9 fix: removed unused `today` variable
     const upcoming = activeSubs
       .filter((s) => s.next_billing_date)
       .map((s) => ({ ...s, daysUntil: calculateDaysUntilRenewal(s.next_billing_date) }))
@@ -761,8 +760,8 @@ export default function DashboardPage() {
           >
             <GraduationCap className="w-5 h-5 text-violet-400 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-violet-300">Verify your student email to unlock exclusive discounts</p>
-              <p className="text-xs text-white/35 mt-0.5">Get up to 50% off popular subscriptions with a .edu email</p>
+              <p className="text-sm font-semibold text-violet-300">Verify your student email</p>
+              <p className="text-xs text-white/35 mt-0.5">Confirm a .edu address to mark your account as a student account</p>
             </div>
             <span className="text-xs font-bold text-violet-400 px-3 py-1.5 rounded-lg shrink-0" style={{ background: "rgba(124,58,237,0.15)", border: "1px solid rgba(124,58,237,0.3)" }}>Verify →</span>
           </button>

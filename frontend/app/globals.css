@@ -1183,7 +1183,7 @@ a:focus-visible {
 }
 
 /* ═══════════════════════════════════════════════
-   UI-1: RESPONSIVE ANALYTICS GRID
+   RESPONSIVE ANALYTICS GRID
    4-col desktop → 2-col tablet → 1-col mobile
    ═══════════════════════════════════════════════ */
 
@@ -1225,7 +1225,7 @@ a:focus-visible {
 }
 
 /* ═══════════════════════════════════════════════
-   UI-11: GRADIENT TEXT — Cross-browser (Safari fix)
+   GRADIENT TEXT — Cross-browser (Safari fix)
    ═══════════════════════════════════════════════ */
 
 .gradient-text {

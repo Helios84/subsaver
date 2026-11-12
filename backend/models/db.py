@@ -70,7 +70,7 @@ class Subscription(Base):
 
 
 class RevokedToken(Base):
-    """JWT blacklist — tokens added here are rejected even before expiry (C-1)."""
+    """JWT blacklist — tokens added here are rejected even before expiry."""
     __tablename__ = "revoked_tokens"
 
     id = Column(Integer, primary_key=True, index=True)

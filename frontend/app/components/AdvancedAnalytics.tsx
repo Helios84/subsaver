@@ -59,7 +59,7 @@ export default function AdvancedAnalytics({
   widgetSizes = {},
   currency = "USD",
   fxRates = { USD: 1, EUR: 0.93, GBP: 0.79 },
-  // H-7: accept pre-loaded data from dashboard/summary to avoid duplicate requests
+  // Accept pre-loaded data from dashboard/summary to avoid duplicate requests
   trendsDataProp,
   insightsProp,
   // New: disabled widgets for placeholder chips
@@ -93,7 +93,7 @@ export default function AdvancedAnalytics({
   // Re-fetch analytics only when subscriptions change AND props are NOT provided
   const subsHash = (allSubscriptions ?? []).map(s => `${s.id}:${s.price_cents}:${s.status}`).join(',');
   useEffect(() => {
-    // Skip internal fetch if data was provided by parent (H-7 optimization)
+    // Skip internal fetch if data was provided by parent
     if (trendsDataProp) return;
 
     async function load() {

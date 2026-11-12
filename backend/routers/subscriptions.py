@@ -23,7 +23,7 @@ def list_subscriptions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """List user's subscriptions with optional pagination (M-7)."""
+    """List user's subscriptions with optional pagination."""
     return (
         db.query(Subscription)
         .filter(Subscription.user_id == current_user.id)
@@ -97,7 +97,7 @@ def update_subscription(
     if payload.category is not None:     sub.category = payload.category if payload.category in CATEGORIES else "Other"
     if payload.next_billing_date is not None:
         sub.next_billing_date = payload.next_billing_date
-        sub.reminder_sent = False  # H-4: reset so user gets reminder for new billing date
+        sub.reminder_sent = False  # Reset so user gets reminder for new billing date
     if payload.split_with is not None:   sub.split_with = payload.split_with
 
     # Track cancellation timestamp for accurate analytics

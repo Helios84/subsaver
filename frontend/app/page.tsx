@@ -2,46 +2,16 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DollarSign, BarChart3, Shield, Zap, Bell,
   GraduationCap, CheckCircle2, Sparkles,
-  Users, TrendingDown, Star, ArrowRight
+  Users, TrendingDown, ArrowRight
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
 
 // Optional contact address; the footer link is hidden when it is not set.
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
-
-/* ── Animated Counter ── */
-function AnimatedCounter({ target, prefix = "", suffix = "", duration = 1800 }: {
-  target: number; prefix?: string; suffix?: string; duration?: number;
-}) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const started = useRef(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !started.current) {
-        started.current = true;
-        const start = Date.now();
-        const tick = () => {
-          const elapsed = Date.now() - start;
-          const progress = Math.min(elapsed / duration, 1);
-          const ease = 1 - Math.pow(1 - progress, 3);
-          setCount(Math.round(target * ease));
-          if (progress < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      }
-    }, { threshold: 0.5 });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [target, duration]);
-
-  return <span ref={ref}>{prefix}{count.toLocaleString()}{suffix}</span>;
-}
 
 /* ── Centre wrapper — inline styles to bypass any Tailwind/CSS issues ── */
 const CONTAINER_STYLE: React.CSSProperties = {
@@ -183,8 +153,6 @@ export default function Home() {
             }} className="hidden lg:flex">
               {[
                 { label: "Features", href: "#features" },
-                { label: "Why Us", href: "#stats" },
-                { label: "Students", href: "#testimonials" },
               ].map(({ label, href }) => (
                 <a
                   key={label}
@@ -341,8 +309,6 @@ export default function Home() {
             <nav style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "20px" }}>
               {[
                 { label: "Features", href: "#features" },
-                { label: "Why Us", href: "#stats" },
-                { label: "Students", href: "#testimonials" },
               ].map(({ label, href }) => (
                 <a
                   key={label}
@@ -421,7 +387,6 @@ export default function Home() {
         {/* Floating subscription cards */}
         <div className="absolute inset-0 pointer-events-none hidden lg:block">
           <FloatingCard name="Spotify" price="$4.99/mo" icon="🎵" color="#1DB954" delay="0s" x="4%" y="28%" rotate="-4deg" />
-          <FloatingCard name="Netflix" price="$3.99/mo" icon="🎬" color="#E50914" delay="1.2s" x="5%" y="62%" rotate="3deg" />
           <FloatingCard name="Adobe CC" price="$19.99/mo" icon="🎨" color="#FF0000" delay="0.5s" x="76%" y="24%" rotate="5deg" />
           <FloatingCard name="Xbox Pass" price="$4.99/mo" icon="🎮" color="#107C10" delay="1.8s" x="72%" y="62%" rotate="-3deg" />
           <FloatingCard name="Notion" price="Free" icon="📝" color="#FFFFFF" delay="0.8s" x="3%" y="46%" rotate="2deg" />
@@ -443,7 +408,7 @@ export default function Home() {
           {/* Badge */}
           <div className="liquid-badge animate-pulse-glow" style={{ marginBottom: "28px" }}>
             <GraduationCap className="w-3.5 h-3.5 text-violet-400" />
-            <span>The #1 Finance App for Students</span>
+            <span>Subscription tracker for students</span>
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
           </div>
 
@@ -476,8 +441,8 @@ export default function Home() {
               textAlign: "center",
             }}
           >
-            The intelligent subscription manager built for campus life.
-            Find student discounts, split costs, and stop wasting money.
+            See what your subscriptions cost each month, split shared plans,
+            get renewal reminders and look up student prices.
           </p>
 
           {/* CTA Buttons */}
@@ -577,88 +542,6 @@ export default function Home() {
       {/* ─── DIVIDER ─── */}
       <div className="section-divider" />
 
-      {/* ─── STATS ─── */}
-      <section id="stats" style={{ width: "100%", padding: "80px 0" }}>
-        <div style={CONTAINER_STYLE}>
-          {/*
-            2×2 on mobile/tablet  →  4×1 on ≥1024 px
-          */}
-          <div className="liquid-panel rounded-3xl w-full grid grid-cols-2 lg:grid-cols-4 overflow-hidden">
-            {[
-              { value: 10000, suffix: "+", label: "Students Enrolled", color: "#7C3AED", icon: "🎓" },
-              { value: 847, prefix: "$", suffix: "/yr", label: "Avg Savings Per Student", color: "#D946EF", icon: "💰" },
-              { value: 98, suffix: "%", label: "Satisfaction Rate", color: "#06B6D4", icon: "⭐" },
-              { value: 200, suffix: "+", label: "Services Supported", color: "#10B981", icon: "🔗" },
-            ].map((s, i) => {
-              // Map correct borders based on index
-              let borderClasses = "";
-              if (i === 0) borderClasses = "border-b border-r border-white/10 lg:border-b-0";
-              else if (i === 1) borderClasses = "border-b border-white/10 lg:border-b-0 lg:border-r";
-              else if (i === 2) borderClasses = "border-r border-white/10";
-              else borderClasses = "border-none";
-
-              return (
-                <div
-                  key={i}
-                  className={`group relative flex flex-col items-center justify-center text-center ${borderClasses} transition-colors duration-300 min-w-0`}
-                  style={{
-                    padding: "clamp(16px, 2.5vw, 32px) clamp(12px, 1.5vw, 20px)",
-                  }}
-                >
-                  {/* Coloured top-edge accent */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0, left: "20%", right: "20%",
-                      height: "2px",
-                      borderRadius: "0 0 4px 4px",
-                      background: `linear-gradient(90deg, transparent, ${s.color}, transparent)`,
-                      opacity: 0.6,
-                    }}
-                  />
-
-                  {/* Emoji icon */}
-                  <div
-                    className="text-2xl mb-3 transition-transform duration-300 group-hover:scale-110"
-                    style={{ filter: "saturate(1.2)" }}
-                  >
-                    {s.icon}
-                  </div>
-
-                  {/* Animated number */}
-                  <p
-                    className="font-black mb-1.5 leading-none tracking-tight"
-                    style={{
-                      color: s.color,
-                      fontSize: "clamp(22px, 2.5vw, 32px)",
-                    }}
-                  >
-                    <AnimatedCounter target={s.value} prefix={s.prefix} suffix={s.suffix} />
-                  </p>
-
-                  {/* Label */}
-                  <p
-                    style={{
-                      fontSize: "clamp(10px, 1.1vw, 12px)",
-                      color: "rgba(255,255,255,0.45)",
-                      fontWeight: 600,
-                      letterSpacing: "0.05em",
-                      textTransform: "uppercase",
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    {s.label}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── DIVIDER ─── */}
-      <div className="section-divider" />
-
       {/* ─── FEATURES ─── */}
       <section id="features" style={{ width: "100%", padding: "80px 0" }}>
         <div style={CONTAINER_STYLE}>
@@ -680,60 +563,12 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" style={{ width: "100%" }}>
-            <FeatureCard icon={DollarSign} title="Student Discounts" desc="Unlock exclusive student pricing for Spotify, Adobe, and more — verified instantly through your .edu email." color="#7C3AED" delay="0s" />
-            <FeatureCard icon={Bell} title="Renewal Reminders" desc="Get notified before free trials end or yearly plans renew. Never be surprised by unexpected charges again." color="#06B6D4" delay="0.1s" />
+            <FeatureCard icon={DollarSign} title="Student Discounts" desc="Look up student prices for 60 services such as Spotify and Adobe, and see which of your subscriptions have one." color="#7C3AED" delay="0s" />
+            <FeatureCard icon={Bell} title="Renewal Reminders" desc="Get an email a few days before a subscription renews, so a charge never comes as a surprise." color="#06B6D4" delay="0.1s" />
             <FeatureCard icon={BarChart3} title="Expense Tracking" desc="Visualize exactly where your money goes. Track both monthly and yearly subscriptions in one place." color="#10B981" delay="0.2s" />
             <FeatureCard icon={Users} title="Split Costs" desc="Share Netflix with a roommate? Split the cost in the app and track exactly what your share is." color="#D946EF" delay="0.3s" />
-            <FeatureCard icon={Shield} title="Secure & Private" desc="Your financial data is encrypted and private. We never sell your personal information — ever." color="#F59E0B" delay="0.4s" />
-            <FeatureCard icon={TrendingDown} title="Save Smarter" desc="AI-powered insights identify subscriptions you're not using and suggest where you can cut costs." color="#EF4444" delay="0.5s" />
-          </div>
-        </div>
-      </section>
-
-      {/* ─── DIVIDER ─── */}
-      <div className="section-divider" />
-
-      {/* ─── TESTIMONIALS ─── */}
-      <section id="testimonials" style={{ width: "100%", padding: "80px 0" }}>
-        <div style={CONTAINER_STYLE}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: "56px", width: "100%" }}>
-            <div className="liquid-badge mb-5">
-              <Star className="w-3.5 h-3.5 text-amber-400" />
-              <span>Student Reviews</span>
-            </div>
-            <h2
-              className="text-4xl lg:text-5xl font-black text-white mb-4"
-              style={{ fontFamily: "var(--font-syne, sans-serif)" }}
-            >
-              Loved by <span className="gradient-text">Students</span>
-            </h2>
-            <p className="text-white/40 text-base">Join thousands already saving every month</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5" style={{ width: "100%" }}>
-            {[
-              { name: "Alex K.", school: "MIT", text: "I was paying full price for Adobe and Spotify. SubSaver found me $47/month in discounts instantly. Game changer.", stars: 5 },
-              { name: "Sarah M.", school: "Stanford", text: "The split cost feature alone saved me $30/month sharing Netflix and Spotify with my roommates. Love this app.", stars: 5 },
-              { name: "James T.", school: "NYU", text: "Finally an app that understands student budgets. Renewal reminders have saved me from so many surprise charges.", stars: 5 },
-            ].map((t, i) => (
-              <div key={i} className="liquid-card rounded-2xl p-7 flex flex-col gap-5 transition-all duration-300 hover:translate-y-[-3px]" style={{ minHeight: "220px" }}>
-                <div className="flex gap-0.5">
-                  {[...Array(t.stars)].map((_, j) => (
-                    <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-white/65 text-sm leading-relaxed flex-1">&ldquo;{t.text}&rdquo;</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center text-sm font-bold text-white shrink-0">
-                    {t.name[0]}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{t.name}</p>
-                    <p className="text-xs text-white/40">{t.school}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+            <FeatureCard icon={Shield} title="Secure & Private" desc="Passwords are stored as bcrypt hashes and all traffic uses HTTPS. No ads, no analytics, no bank connection." color="#F59E0B" delay="0.4s" />
+            <FeatureCard icon={TrendingDown} title="Spending Insights" desc="Simple rule-based tips: renewals due this week, categories that dominate your budget, and plans that may be cheaper yearly." color="#EF4444" delay="0.5s" />
           </div>
         </div>
       </section>
@@ -795,15 +630,15 @@ export default function Home() {
                   className="text-white/60 leading-relaxed mb-8"
                   style={{ fontSize: "clamp(14px, 1.5vw, 16px)", maxWidth: "340px" }}
                 >
-                  Join thousands of students taking control of their finances — for free.
+                  Free to use. You enter your subscriptions by hand; nothing connects to your bank.
                 </p>
 
                 {/* Feature list */}
                 <div className="flex flex-col gap-3 w-full max-w-xs lg:max-w-none">
                   {[
-                    "Automatic student discount finder",
-                    "Renewal alerts before you're charged",
-                    "Split costs with roommates in one tap",
+                    "Student prices for 60 services",
+                    "Email reminders before a renewal",
+                    "Shared plans split between roommates",
                   ].map((f, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <div
@@ -836,10 +671,10 @@ export default function Home() {
                   }}
                 >
                   <p className="text-white font-bold text-lg" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>
-                    Start saving today
+                    Get started
                   </p>
                   <p className="text-white/50 text-sm leading-relaxed">
-                    Free account · 2 minutes · No credit card needed.
+                    Free account. No credit card needed.
                   </p>
 
                   {/* Stat pill */}
@@ -856,11 +691,11 @@ export default function Home() {
                       className="font-black text-fuchsia-300 font-mono tabular-nums"
                       style={{ fontSize: "28px", lineHeight: 1 }}
                     >
-                      $847
+                      60
                     </p>
                     <div>
-                      <p className="text-xs text-white font-semibold">avg saved / year</p>
-                      <p className="text-xs text-white/40">per student</p>
+                      <p className="text-xs text-white font-semibold">services</p>
+                      <p className="text-xs text-white/40">in the student discount catalog</p>
                     </div>
                   </div>
 

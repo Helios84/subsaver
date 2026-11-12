@@ -43,14 +43,14 @@ class ReminderScheduler:
             db.close()
 
     def cleanup_expired_tokens(self):
-        """Remove expired entries from the JWT blacklist table (C-1)."""
+        """Remove expired entries from the JWT blacklist table."""
         if not self.db_session_maker:
             return
         from models.db import RevokedToken
         from datetime import timezone as _tz
         db = self.db_session_maker()
         try:
-            # L-4: Use UTC explicitly — server timezone must not affect cleanup
+            # Use UTC explicitly — server timezone must not affect cleanup
             now = datetime.now(_tz.utc).replace(tzinfo=None)
             deleted = db.query(RevokedToken).filter(RevokedToken.expires_at < now).delete()
             db.commit()
@@ -64,7 +64,7 @@ class ReminderScheduler:
     
     def start(self):
         """Start the scheduler."""
-        # Run every day at 9:00 AM UTC (S-8 fix: timezone explicitly set)
+        # Run every day at 9:00 AM UTC (timezone explicitly set)
         self.scheduler.add_job(
             self.check_and_send_reminders,
             CronTrigger(hour=9, minute=0, timezone="UTC"),
@@ -73,7 +73,7 @@ class ReminderScheduler:
             replace_existing=True
         )
 
-        # Cleanup expired JWT blacklist entries daily at 3:00 AM UTC (C-1)
+        # Cleanup expired JWT blacklist entries daily at 3:00 AM UTC
         self.scheduler.add_job(
             self.cleanup_expired_tokens,
             CronTrigger(hour=3, minute=0, timezone="UTC"),

@@ -50,7 +50,7 @@ function VerifyEmailInner() {
     }
     setTimeout(() => setMounted(true), 50);
     inputRefs.current[0]?.focus();
-    // C-2: Read dev_code from sessionStorage only in development
+    // Read dev_code from sessionStorage only in development
     if (process.env.NODE_ENV === "development") {
       const saved = sessionStorage.getItem("register_dev_code");
       if (saved) {
@@ -139,7 +139,7 @@ function VerifyEmailInner() {
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      // C-2: Only show dev_code in development environment
+      // Only show dev_code in development environment
       if (res.dev_code && process.env.NODE_ENV === "development") {
         setDevCode(res.dev_code);
         setResendMsg("Dev mode: SMTP offline, use the code shown above.");

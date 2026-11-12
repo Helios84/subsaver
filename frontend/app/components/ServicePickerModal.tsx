@@ -62,7 +62,7 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
             && (activeCategory === "All" || s.category === activeCategory);
     }), [services, search, activeCategory]);
 
-    // UI-6: Escape key closes modal
+    // Escape key closes modal
     useEffect(() => {
         const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
         window.addEventListener("keydown", handler);

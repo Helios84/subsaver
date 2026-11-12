@@ -355,7 +355,7 @@ function SecurityTab({ user, toast }: { user: UserProfile | null; toast: Functio
       toast("Password changed! Please log in again.", "success");
       setStep("done");
       setCode(""); setNewPw(""); setConfirmPw("");
-      // H-6: Revoke current JWT after password reset — security best practice
+      // Revoke current JWT after password reset — security best practice
       try { await apiFetch("/auth/logout", { method: "POST" }); } catch { /* ignore */ }
       localStorage.removeItem("subsaver_token");
       setTimeout(() => window.location.href = "/login", 1500);
@@ -774,7 +774,7 @@ function StudentTab({ user, onRefresh, toast }: { user: UserProfile | null; onRe
       <div style={{ ...cardStyle(), background: "rgba(16,185,129,0.04)", border: "1px solid rgba(16,185,129,0.15)" }}>
         <div style={{ color: "#34D399", fontWeight: 700, fontSize: 13, marginBottom: 10 }}>🎓 Student Benefits</div>
         <ul style={{ display: "flex", flexDirection: "column", gap: 8, margin: 0, padding: 0, listStyle: "none" }}>
-          {["Up to 50% off popular subscriptions", "Exclusive student pricing on Spotify, Adobe, and more", "Badge displayed on your profile"].map((b) => (
+          {["Student prices for 60 services in the catalog", "See which of your subscriptions have a student price", "Badge displayed on your profile"].map((b) => (
             <li key={b} style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.55)", fontSize: 13 }}>
               <CheckCircle2 size={13} style={{ color: "#34D399", flexShrink: 0 }} />
               {b}
@@ -931,7 +931,7 @@ function DangerTab({ router, toast }: { router: any; toast: Function }) {
     }
     setDeleting(true);
     try {
-      // C-1: Revoke JWT on backend BEFORE deleting account
+      // Revoke JWT on backend BEFORE deleting account
       try { await apiFetch("/auth/logout", { method: "POST" }); } catch { /* ignore */ }
       await apiFetch("/users/me", { method: "DELETE", body: JSON.stringify({ password }) });
       localStorage.removeItem("subsaver_token");

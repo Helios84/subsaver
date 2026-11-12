@@ -299,7 +299,7 @@ export default function AddSubscriptionPanel({
           <span style={{ color: "white", fontWeight: 700, fontSize: 13 }}>Pro Tip</span>
         </div>
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, margin: 0 }}>
-          Cancelling unused subscriptions can save you over <span style={{ color: "#34D399", fontWeight: 600 }}>$500/year</span> on average.
+          Mark a subscription as cancelled to keep it in your history without counting it in your totals.
         </p>
       </div>
 

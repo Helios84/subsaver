@@ -18,8 +18,8 @@ const TYPE_STYLES = {
 
 // Tip cards shown when there is spare space at the bottom
 const SPACE_TIPS = [
-    { icon: <TrendingDown className="w-3.5 h-3.5" />, text: "Switch annual plans to save up to 40% on most services." },
-    { icon: <Star className="w-3.5 h-3.5" />, text: "Bundle streaming apps with student bundles for extra savings." },
+    { icon: <TrendingDown className="w-3.5 h-3.5" />, text: "Yearly plans are often cheaper than paying monthly." },
+    { icon: <Star className="w-3.5 h-3.5" />, text: "Check the discount catalog for a student price before you renew." },
 ];
 
 export default function InsightsPanel({ insights, span = 1 }: { insights: Insight[], span?: WidgetSpan }) {

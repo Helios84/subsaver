@@ -22,10 +22,10 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "SubSaver | Smart Savings for Students",
+    default: "SubSaver | Subscription tracker for students",
     template: "%s | SubSaver",
   },
-  description: "The intelligent subscription manager built for campus life. Find student discounts, split costs with roommates, and stop wasting money on subscriptions.",
+  description: "A subscription tracker for students: monthly spend, renewal reminders, cost splitting and a catalog of student prices.",
   keywords: ["student discounts", "subscription manager", "save money student", "student deals", "subscription tracker"],
   authors: [{ name: "SubSaver" }],
   openGraph: {
@@ -33,13 +33,13 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "SubSaver",
-    title: "SubSaver | Smart Savings for Students",
-    description: "Track subscriptions, find student discounts, and save up to $847/year. Built for campus life.",
+    title: "SubSaver | Subscription tracker for students",
+    description: "Track subscriptions, split costs, get renewal reminders and look up student prices.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "SubSaver | Smart Savings for Students",
-    description: "Track subscriptions, find student discounts, and save up to $847/year.",
+    title: "SubSaver | Subscription tracker for students",
+    description: "Track subscriptions, split costs, get renewal reminders and look up student prices.",
   },
   robots: {
     index: true,

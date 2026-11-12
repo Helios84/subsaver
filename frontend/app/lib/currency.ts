@@ -1,7 +1,7 @@
 /**
  * currency.ts — Real currency conversion utility.
  *
- * M-5 fix: Rates are fetched from the backend (/api/rates) which caches them
+ * Rates are fetched from the backend (/api/rates) which caches them
  * server-side for 1 hour. This avoids the 1500 req/month limit on open.er-api.com
  * by sharing one upstream request across all users.
  *
@@ -26,7 +26,7 @@ export const CURRENCY_NAMES: Record<Currency, string> = {
 const RATES_CACHE_KEY = "subsaver_fx_rates";
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 min client-side cache
 
-// Updated May 2026 fallback rates (L-8)
+// Updated May 2026 fallback rates
 const FALLBACK_RATES: Record<string, number> = { USD: 1, EUR: 0.93, GBP: 0.79 };
 
 interface RatesCache {

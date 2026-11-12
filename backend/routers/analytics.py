@@ -108,7 +108,7 @@ async def get_insights(
 ):
     """
     Generate insights and recommendations.
-    UI-7 fix: amounts are formatted as dollars, not raw cents.
+    Amounts are formatted as dollars, not raw cents.
     """
     subs = db.query(Subscription).filter(
         Subscription.user_id == current_user.id,
@@ -130,7 +130,7 @@ async def get_insights(
                 upcoming_cost_cents += sub.price_cents // split
 
     if upcoming_count > 0:
-        # UI-7 fix: format as dollars, not raw cents
+        # Format as dollars, not raw cents
         amount_dollars = upcoming_cost_cents / 100
         insights.append({
             "type": "warning",

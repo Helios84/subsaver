@@ -29,7 +29,7 @@ router = APIRouter(tags=["auth"])
 
 # ─── Helper: revoke a token by jti ───────────────────────────────────────────
 def _revoke_token(token: str, db: Session) -> None:
-    """Decode token and add its jti to the revoked_tokens table (C-1)."""
+    """Decode token and add its jti to the revoked_tokens table."""
     try:
         payload = _jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_alg])
         jti = payload.get("jti")
@@ -195,7 +195,7 @@ def logout(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Revoke the current JWT so it can no longer be used (C-1)."""
+    """Revoke the current JWT so it can no longer be used."""
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         token_str = auth_header[7:]
@@ -262,7 +262,7 @@ def reset_password(request: Request, payload: ResetPasswordRequest, db: Session 
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STUDENT .EDU VERIFICATION (H-2: uses separate edu_verification_code fields)
+# STUDENT .EDU VERIFICATION (uses separate edu_verification_code fields)
 # ═══════════════════════════════════════════════════════════════════════════════
 @router.post("/auth/verify-registration")
 @limiter.limit("5/minute")
@@ -301,7 +301,7 @@ def resend_verification(request: Request, payload: ResendVerificationRequest, db
     if not user.edu_email:
         raise HTTPException(status_code=400, detail="No .edu email on file.")
     code = str(secrets.randbelow(900000) + 100000)
-    # H-2: use dedicated edu_verification_code fields
+    # Use dedicated edu_verification_code fields
     user.edu_verification_code = code
     user.edu_verification_code_expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=15)
     db.commit()
@@ -326,7 +326,7 @@ async def request_verification_code(
         code = str(secrets.randbelow(900000) + 100000)
         expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=15)
         current_user.edu_email = req.edu_email
-        # H-2: use dedicated edu_verification_code fields (no conflict with registration code)
+        # Use dedicated edu_verification_code fields (no conflict with registration code)
         current_user.edu_verification_code = code
         current_user.edu_verification_code_expires = expires_at
         db.commit()
@@ -353,7 +353,7 @@ async def confirm_verification_code(
 ):
     if current_user.is_verified:
         return {"message": "Already verified", "is_verified": True}
-    # H-2: use dedicated edu_verification_code fields
+    # Use dedicated edu_verification_code fields
     if not current_user.edu_verification_code or not current_user.edu_verification_code_expires:
         raise HTTPException(status_code=400, detail="No verification code found.")
     if datetime.now(timezone.utc).replace(tzinfo=None) > current_user.edu_verification_code_expires:
@@ -398,7 +398,7 @@ def delete_account(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# USER PREFERENCES (M-8)
+# USER PREFERENCES
 # ═══════════════════════════════════════════════════════════════════════════════
 class PreferencesPayload(BaseModel):
     preferences: str  # JSON string from frontend

@@ -123,7 +123,7 @@ def send_reminders_now(
     """Manually trigger reminder check for current user only (not all users)."""
     from services.reminder_service import reminder_service
     
-    # M-8 fix: only send reminders for the requesting user, not all users
+    # Only send reminders for the requesting user, not all users
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     active_subs = (
         db.query(Subscription)

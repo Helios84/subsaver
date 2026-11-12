@@ -1,5 +1,5 @@
 """Categories router — provides a single source of truth for subscription categories.
-T-8 fix: Frontend fetches this instead of maintaining a separate hardcoded list.
+Frontend fetches this instead of maintaining a separate hardcoded list.
 """
 from fastapi import APIRouter
 from typing import List

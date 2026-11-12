@@ -1,5 +1,5 @@
 """
-FX rates endpoint — serves exchange rates with server-side 1-hour cache (M-5).
+FX rates endpoint — serves exchange rates with server-side 1-hour cache.
 Replaces direct client-side calls to open.er-api.com, avoiding the 1500 req/month limit.
 """
 import time
