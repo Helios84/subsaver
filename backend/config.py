@@ -20,10 +20,10 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./subsaver.db"
 
     # ── URLs ──
-    frontend_url: str = "https://subsaver.example"
+    frontend_url: str = "http://localhost:3000"
 
     # ── CORS ──
-    # Accept comma-separated list: "http://localhost:3000,https://subsaver.example"
+    # Accept comma-separated list: "http://localhost:3000,https://your-frontend.example"
     allowed_origins: str = "http://localhost:3000"
 
     # ── Email / SMTP (optional — server starts even without these) ──

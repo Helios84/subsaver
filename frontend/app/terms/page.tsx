@@ -3,11 +3,14 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Terms of Service — SubSaver",
-  description: "Read SubSaver's Terms of Service to understand how you can use our platform.",
+  description: "Terms of use for SubSaver, a student portfolio project.",
 };
 
+// Optional contact address; the contact line is hidden when it is not set.
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
+
 export default function TermsPage() {
-  const lastUpdated = "April 17, 2025";
+  const lastUpdated = "November 12, 2026";
 
   return (
     <main style={{ minHeight: "100vh", background: "#080B14", color: "white", fontFamily: "var(--font-inter, sans-serif)" }}>
@@ -27,50 +30,36 @@ export default function TermsPage() {
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)" }}>Last updated: {lastUpdated}</p>
         </div>
 
+        <div style={{ marginBottom: 40, padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>
+            SubSaver is a student portfolio project, not a commercial service.
+          </p>
+        </div>
+
         {[
           {
-            title: "1. Acceptance of Terms",
-            body: "By accessing or using SubSaver (the \"Service\"), you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you may not access the Service."
+            title: "1. The Service",
+            body: "SubSaver is a subscription tracker for students. You enter your subscriptions by hand; the app shows your spending, upcoming renewals and possible student discounts. It does not cancel, pay for or manage subscriptions with any provider. It is free to use."
           },
           {
-            title: "2. Description of Service",
-            body: "SubSaver is a subscription tracking and management platform designed for students. We help you track your subscriptions, discover student discounts, and manage renewal reminders. The Service is provided free of charge for personal use."
+            title: "2. Accounts",
+            body: "You need a valid email address to create an account. You are responsible for keeping your password private."
           },
           {
-            title: "3. User Accounts",
-            body: "You must provide a valid email address to create an account. You are responsible for maintaining the confidentiality of your password and for all activities that occur under your account. You must notify us immediately of any unauthorized use of your account."
+            title: "3. Student Discounts",
+            body: "Discount information comes from a hand-maintained catalog and may be out of date. Always check the provider's own site before relying on a price. Student verification requires an institutional .edu email address."
           },
           {
-            title: "4. Student Verification",
-            body: "Student discount verification requires a valid institutional (.edu or similar) email address. We reserve the right to revoke verified status if we determine the verification was fraudulent. Misuse of student pricing is a violation of these terms."
+            title: "4. Acceptable Use",
+            body: "Do not use the Service for anything unlawful, submit false information to obtain student status, or attempt to gain unauthorized access to the Service or other users' data."
           },
           {
-            title: "5. Acceptable Use",
-            body: "You agree not to use the Service for any unlawful purpose, to harass other users, to submit false or misleading information, to attempt to gain unauthorized access to our systems, or to reverse engineer any portion of the Service."
+            title: "5. No Warranty",
+            body: "The Service is provided \"as is\", without warranties of any kind. As a portfolio project it may change, be reset or go offline at any time, so do not rely on it as your only record."
           },
           {
-            title: "6. Privacy",
-            body: "Your use of the Service is also governed by our Privacy Policy, which is incorporated into these Terms by reference. Please review our Privacy Policy to understand our practices."
-          },
-          {
-            title: "7. Intellectual Property",
-            body: "The Service and its original content, features, and functionality are owned by SubSaver and are protected by international copyright, trademark, and other intellectual property laws."
-          },
-          {
-            title: "8. Disclaimer of Warranties",
-            body: "The Service is provided on an \"as is\" and \"as available\" basis without any warranties of any kind, either express or implied. We do not warrant that the Service will be uninterrupted, error-free, or completely secure."
-          },
-          {
-            title: "9. Limitation of Liability",
-            body: "In no event shall SubSaver be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use or inability to use the Service, even if we have been advised of the possibility of such damages."
-          },
-          {
-            title: "10. Changes to Terms",
-            body: "We reserve the right to modify these terms at any time. We will notify users of significant changes via email or a prominent notice on our website. Your continued use of the Service after changes constitutes acceptance of the new Terms."
-          },
-          {
-            title: "11. Contact Us",
-            body: "If you have any questions about these Terms, please contact us at legal@subsaver.example."
+            title: "6. Limitation of Liability",
+            body: "To the extent permitted by law, the author is not liable for any damages resulting from your use of, or inability to use, the Service."
           },
         ].map((section) => (
           <section key={section.title} style={{ marginBottom: 36, paddingBottom: 36, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
@@ -83,8 +72,13 @@ export default function TermsPage() {
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 1.7 }}>
             Also see our{" "}
             <Link href="/privacy" style={{ color: "#A78BFA", fontWeight: 600 }}>Privacy Policy</Link>
-            . For any questions, contact us at{" "}
-            <a href="mailto:legal@subsaver.example" style={{ color: "#A78BFA" }}>legal@subsaver.example</a>
+            .
+            {CONTACT_EMAIL && (
+              <>
+                {" "}Questions? Contact{" "}
+                <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: "#A78BFA" }}>{CONTACT_EMAIL}</a>.
+              </>
+            )}
           </p>
         </div>
       </article>

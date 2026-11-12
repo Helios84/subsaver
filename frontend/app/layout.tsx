@@ -16,7 +16,11 @@ const syne = Syne({
   weight: ["400", "500", "600", "700", "800"],
 });
 
+// Public URL of the deployed frontend, used for absolute Open Graph links.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "SubSaver | Smart Savings for Students",
     template: "%s | SubSaver",
@@ -27,7 +31,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://subsaver.example",
+    url: SITE_URL,
     siteName: "SubSaver",
     title: "SubSaver | Smart Savings for Students",
     description: "Track subscriptions, find student discounts, and save up to $847/year. Built for campus life.",

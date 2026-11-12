@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="frontend/public/logo.png" alt="SubSaver Logo" width="80" height="80" style="border-radius: 16px"/>
+<img src="frontend/public/logo.svg" alt="SubSaver logo" width="80" height="80" style="border-radius: 16px"/>
 
 # SubSaver
 
@@ -8,7 +8,7 @@
 
 Track subscriptions, unlock student discounts, and stop wasting money.
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-subsaver.example-7C3AED?style=for-the-badge&logo=vercel&logoColor=white)](https://subsaver-mu.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-online-7C3AED?style=for-the-badge&logo=vercel&logoColor=white)](https://subsaver-mu.vercel.app)
 [![API](https://img.shields.io/badge/API-Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)](https://subsaver-production.up.railway.app/docs)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
@@ -291,7 +291,7 @@ npm run dev
 | `JWT_SECRET` | ✅ | — | Long random secret (64+ chars recommended) |
 | `DATABASE_URL` | ✅ | `sqlite:///./subsaver.db` | PostgreSQL or SQLite connection string |
 | `ALLOWED_ORIGINS` | ✅ | `http://localhost:3000` | Comma-separated CORS origins |
-| `FRONTEND_URL` | ✅ | `https://subsaver.example` | Used in email links |
+| `FRONTEND_URL` | ✅ | `http://localhost:3000` | Used in email links |
 | `ENVIRONMENT` | — | `production` | `development` enables dev debug codes |
 | `SMTP_HOST` | — | — | SMTP host (e.g. `sandbox.smtp.mailtrap.io`) |
 | `SMTP_PORT` | — | `2525` | SMTP port |

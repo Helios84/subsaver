@@ -265,7 +265,7 @@ export default function RegisterPage() {
             }}
           >
             <div style={{ background: "linear-gradient(135deg,#7C3AED,#DB2777)", borderRadius: "12px", padding: "6px" }}>
-              <Image src="/logo.png" alt="SubSaver" width={24} height={24} style={{ width: 24, height: 24, borderRadius: 8 }} />
+              <Image src="/logo.svg" alt="SubSaver" width={24} height={24} style={{ width: 24, height: 24, borderRadius: 8 }} />
             </div>
             <span style={{ fontSize: "20px", fontWeight: 800, color: "white", fontFamily: "var(--font-syne, sans-serif)" }}>
               Sub
@@ -389,7 +389,7 @@ export default function RegisterPage() {
         <div className="lg:hidden" style={{ marginBottom: "1.75rem", alignSelf: "flex-start" }}>
           <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
             <div style={{ background: "linear-gradient(135deg,#7C3AED,#DB2777)", borderRadius: "10px", padding: "5px" }}>
-              <Image src="/logo.png" alt="SubSaver" width={22} height={22} style={{ borderRadius: 6 }} />
+              <Image src="/logo.svg" alt="SubSaver" width={22} height={22} style={{ borderRadius: 6 }} />
             </div>
             <span style={{ fontSize: "18px", fontWeight: 800, color: "white", fontFamily: "var(--font-syne, sans-serif)" }}>
               Sub

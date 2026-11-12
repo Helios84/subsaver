@@ -127,7 +127,7 @@ function SettingsPageInner() {
 
           <Link href="/" className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
             <div className="bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-lg p-1">
-              <Image src="/logo.png" alt="SubSaver" width={20} height={20} className="w-5 h-5 rounded" />
+              <Image src="/logo.svg" alt="SubSaver" width={20} height={20} className="w-5 h-5 rounded" />
             </div>
             <span className="text-base font-bold hidden sm:block" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>
               Sub<span className="gradient-text">Saver</span>

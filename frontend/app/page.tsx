@@ -10,6 +10,9 @@ import {
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
 
+// Optional contact address; the footer link is hidden when it is not set.
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
+
 /* ── Animated Counter ── */
 function AnimatedCounter({ target, prefix = "", suffix = "", duration = 1800 }: {
   target: number; prefix?: string; suffix?: string; duration?: number;
@@ -160,7 +163,7 @@ export default function Home() {
               <div style={{ position: "relative", flexShrink: 0 }}>
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #7C3AED, #D946EF)", borderRadius: "10px", filter: "blur(8px)", opacity: 0.5 }} className="group-hover:opacity-80 transition-opacity" />
                 <div style={{ position: "relative", background: "linear-gradient(135deg, #7C3AED, #D946EF)", borderRadius: "10px", padding: "6px", boxShadow: "0 4px 12px rgba(124,58,237,0.4)" }}>
-                  <Image src="/logo.png" alt="SubSaver" width={24} height={24} style={{ width: 24, height: 24, borderRadius: "6px", display: "block" }} />
+                  <Image src="/logo.svg" alt="SubSaver" width={24} height={24} style={{ width: 24, height: 24, borderRadius: "6px", display: "block" }} />
                 </div>
               </div>
               <span style={{ fontFamily: "var(--font-syne, sans-serif)", fontSize: "18px", fontWeight: 800, letterSpacing: "-0.01em", color: "white" }}>
@@ -457,9 +460,9 @@ export default function Home() {
               textAlign: "center",
             }}
           >
-            <span style={{ color: "white" }}>Stack Your</span>
+            <span style={{ color: "white" }}>Track your</span>
             <br />
-            <span className="gradient-text-animate">Savings.</span>
+            <span className="gradient-text-animate">subscriptions.</span>
           </h1>
 
           {/* Subtitle */}
@@ -784,7 +787,7 @@ export default function Home() {
                     fontSize: "clamp(28px, 4vw, 48px)",
                   }}
                 >
-                  Ready to Stack<br />Your Savings?
+                  Track your<br />subscriptions.
                 </h2>
 
                 {/* Sub */}
@@ -906,7 +909,7 @@ export default function Home() {
           <div className="py-10 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2.5">
               <div className="bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl p-1.5">
-                <Image src="/logo.png" alt="SubSaver" width={20} height={20} className="w-5 h-5 rounded" />
+                <Image src="/logo.svg" alt="SubSaver" width={20} height={20} className="w-5 h-5 rounded" />
               </div>
               <span className="font-bold text-white" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>
                 Sub<span className="text-white/40">Saver</span>
@@ -916,7 +919,9 @@ export default function Home() {
             <div className="flex gap-6 text-sm text-white/35">
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-              <a href="mailto:support@subsaver.example" className="hover:text-white transition-colors">Support</a>
+              {CONTACT_EMAIL && (
+                <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-white transition-colors">Contact</a>
+              )}
             </div>
           </div>
         </div>

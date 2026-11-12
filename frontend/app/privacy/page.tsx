@@ -3,11 +3,14 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — SubSaver",
-  description: "Learn how SubSaver collects, uses, and protects your personal data.",
+  description: "What data SubSaver stores and how it is used.",
 };
 
+// Optional contact address; the contact line is hidden when it is not set.
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
+
 export default function PrivacyPage() {
-  const lastUpdated = "April 17, 2025";
+  const lastUpdated = "November 12, 2026";
 
   return (
     <main style={{ minHeight: "100vh", background: "#080B14", color: "white", fontFamily: "var(--font-inter, sans-serif)" }}>
@@ -27,50 +30,40 @@ export default function PrivacyPage() {
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)" }}>Last updated: {lastUpdated}</p>
         </div>
 
+        <div style={{ marginBottom: 40, padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>
+            SubSaver is a student portfolio project, not a commercial service.
+          </p>
+        </div>
+
         {[
           {
-            title: "1. Information We Collect",
-            body: "We collect information you provide directly: email address, password (hashed), and subscription data you enter. We also collect usage data such as login timestamps and feature interactions to improve the Service. We do not collect payment information."
+            title: "1. What We Store",
+            body: "Your email address, your password (stored only as a bcrypt hash), the subscription data you enter, your dashboard preferences and, if you verify student status, your .edu email address. We do not collect payment information, and the app never connects to your bank, card or subscription providers."
           },
           {
-            title: "2. How We Use Your Information",
-            body: "We use your information to provide, maintain, and improve the Service; to send renewal reminders and service notifications; to verify student status; and to respond to your requests. We do not sell your personal information to third parties."
+            title: "2. How It Is Used",
+            body: "To show your dashboard, to send account emails (confirmation codes, password reset codes and, if enabled, renewal reminders) and to record your student verification. Your data is not sold or shared for marketing."
           },
           {
-            title: "3. Data Storage & Security",
-            body: "Your data is stored on secure cloud servers (Neon PostgreSQL). Passwords are hashed using industry-standard bcrypt. We use HTTPS for all data transmission and implement appropriate technical safeguards to protect your information."
+            title: "3. Where It Is Stored",
+            body: "Data is kept in a PostgreSQL database hosted by Neon. The API runs on Railway and the website on Vercel. All traffic uses HTTPS."
           },
           {
-            title: "4. Student Email Verification",
-            body: "When you verify your student status, we store your institutional (.edu) email address. This is used solely to verify your eligibility for student discounts. We do not share this information with subscription services."
+            title: "4. Emails",
+            body: "We only send account emails. You can turn renewal reminders off in Settings > Notifications."
           },
           {
-            title: "5. Email Communications",
-            body: "We send transactional emails including: account verification codes, renewal reminders (if enabled), and password reset codes. You can disable reminder emails in Settings > Reminders. We do not send marketing emails without explicit consent."
+            title: "5. Local Storage",
+            body: "Your browser's localStorage holds your sign-in token, dashboard preferences and cached exchange rates. We do not use cookies or analytics."
           },
           {
-            title: "6. Data Retention",
-            body: "We retain your account data for as long as your account is active. You can delete your account at any time from Settings > Danger Zone, which permanently removes all your data including subscriptions and verification status."
+            title: "6. Third-Party Services",
+            body: "Hosting is provided by Vercel, Railway and Neon, and emails are sent through an SMTP provider. Exchange rates are fetched from open.er-api.com; no personal data is sent with that request."
           },
           {
-            title: "7. Cookies & Local Storage",
-            body: "We use browser localStorage to store your authentication token and dashboard preferences. We do not use tracking cookies or third-party analytics. No cookies are set for non-authenticated visitors."
-          },
-          {
-            title: "8. Third-Party Services",
-            body: "We use Neon PostgreSQL for database hosting and Mailtrap/SMTP for email delivery. These services have their own privacy policies. We share only the minimum data necessary for these services to function."
-          },
-          {
-            title: "9. GDPR / Your Rights",
-            body: "If you are in the European Union, you have the right to access, correct, or delete your personal data. You can exercise most of these rights directly in our app. For additional requests, contact us at privacy@subsaver.example."
-          },
-          {
-            title: "10. Changes to This Policy",
-            body: "We may update this Privacy Policy from time to time. We will notify you of significant changes via email or a notice in the app. Continued use of the Service after changes constitutes acceptance."
-          },
-          {
-            title: "11. Contact",
-            body: "For privacy-related questions or to exercise your data rights, contact us at privacy@subsaver.example."
+            title: "7. Deleting Your Data",
+            body: "You can delete your account at any time in Settings > Danger Zone. This permanently removes your account and all of your subscriptions."
           },
         ].map((section) => (
           <section key={section.title} style={{ marginBottom: 36, paddingBottom: 36, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
@@ -83,8 +76,13 @@ export default function PrivacyPage() {
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 1.7 }}>
             Also see our{" "}
             <Link href="/terms" style={{ color: "#34D399", fontWeight: 600 }}>Terms of Service</Link>
-            . For privacy concerns, contact us at{" "}
-            <a href="mailto:privacy@subsaver.example" style={{ color: "#34D399" }}>privacy@subsaver.example</a>
+            .
+            {CONTACT_EMAIL && (
+              <>
+                {" "}Questions? Contact{" "}
+                <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: "#34D399" }}>{CONTACT_EMAIL}</a>.
+              </>
+            )}
           </p>
         </div>
       </article>

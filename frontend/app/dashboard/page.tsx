@@ -592,7 +592,7 @@ export default function DashboardPage() {
               <div className="relative flex-shrink-0">
                 <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl blur-md opacity-40" />
                 <div className="relative bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl p-1.5">
-                  <img src="/logo.png" alt="SubSaver" className="w-7 h-7 rounded-lg" />
+                  <img src="/logo.svg" alt="SubSaver" className="w-7 h-7 rounded-lg" />
                 </div>
               </div>
               <div className="hidden sm:block">

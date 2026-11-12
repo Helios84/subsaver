@@ -116,7 +116,7 @@ class EmailService:
 
               <!-- Footer -->
               <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.2);">
-                © 2026 SubSaver. The #1 savings app for students.
+                © 2026 SubSaver. Subscription tracker for students.
               </p>
             </td></tr>
           </table>
@@ -161,7 +161,7 @@ class EmailService:
                 </td></tr>
               </table>
               <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.2);">
-                &copy; 2026 SubSaver. The #1 savings app for students.
+                &copy; 2026 SubSaver. Subscription tracker for students.
               </p>
             </td></tr>
           </table>
@@ -215,7 +215,7 @@ class EmailService:
 
               <!-- Footer -->
               <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.2);">
-                © 2026 SubSaver. The #1 savings app for students.
+                © 2026 SubSaver. Subscription tracker for students.
               </p>
             </td></tr>
           </table>
@@ -270,7 +270,7 @@ class EmailService:
 
               <!-- Footer -->
               <p style="margin:24px 0 0;font-size:12px;color:rgba(255,255,255,0.2);">
-                © 2026 SubSaver. The #1 savings app for students.
+                © 2026 SubSaver. Subscription tracker for students.
               </p>
             </td></tr>
           </table>

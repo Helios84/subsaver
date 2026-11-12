@@ -1055,7 +1055,7 @@ export default function CustomizePage() {
             </div>
             <div className="flex-1 flex justify-center">
               <div className="px-4 py-1 rounded-full text-[10px] text-white/20 border border-white/6 bg-white/[0.02]">
-                subsaver.example/dashboard
+                subsaver/dashboard
               </div>
             </div>
             <div className="flex items-center gap-2">
