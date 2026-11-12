@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     # Accept comma-separated list: "http://localhost:3000,https://your-frontend.example"
     allowed_origins: str = "http://localhost:3000"
 
+    # ── Reverse proxies ──
+    # Number of trusted proxies in front of the app that append to
+    # X-Forwarded-For. 0 = ignore the header and use the socket address.
+    trusted_proxy_count: int = 0
+
     # ── Email / SMTP (optional — server starts even without these) ──
     smtp_host: str = ""
     smtp_port: int = 2525

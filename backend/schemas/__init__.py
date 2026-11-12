@@ -3,7 +3,7 @@ from .auth import (
     RegisterRequest, LoginRequest, TokenResponse,
     ForgotPasswordRequest, VerifyResetCodeRequest, ResetPasswordRequest,
     VerificationRequest, VerificationConfirmRequest,
-    VerifyRegistrationRequest, ResendVerificationRequest, UserOut,
+    UserOut,
 )
 from .subscription import SubscriptionCreate, SubscriptionUpdate, SubscriptionOut
 
@@ -11,6 +11,6 @@ __all__ = [
     "RegisterRequest", "LoginRequest", "TokenResponse",
     "ForgotPasswordRequest", "VerifyResetCodeRequest", "ResetPasswordRequest",
     "VerificationRequest", "VerificationConfirmRequest",
-    "VerifyRegistrationRequest", "ResendVerificationRequest", "UserOut",
+    "UserOut",
     "SubscriptionCreate", "SubscriptionUpdate", "SubscriptionOut",
 ]

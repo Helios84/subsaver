@@ -9,6 +9,8 @@ from dependencies import get_db, get_current_user
 from models.db import User, Subscription
 from limiter import limiter
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/student-discounts", tags=["student-discounts"])
 
 
@@ -69,7 +71,7 @@ async def batch_check_discounts(
 
         return result
     except Exception as e:
-        logging.getLogger(__name__).error(f"batch-check failed: {e}", exc_info=True)
+        logger.error(f"batch-check failed: {e}", exc_info=True)
         return {str(sid): None for sid in payload.subscription_ids}
 
 
@@ -92,52 +94,6 @@ async def get_all_student_discounts(request: Request, db: Session = Depends(get_
         if "no such table" in err_str or "relation" in err_str and "does not exist" in err_str:
             return []
         raise
-
-
-@router.get("/check/{subscription_id}")
-async def check_discount_for_subscription(
-    subscription_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Check if a student discount exists for a specific subscription.
-    Returns discount info if available, null if not.
-    """
-    # Get the subscription
-    subscription = db.query(Subscription).filter(
-        Subscription.id == subscription_id,
-        Subscription.user_id == current_user.id
-    ).first()
-    
-    if not subscription:
-        raise HTTPException(status_code=404, detail="Subscription not found")
-    
-    try:
-        from models.student_discount import StudentDiscount
-        
-        # Try to find matching discount by service name (case-insensitive)
-        discount = db.query(StudentDiscount).filter(
-            StudentDiscount.service_name.ilike(f"%{subscription.name}%"),
-            StudentDiscount.is_active == True
-        ).first()
-        
-        if not discount:
-            # Try exact match
-            discount = db.query(StudentDiscount).filter(
-                StudentDiscount.service_name == subscription.name,
-                StudentDiscount.is_active == True
-            ).first()
-        
-        if discount:
-            result = discount.to_dict()
-            result["subscription_id"] = subscription_id
-            result["already_applied"] = subscription.student_discount_applied
-            return result
-        
-        return None
-    except Exception as e:
-        return None
 
 
 @router.post("/apply/{subscription_id}")
@@ -194,9 +150,10 @@ async def mark_discount_applied(
         }
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to apply discount: {str(e)}")
+        logger.exception("Failed to apply discount")
+        raise HTTPException(status_code=500, detail="Failed to apply discount")
 
 
 @router.delete("/unapply/{subscription_id}")
@@ -298,7 +255,7 @@ async def get_savings_summary(
             "breakdown": breakdown
         }
     except Exception as e:
-        print(f"Error calculating savings: {e}")
+        logger.error(f"Error calculating savings: {e}", exc_info=True)
         return {
             "total_saved_monthly": 0, 
             "total_saved_yearly": 0,

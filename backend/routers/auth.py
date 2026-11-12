@@ -14,8 +14,7 @@ from models.db import User, RevokedToken
 from schemas.auth import (
     RegisterRequest, LoginRequest, TokenResponse,
     ForgotPasswordRequest, VerifyResetCodeRequest, ResetPasswordRequest,
-    VerificationRequest, VerificationConfirmRequest,
-    VerifyRegistrationRequest, ResendVerificationRequest, UserOut,
+    VerificationRequest, VerificationConfirmRequest, UserOut,
     ConfirmEmailRequest,
 )
 from core.security import hash_password, verify_password, needs_rehash, create_access_token
@@ -25,6 +24,18 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["auth"])
+
+
+def _log_unsent_code(kind: str, email: str, code: str) -> None:
+    """Report that a code email was not sent.
+
+    The code itself is written to the log only in development, so a local
+    setup without SMTP stays usable. In production the log never contains codes.
+    """
+    if settings.environment == "development":
+        logger.warning(f"Email not sent. {kind} code for {email}: {code}")
+    else:
+        logger.warning(f"Email not sent ({kind} code) for {email}")
 
 
 # ─── Helper: revoke a token by jti ───────────────────────────────────────────
@@ -76,7 +87,7 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
             from services.email_service import email_service
             sent = email_service.send_email_confirmation(email, code)
             if not sent:
-                logger.warning(f"SMTP disabled. Re-registration code for {email}: {code}")
+                _log_unsent_code("Re-registration", email, code)
             return {"message": "registered"}
 
         # New user
@@ -93,7 +104,7 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
         from services.email_service import email_service
         sent = email_service.send_email_confirmation(email, code)
         if not sent:
-            logger.warning(f"SMTP disabled. Email confirmation code for {email}: {code}")
+            _log_unsent_code("Email confirmation", email, code)
         return {"message": "registered"}
     except HTTPException:
         raise
@@ -148,7 +159,7 @@ def resend_confirmation(request: Request, payload: ForgotPasswordRequest, db: Se
     from services.email_service import email_service
     sent = email_service.send_email_confirmation(email, code)
     if not sent:
-        logger.warning(f"SMTP disabled. Resend confirmation code for {email}: {code}")
+        _log_unsent_code("Resend confirmation", email, code)
     return {"message": "Confirmation code resent to your email"}
 
 
@@ -220,7 +231,7 @@ def forgot_password(request: Request, payload: ForgotPasswordRequest, db: Sessio
     from services.email_service import email_service
     sent = email_service.send_password_reset_code(user.email, code)
     if not sent:
-        logger.warning(f"SMTP disabled. Reset code for {user.email}: {code}")
+        _log_unsent_code("Reset", user.email, code)
     return {"message": "If that email exists, a reset code has been sent."}
 
 
@@ -264,54 +275,6 @@ def reset_password(request: Request, payload: ResetPasswordRequest, db: Session 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STUDENT .EDU VERIFICATION (uses separate edu_verification_code fields)
 # ═══════════════════════════════════════════════════════════════════════════════
-@router.post("/auth/verify-registration")
-@limiter.limit("5/minute")
-def verify_registration(request: Request, payload: VerifyRegistrationRequest, db: Session = Depends(get_db)):
-    email = payload.email.strip().lower()
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found.")
-    if user.is_verified:
-        return {"message": "Already verified"}
-    if not user.verification_code or not user.verification_code_expires:
-        raise HTTPException(status_code=400, detail="No verification code found.")
-    if datetime.now(timezone.utc).replace(tzinfo=None) > user.verification_code_expires:
-        user.verification_code = None
-        user.verification_code_expires = None
-        db.commit()
-        raise HTTPException(status_code=400, detail="Verification code expired.")
-    if not secrets.compare_digest(user.verification_code, payload.code):
-        raise HTTPException(status_code=400, detail="Invalid verification code.")
-    user.is_verified = True
-    user.verification_code = None
-    user.verification_code_expires = None
-    db.commit()
-    return {"message": "Email verified successfully! You can now log in."}
-
-
-@router.post("/auth/resend-verification")
-@limiter.limit("3/minute")
-def resend_verification(request: Request, payload: ResendVerificationRequest, db: Session = Depends(get_db)):
-    email = payload.email.strip().lower()
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found.")
-    if user.is_verified:
-        return {"message": "Already verified"}
-    if not user.edu_email:
-        raise HTTPException(status_code=400, detail="No .edu email on file.")
-    code = str(secrets.randbelow(900000) + 100000)
-    # Use dedicated edu_verification_code fields
-    user.edu_verification_code = code
-    user.edu_verification_code_expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=15)
-    db.commit()
-    from services.email_service import email_service
-    sent = email_service.send_verification_code(user.edu_email, code)
-    if not sent:
-        logger.warning(f"SMTP disabled. Resend EDU verification code for {user.edu_email}: {code}")
-    return {"message": f"Code resent to {user.edu_email}", "expires_in_minutes": 15}
-
-
 @router.post("/auth/verify-edu")
 @limiter.limit("5/minute")
 async def request_verification_code(
@@ -331,16 +294,15 @@ async def request_verification_code(
         current_user.edu_verification_code_expires = expires_at
         db.commit()
         from services.email_service import email_service
-        sent_edu = email_service.send_verification_code(req.edu_email, code)
-        sent_main = False
-        if current_user.email.lower() != req.edu_email.lower():
-            sent_main = email_service.send_verification_code(current_user.email, code)
-        if not (sent_edu or sent_main):
-            logger.warning(f"SMTP disabled. EDU verification code for {req.edu_email}: {code}")
+        # Send only to the .edu address: receiving the code is the proof of ownership.
+        sent = email_service.send_verification_code(req.edu_email, code)
+        if not sent:
+            _log_unsent_code("EDU verification", req.edu_email, code)
         return {"message": f"Code sent to {req.edu_email}.", "expires_in_minutes": 15}
-    except Exception as e:
+    except Exception:
+        db.rollback()
         logger.exception("EDU verification error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Could not start student verification")
 
 
 @router.post("/auth/verify-edu/confirm")

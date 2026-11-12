@@ -242,7 +242,8 @@ npm run dev
 | `DATABASE_URL` | yes | `sqlite:///./subsaver.db` | PostgreSQL connection string |
 | `ALLOWED_ORIGINS` | yes | `http://localhost:3000` | Comma-separated CORS origins |
 | `FRONTEND_URL` | yes | `http://localhost:3000` | Base URL used for links in emails |
-| `ENVIRONMENT` | no | `production` | `development` or `production` |
+| `ENVIRONMENT` | no | `production` | `development` or `production`. Verification codes are written to the log only in `development` |
+| `TRUSTED_PROXY_COUNT` | no | `0` | Number of reverse proxies in front of the API; used to read the client IP for rate limiting from `X-Forwarded-For` |
 | `SMTP_HOST` | no | empty | SMTP host |
 | `SMTP_PORT` | no | `2525` | SMTP port |
 | `SMTP_USER` | no | empty | SMTP username |
