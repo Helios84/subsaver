@@ -9,6 +9,7 @@ A subscription tracker for students: enter what you pay for and see the monthly 
 **[Live demo: subsaver-mu.vercel.app](https://subsaver-mu.vercel.app)**
 Click **Try the demo** on the home page. It opens a temporary account with sample data; no sign-up or password is needed.
 
+[![CI](https://github.com/Helios84/subsaver/actions/workflows/ci.yml/badge.svg)](https://github.com/Helios84/subsaver/actions/workflows/ci.yml)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)](https://neon.tech)
@@ -187,16 +188,31 @@ Production runs on PostgreSQL. To use it locally, set `DATABASE_URL=postgresql:/
 
 ## Tests
 
-There is no automated test suite yet. What can be run today:
+The backend has 53 pytest tests. Each test runs against a fresh SQLite database in a temporary folder, so a local `.env` pointing at a real database is never used. They cover:
+
+- sign-up, email confirmation, login, logout and token revocation, password reset, `.edu` verification, account deletion
+- subscription CRUD, validation, cancellation, and that users cannot see or change each other's data
+- dashboard totals with cost splitting and yearly plans, trends over time, insights
+- student prices (apply and remove), potential savings and "saved so far"
+- demo accounts: isolation, restrictions, 24-hour cleanup, limits
+- rate limits per client, the proxy secret, removed endpoints
+- renewal reminders, and that all Alembic migrations run and match the models
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest
+```
+
+Frontend checks:
 
 ```bash
 cd frontend
 npx tsc --noEmit    # type check
 npm run build       # production build
-npm run lint        # ESLint (reports existing issues)
 ```
 
-A backend test suite and CI are on the roadmap below.
+[GitHub Actions](.github/workflows/ci.yml) runs the backend tests, the type check and the production build on every push to `main` and on pull requests.
 
 ## API
 
@@ -218,11 +234,11 @@ Interactive documentation is served at `/docs` on a running backend. The [hosted
 - Student prices in the catalog are monthly, so they can only be applied to monthly subscriptions.
 - "Saved so far" is an estimate: it assumes the old price would have stayed the same.
 - Spending trends are estimates from the data you entered, not a payment history.
-- There are no automated tests yet.
+- There are no frontend or end-to-end tests yet; the frontend is checked by the type checker and the build.
 
 ## Roadmap
 
-- Backend tests (pytest) and CI on every push
+- End-to-end tests for the main browser flows
 - Lint clean-up (replace `any` types)
 
 ## Timeline
