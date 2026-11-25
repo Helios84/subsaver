@@ -65,7 +65,7 @@ export default function StudentSavingsCard({
                 </div>
 
                 <div className="flex-1 flex flex-col justify-center">
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">Saved / year</p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">Student prices save / year</p>
                     <div className="flex items-baseline gap-1 mt-0.5">
                         <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
                             {fxFormat(data.total_saved_yearly, currency, fxRates)}
@@ -111,7 +111,7 @@ export default function StudentSavingsCard({
             <div className={`flex ${span >= 3 ? 'gap-6' : 'gap-4'} flex-1 min-h-0`}>
                 {/* Primary: total saved */}
                 <div className="flex-1 bg-white/5 px-4 py-3 rounded-xl border border-white/10 flex flex-col justify-center">
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Total Saved</p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Student prices save</p>
                     <div className="flex items-baseline gap-1">
                         <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
                             {fxFormat(data.total_saved_yearly, currency, fxRates)}

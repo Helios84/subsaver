@@ -73,16 +73,15 @@ export const STAT_CARD_LABELS: Record<StatCardId, string> = {
   active_count:      "Active Subs",
   yearly_projection: "Yearly Projection",
   avg_per_sub:       "Avg per Sub",
-  total_savings:     "Student Savings",
+  total_savings:     "Saved So Far",
   cancelled_count:   "Cancelled",
   most_expensive:    "Most Expensive",
   next_renewal_days: "Next Renewal",
 };
 
-// "total_savings" is not offered yet: the app has no real savings figure to show there.
 export const DEFAULT_STATS_CARDS: StatCardId[] = [
-  "monthly_spend", "active_count", "yearly_projection", "avg_per_sub",
-  "cancelled_count", "most_expensive", "next_renewal_days",
+  "monthly_spend", "active_count", "yearly_projection", "total_savings",
+  "avg_per_sub", "cancelled_count", "most_expensive", "next_renewal_days",
 ];
 
 /** Drop cards that are no longer offered from a saved list. */
@@ -309,7 +308,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ─── Real Dashboard Preview ───────────────────────────────────────────────────
-function RealDashboardPreview({ settings, subs, user, onWidgetReorder }: {
+function RealDashboardPreview({ settings, subs, user, savedToDateCents, onWidgetReorder }: {
+  savedToDateCents: number;
   settings: DashboardSettings;
   subs: Sub[];
   user: { is_verified: boolean; email: string } | null;
@@ -367,7 +367,7 @@ function RealDashboardPreview({ settings, subs, user, onWidgetReorder }: {
     active_count:      String(activeSubs.length),
     yearly_projection: formatMoney(sumMonthly * 12, currency, fxRates),
     avg_per_sub:       formatMoney(avgPerSub, currency, fxRates),
-    total_savings:     formatMoney(0, currency, fxRates),
+    total_savings:     formatMoney(savedToDateCents, currency, fxRates),
     cancelled_count:   String(subs.filter(s => s.status === "cancelled").length),
     most_expensive:    activeSubs.length > 0 ? `${activeSubs.sort((a,b) => b.price_cents - a.price_cents)[0].name.slice(0,8)}…` : "N/A",
     next_renewal_days: upcomingRenewals.length > 0 ? `${upcomingRenewals[0].daysUntil}d` : "N/A",
@@ -585,6 +585,7 @@ export default function CustomizePage() {
   const [activeId, setActiveId] = useState<WidgetId | null>(null);
   const [subs, setSubs] = useState<Sub[]>([]);
   const [subsLoaded, setSubsLoaded] = useState(false);
+  const [savedToDateCents, setSavedToDateCents] = useState(0);
   const [user, setUser] = useState<{ is_verified: boolean; email: string } | null>(null);
   // Undo stack — each entry is a full settings snapshot before the change
   const [undoStack, setUndoStack] = useState<DashboardSettings[]>([]);
@@ -609,6 +610,7 @@ export default function CustomizePage() {
     setSettings(loadDashboardSettings());
     apiFetch("/subscriptions").then(setSubs).catch(console.error).finally(() => setSubsLoaded(true));
     apiFetch("/users/me").then(setUser).catch(console.error);
+    apiFetch("/api/student-discounts/savings").then((d: any) => setSavedToDateCents(d?.total_saved_to_date ?? 0)).catch(console.error);
     // Load preferences from backend and merge (cross-device sync)
     apiFetch("/users/me/preferences")
       .then((data: any) => {
@@ -1111,6 +1113,7 @@ export default function CustomizePage() {
                   settings={settings}
                   subs={subs}
                   user={user}
+                  savedToDateCents={savedToDateCents}
                   onWidgetReorder={(newOrder) => {
                     mark(prev => ({
                       ...prev,

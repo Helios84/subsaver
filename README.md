@@ -22,7 +22,7 @@ Click **Try the demo** on the home page. It opens a temporary account with sampl
 
 ## What it is
 
-SubSaver is a web app where you enter your subscriptions by hand and see them in one dashboard. It also includes a hand-maintained catalog of student prices for 60 services and matches it against your subscriptions by name.
+SubSaver is a web app where you enter your subscriptions by hand and see them in one dashboard. It also includes a small catalog of 13 services that have an official US student offer, and matches it against your subscriptions by name.
 
 It does not connect to a bank, a card, an email inbox or any subscription provider, and it does not cancel or pay for anything on your behalf.
 
@@ -37,13 +37,15 @@ This is a solo student portfolio project, not a commercial service.
 
 **Dashboard**
 - Monthly spend, yearly projection and average per subscription
+- Saved so far: months since a cancellation or since a student price was applied, times the monthly amount
 - Six-month spending trend that takes cancellation dates and cost splits into account
 - Category breakdown, upcoming renewals and a billing calendar
 - Rule-based tips: renewals due this week, a category that dominates spending, monthly plans worth comparing with a yearly price
 - Drag-and-drop widget order, widget on/off and width, layout presets; USD, EUR or GBP display
 
 **Student prices**
-- Catalog of 60 services with regular and student prices, matched to your subscriptions by name
+- Catalog of 13 services with an official US student offer; each entry stores the source page and the date its prices were checked
+- Apply a student price to a subscription and remove it again; the previous price is kept and restored
 - `.edu` email verification by a 6-digit code sent to that address
 
 **Accounts and email**
@@ -223,8 +225,9 @@ Interactive documentation is served at `/docs` on a running backend ([live API d
 
 - Everything is entered by hand. Nothing is imported from banks or providers.
 - "Cancelled" is a status in your own list; the app does not cancel anything with the provider.
-- Catalog prices are maintained by hand and have not been checked against current provider pricing.
-- The savings figures use catalog prices rather than the price you entered.
+- Catalog prices were checked by hand on 25 November 2026 and will go out of date; the app shows that date next to them.
+- Student prices in the catalog are monthly, so they can only be applied to monthly subscriptions.
+- "Saved so far" is an estimate: it assumes the old price would have stayed the same.
 - Spending trends are estimates from the data you entered, not a payment history.
 - There are no automated tests yet.
 - Migrations run only on PostgreSQL.
@@ -232,8 +235,6 @@ Interactive documentation is served at `/docs` on a running backend ([live API d
 
 ## Roadmap
 
-- Savings based on the user's own price, and realized savings from cancelled subscriptions
-- A reviewed discount catalog with a source link and a "checked on" date for each entry
 - Backend tests (pytest) and CI on every push
 - A committed `.env.example` and a database setup that works from a fresh clone
 - Lint clean-up (replace `any` types)

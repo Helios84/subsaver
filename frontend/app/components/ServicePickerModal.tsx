@@ -1,9 +1,10 @@
 "use client";
 
-import { Search, X, Sparkles, Tag, TrendingDown, Star, Zap } from "lucide-react";
+import { Search, X, Sparkles, Tag, GraduationCap, Star, Zap } from "lucide-react";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { apiFetch } from "../lib/api";
+import { formatCheckedDate } from "../lib/money";
 import { getServiceIcon } from "../dashboard/serviceIcons";
 
 type StudentDiscount = {
@@ -20,6 +21,7 @@ type StudentDiscount = {
     direct_link: string;
     availability: string;
     notes: string | null;
+    price_checked_on?: string | null;
 };
 
 type Props = {
@@ -40,12 +42,8 @@ function getServiceColor(name: string): string {
     return palette[Math.abs(hash) % palette.length];
 }
 
-const CATEGORY_FILTERS = [
-    "All", "Entertainment", "Productivity", "Gaming",
-    "Education", "Health & Fitness", "Finance", "News & Media", "Other",
-];
 
-export default function ServicePickerModal({ isVerified, onSelect, onClose }: Props) {
+export default function ServicePickerModal({ onSelect, onClose }: Props) {
     const [services, setServices] = useState<StudentDiscount[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
@@ -84,6 +82,12 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
         [services]);
 
     const showTopPicks = !search && activeCategory === "All" && topPicks.length > 0;
+
+    // Only offer filters for categories that exist in the catalog
+    const categoryFilters = useMemo(() => ["All", ...Array.from(new Set(services.map(s => s.category))).sort()], [services]);
+
+    // Latest date any catalog price was checked against the provider's page
+    const checkedOn = formatCheckedDate(services.map(s => s.price_checked_on ?? "").sort().pop());
 
     // Rendered into <body> so the dialog sits above the sticky page header,
     // whatever stacking context the dashboard content is in.
@@ -151,7 +155,6 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
                                     <h2 className="text-[18px] font-bold text-white leading-tight tracking-tight">Choose a Service</h2>
                                     <p className="text-[12px] text-white/40 mt-0.5">
                                         {services.length > 0 ? `${services.length} services` : "Loading…"}
-                                        {isVerified && <span className="ml-1.5 text-emerald-400 font-medium">· Student prices ON</span>}
                                     </p>
                                 </div>
                             </div>
@@ -194,7 +197,7 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
 
                         {/* Category pills — horizontal scroll, no scrollbar shown */}
                         <div className="flex gap-2 pb-4 overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                            {CATEGORY_FILTERS.map(cat => {
+                            {categoryFilters.map(cat => {
                                 const active = activeCategory === cat;
                                 return (
                                     <button key={cat} onClick={() => setCategory(cat)}
@@ -225,7 +228,7 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-20 gap-4">
                                 <div className="w-9 h-9 rounded-full border-2 border-violet-500/20 border-t-violet-500 animate-spin" />
-                                <p className="text-sm text-white/35 font-medium">Discovering student discounts…</p>
+                                <p className="text-sm text-white/35 font-medium">Loading services…</p>
                             </div>
                         ) : filtered.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-20 text-center px-8">
@@ -245,7 +248,7 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
                                         <div className="flex items-center gap-2 px-2 mb-3">
                                             <div className="flex items-center gap-1.5">
                                                 <Star className="w-3.5 h-3.5 text-amber-400" fill="currentColor" />
-                                                <span className="text-[11px] font-bold text-white/50 uppercase tracking-[0.08em]">Top Student Discounts</span>
+                                                <span className="text-[11px] font-bold text-white/50 uppercase tracking-[0.08em]">Largest student discounts</span>
                                             </div>
                                             <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
                                         </div>
@@ -254,7 +257,7 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
                                             {topPicks.map(service => {
                                                 const accent = getServiceColor(service.service_name);
                                                 const Icon = getServiceIcon(service.service_name);
-                                                const price = isVerified ? service.student_price_cents : service.regular_price_cents;
+                                                const price = service.regular_price_cents;
                                                 return (
                                                     <button key={`top-${service.id}`}
                                                         onClick={() => onSelect(service)}
@@ -305,8 +308,8 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
                                     {filtered.map(service => {
                                         const accent = getServiceColor(service.service_name);
                                         const Icon = getServiceIcon(service.service_name);
-                                        const price = isVerified ? service.student_price_cents : service.regular_price_cents;
-                                        const hasSaving = isVerified && service.student_price_cents < service.regular_price_cents;
+                                        const price = service.regular_price_cents;
+                                        const hasSaving = service.student_price_cents < service.regular_price_cents;
 
                                         return (
                                             <button
@@ -339,7 +342,7 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
                                                             style={{ background: `${accent}16`, color: accent, border: `1px solid ${accent}28` }}>
                                                             {service.category}
                                                         </span>
-                                                        {isVerified && service.discount_percentage > 0 && (
+                                                        {service.discount_percentage > 0 && (
                                                             <span className="text-[10px] font-bold inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
                                                                 style={{ background: "rgba(16,185,129,0.1)", color: "#34D399", border: "1px solid rgba(16,185,129,0.2)" }}>
                                                                 <Tag className="w-2.5 h-2.5" />
@@ -357,9 +360,9 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
                                                     </div>
                                                     {hasSaving ? (
                                                         <div className="flex items-center gap-1 justify-end mt-1">
-                                                            <TrendingDown className="w-3 h-3 text-emerald-400" />
+                                                            <GraduationCap className="w-3 h-3 text-emerald-400" />
                                                             <span className="text-[10px] font-semibold text-emerald-400">
-                                                                save ${(service.monthly_savings_cents / 100).toFixed(2)}/mo
+                                                                student ${(service.student_price_cents / 100).toFixed(2)}/mo
                                                             </span>
                                                         </div>
                                                     ) : (
@@ -380,17 +383,10 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
                     {/* ── FOOTER ── */}
                     <div className="flex-shrink-0 px-5 py-3.5 flex flex-col items-center gap-2.5"
                         style={{ borderTop: "1px solid rgba(255,255,255,0.07)", background: "rgba(0,0,0,0.18)" }}>
-                        {!isVerified && (
-                            <div className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl"
-                                style={{
-                                    background: "linear-gradient(135deg, rgba(124,58,237,0.14), rgba(217,70,239,0.08))",
-                                    border: "1px solid rgba(124,58,237,0.22)",
-                                }}>
-                                <Sparkles className="w-3.5 h-3.5 text-violet-400 flex-shrink-0" />
-                                <p className="text-[12px] font-semibold text-violet-300 leading-tight">
-                                    Verify your student email to unlock exclusive discounts!
-                                </p>
-                            </div>
+                        {checkedOn && (
+                            <p className="text-[11px] text-white/50 text-center">
+                                Regular and student prices checked on {checkedOn}. They may change.
+                            </p>
                         )}
                         <p className="text-[12px] text-white/35">
                             Can&apos;t find a service?{" "}

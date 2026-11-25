@@ -41,7 +41,7 @@ const STEPS = [
 
 const FEATURES = [
   { icon: Users, color: "#D946EF", title: "Cost splitting", text: "Share a plan with roommates? Record how many people split it and see only your share in the totals." },
-  { icon: GraduationCap, color: "#A78BFA", title: "Student prices", text: "A catalog of 60 services with student pricing, matched against your subscriptions by name." },
+  { icon: GraduationCap, color: "#A78BFA", title: "Student prices", text: "A small catalog of services with an official student price, matched against your subscriptions by name." },
   { icon: Bell, color: "#22D3EE", title: "Renewal reminders", text: "An optional email a few days before a subscription renews. You choose how many days." },
   { icon: BarChart3, color: "#34D399", title: "Spending charts", text: "Monthly and yearly totals, a six-month trend and a category breakdown, in USD, EUR or GBP." },
   { icon: SlidersHorizontal, color: "#FBBF24", title: "Adjustable dashboard", text: "Reorder, resize or hide dashboard widgets with drag and drop. Your layout is saved to your account." },
@@ -275,7 +275,7 @@ export default function Home() {
 
           <p className="mx-auto mt-10 max-w-2xl text-center text-sm leading-relaxed text-white/60">
             SubSaver is a student portfolio project. It does not cancel, pay for or manage subscriptions with any provider,
-            and catalog prices are maintained by hand, so check the provider&apos;s site before relying on them.
+            and catalog prices are checked by hand from time to time, so confirm them on the provider&apos;s site.
           </p>
         </div>
       </section>

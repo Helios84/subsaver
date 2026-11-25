@@ -142,6 +142,7 @@ class SubscriptionOut(BaseModel):
     cancelled_at: Optional[datetime] = None
     reminder_sent: bool = False
     student_discount_applied: bool = False
+    original_price_cents: Optional[int] = None
     split_with: int = 1
 
     model_config = ConfigDict(from_attributes=True)

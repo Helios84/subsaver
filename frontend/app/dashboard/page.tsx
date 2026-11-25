@@ -58,6 +58,8 @@ export default function DashboardPage() {
   // ── Student discounts
   const [studentDiscounts, setStudentDiscounts] = useState<Map<number, StudentDiscount>>(new Map());
   const [selectedDiscount, setSelectedDiscount] = useState<StudentDiscount | null>(null);
+  // Saved so far: months since a cancellation or since a student price was applied
+  const [savedToDateCents, setSavedToDateCents] = useState(0);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [showServicePicker, setShowServicePicker] = useState(false);
 
@@ -184,6 +186,7 @@ export default function DashboardPage() {
       // Analytics data from summary — no extra requests needed
       if (summary.analytics) setAnalyticsData(summary.analytics);
       if (summary.insights)  setInsightsData(summary.insights);
+      setSavedToDateCents(summary.savings?.total_saved_to_date ?? 0);
       // Also load student discounts for active subs (skip if user not verified)
       const activeIds = summary.subscriptions
         .filter((s: Sub) => s.status === "active")
@@ -260,16 +263,20 @@ export default function DashboardPage() {
   async function handleApplyDiscount(subscriptionId: number) {
     try {
       await apiFetch(`/api/student-discounts/apply/${subscriptionId}`, { method: "POST" });
-      setSubs((prev) => prev.map((s) => s.id === subscriptionId ? { ...s, student_discount_applied: true } : s));
-      setStudentDiscounts((prev) => {
-        const newMap = new Map(prev);
-        const d = newMap.get(subscriptionId);
-        if (d) newMap.set(subscriptionId, { ...d, already_applied: true });
-        return newMap;
-      });
-      toast("Student discount marked as applied!", "success");
+      await fetchDashboard();   // price, totals and savings all change
+      toast("Student price applied.", "success");
     } catch (err: any) {
-      toast(err?.message ?? "Failed to apply discount", "error");
+      toast(err?.message ?? "Could not apply the student price", "error");
+    }
+  }
+
+  async function handleRemoveDiscount(sub: Sub) {
+    try {
+      await apiFetch(`/api/student-discounts/unapply/${sub.id}`, { method: "DELETE" });
+      await fetchDashboard();
+      toast(`Student price removed from ${sub.name}. The previous price is back.`, "success");
+    } catch (err: any) {
+      toast(err?.message ?? "Could not remove the student price", "error");
     }
   }
 
@@ -312,7 +319,8 @@ export default function DashboardPage() {
 
   async function handleServiceSelect(service: StudentDiscount) {
     setShowServicePicker(false);
-    const priceToSet = user?.is_verified ? service.student_price_cents : service.regular_price_cents;
+    // Added at the regular price; a student price can be applied afterwards.
+    const priceToSet = service.regular_price_cents;
     try {
       await apiFetch("/subscriptions", {
         method: "POST",
@@ -518,8 +526,7 @@ export default function DashboardPage() {
     const w: Record<string, boolean> = {};
     dashSettings.widgets.forEach((widget) => { w[widget.id] = widget.enabled; });
 
-    // totalSavings shown via StudentSavingsCard API — use 0 as placeholder in stat cards
-    const savings = 0; // StudentSavingsCard fetches real data from /api/student-discounts/savings
+    const savings = savedToDateCents;
     const cancelled = subs.filter(s => s.status === "cancelled").length;
     const sorted = [...activeSubs].sort((a, b) => b.price_cents - a.price_cents);
     const topSub = sorted[0];
@@ -537,7 +544,7 @@ export default function DashboardPage() {
       mostExpensive:   topSub ? `${topSub.name.length > 10 ? topSub.name.slice(0,9)+"…" : topSub.name}` : "N/A",
       nextRenewalDays: nextDays !== null ? `${nextDays}d` : "N/A",
     };
-  }, [subs, dashSettings, fxRates, currency]);
+  }, [subs, dashSettings, fxRates, currency, savedToDateCents]);
 
   const layoutCompact = dashSettings.density === "compact" || dashSettings.layout === "compact";
 
@@ -1007,6 +1014,7 @@ export default function DashboardPage() {
                             onToggleStatus={toggleStatus}
                             onConfirmDelete={confirmDelete}
                             onCancelDelete={cancelDelete}
+                            onRemoveDiscount={handleRemoveDiscount}
                             onExecuteDelete={executeDelete}
                             onDuplicate={duplicateSub}
                             onDiscountClick={(d) => { setSelectedDiscount(d); setShowDiscountModal(true); }}

@@ -23,7 +23,7 @@ const STAT_CARD_META: Record<StatCardId, {
   active_count:       { label: "Active Subs",        icon: Activity,      color: "#06B6D4", glow: "rgba(6,182,212,0.2)"   },
   yearly_projection:  { label: "Yearly Projection",  icon: CreditCard,    color: "#10B981", glow: "rgba(16,185,129,0.2)"  },
   avg_per_sub:        { label: "Avg per Sub",         icon: TrendingUp,    color: "#D946EF", glow: "rgba(217,70,239,0.2)"  },
-  total_savings:      { label: "Student Savings",    icon: GraduationCap, color: "#F59E0B", glow: "rgba(245,158,11,0.2)"  },
+  total_savings:      { label: "Saved So Far",    icon: GraduationCap, color: "#F59E0B", glow: "rgba(245,158,11,0.2)"  },
   cancelled_count:    { label: "Cancelled",           icon: XCircle,       color: "#6B7280", glow: "rgba(107,114,128,0.2)" },
   most_expensive:     { label: "Most Expensive",     icon: Star,          color: "#F97316", glow: "rgba(249,115,22,0.2)"  },
   next_renewal_days:  { label: "Next Renewal",        icon: Clock,         color: "#3B82F6", glow: "rgba(59,130,246,0.2)"  },

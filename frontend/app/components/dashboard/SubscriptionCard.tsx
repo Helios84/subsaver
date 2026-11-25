@@ -61,6 +61,7 @@ type Props = {
   onToggleStatus: (s: Sub) => void;
   onConfirmDelete: (id: number) => void;
   onCancelDelete: () => void;
+  onRemoveDiscount?: (s: Sub) => void;
   onExecuteDelete: (id: number) => void;
   onDiscountClick: (d: StudentDiscount) => void;
   onDuplicate?: (s: Sub) => void;
@@ -80,6 +81,7 @@ export default function SubscriptionCard({
   onToggleStatus,
   onConfirmDelete,
   onCancelDelete,
+  onRemoveDiscount,
   onExecuteDelete,
   onDiscountClick,
   onDuplicate,
@@ -215,11 +217,16 @@ export default function SubscriptionCard({
               </span>
               {discount && isVerified && (<>
           {discount.already_applied ? (
-            <div className="px-2 py-0.5 rounded-md flex items-center gap-1.5"
+            <button
+              type="button"
+              onClick={() => onRemoveDiscount?.(s)}
+              title="Student price applied. Click to remove it and restore the previous price."
+              aria-label={`Student price applied to ${s.name}. Remove it`}
+              className="px-2 py-0.5 rounded-md flex items-center gap-1.5 transition-all hover:brightness-125"
               style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)" }}>
               <GraduationCap className="w-3 h-3 text-emerald-400" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Student price</span>
-            </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Student price ✕</span>
+            </button>
           ) : (
             <button
               onClick={() => onDiscountClick(discount)}

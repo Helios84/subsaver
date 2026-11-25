@@ -23,7 +23,7 @@ const STEPS = [
     icon: GraduationCap,
     iconColor: "#34D399",
     title: "Unlock Student Discounts",
-    subtitle: "Student prices for 60 services",
+    subtitle: "A catalog of student prices",
     description:
       "Verify your .edu email, then check the catalog for student pricing on Spotify, Adobe, Microsoft 365 and other services.",
     cta: "Verify Student Status",

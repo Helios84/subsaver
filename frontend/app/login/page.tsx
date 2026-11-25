@@ -174,7 +174,7 @@ function LoginPageInner() {
           <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
             {[
               { icon: Shield, text: "Passwords stored as bcrypt hashes", color: "#10B981" },
-              { icon: Zap, text: "Student prices for 60 services", color: "#F59E0B" },
+              { icon: Zap, text: "Catalog of student prices", color: "#F59E0B" },
               { icon: Star, text: "Renewal reminders by email", color: "#A78BFA" },
             ].map(({ icon: Icon, text, color }) => (
               <div key={text} style={{ display: "flex", alignItems: "center", gap: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "14px", padding: "14px 16px" }}>

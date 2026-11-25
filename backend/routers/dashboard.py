@@ -13,6 +13,8 @@ from limiter import limiter
 
 from dependencies import get_db, get_current_user
 from models.db import User, Subscription
+from models.student_discount import StudentDiscount
+from services.savings import monthly_share_cents, savings_summary
 from routers.analytics import MONTHLY_PLAN_HINT_CENTS
 
 logger = logging.getLogger(__name__)
@@ -21,11 +23,7 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 def _monthly_cost(sub: Subscription) -> int:
     """Return the user's monthly share in cents for a subscription."""
-    split = max(1, sub.split_with or 1)
-    if sub.billing_cycle == "monthly":
-        return sub.price_cents // split
-    # Yearly: amortise as monthly (always amortise for consistency)
-    return (sub.price_cents // split) // 12
+    return monthly_share_cents(sub.price_cents, sub.billing_cycle, sub.split_with)
 
 
 @router.get("/summary")
@@ -162,6 +160,7 @@ async def get_dashboard_summary(
             "cancelled_at": sub.cancelled_at.isoformat() if sub.cancelled_at else None,
             "reminder_sent": sub.reminder_sent,
             "student_discount_applied": sub.student_discount_applied,
+            "original_price_cents": sub.original_price_cents,
             "split_with": sub.split_with,
         }
 
@@ -174,4 +173,9 @@ async def get_dashboard_summary(
             "total_monthly_cents": total_monthly,
         },
         "insights": insights,
+        "savings": savings_summary(
+            all_subs,
+            db.query(StudentDiscount).filter(StudentDiscount.is_active == True).all(),  # noqa: E712
+            now=today,
+        ),
     }

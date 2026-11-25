@@ -25,3 +25,11 @@ export function displayName(user: { email?: string; is_demo?: boolean } | null |
   if (user.is_demo) return "Demo";
   return user.email?.split("@")[0] ?? "there";
 }
+
+/** "2026-11-25" -> "Nov 25, 2026"; empty string when there is no date. */
+export function formatCheckedDate(iso?: string | null): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return "";
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}

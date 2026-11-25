@@ -182,7 +182,7 @@ export default function RegisterPage() {
   }
 
   const perks = [
-    "Look up student prices for 60 services",
+    "Look up student prices for popular services",
     "Track all subscriptions in one place",
     "Get renewal reminders before billing",
     "Split costs with roommates easily",

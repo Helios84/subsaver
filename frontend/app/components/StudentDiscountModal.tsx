@@ -1,5 +1,6 @@
 "use client";
 import { X, ExternalLink, CheckCircle2, GraduationCap, ShieldCheck, Sparkles, ArrowRight } from "lucide-react";
+import { formatCheckedDate } from "../lib/money";
 import { useState, useEffect } from "react";
 
 type StudentDiscount = {
@@ -16,6 +17,9 @@ type StudentDiscount = {
   direct_link: string;
   availability: string;
   notes: string | null;
+  source_url?: string | null;
+  price_checked_on?: string | null;
+  your_monthly_savings_cents?: number;
   subscription_id?: number;
   already_applied?: boolean;
 };
@@ -73,8 +77,10 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
     try { return JSON.parse(discount.requirements) as string[]; } catch { return []; }
   })();
 
-  const monthly  = (discount.monthly_savings_cents  / 100).toFixed(2);
-  const annual   = (discount.annual_savings_cents   / 100).toFixed(2);
+  // Prefer what this user would save from their own price; fall back to the catalog difference
+  const savingCents = discount.your_monthly_savings_cents ?? discount.monthly_savings_cents;
+  const monthly  = (savingCents / 100).toFixed(2);
+  const annual   = ((savingCents * 12) / 100).toFixed(2);
   const regular  = (discount.regular_price_cents    / 100).toFixed(2);
   const student  = (discount.student_price_cents    / 100).toFixed(2);
   const verify   = VERIFY_LABELS[discount.verification_method] ?? { label: discount.verification_method, icon: "✅" };
@@ -342,6 +348,16 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
           )}
 
           {/* ══ NOTES ══ */}
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.6, margin: "16px 24px 20px" }}>
+            {formatCheckedDate(discount.price_checked_on)
+              ? `Prices checked on ${formatCheckedDate(discount.price_checked_on)}. They may change.`
+              : "Prices may change."}{" "}
+            {discount.source_url && (
+              <a href={discount.source_url} target="_blank" rel="noopener noreferrer" style={{ color: "#C4B5FD", textDecoration: "underline" }}>
+                Official page
+              </a>
+            )}
+          </p>
           {discount.notes && (
             <div style={{
               margin: "0 24px 16px",

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
+from sqlalchemy import Column, Integer, String, DateTime, Date, Boolean, Text
 from datetime import datetime, timezone
 from database import Base
 
@@ -29,6 +29,10 @@ class StudentDiscount(Base):
     direct_link = Column(String, nullable=False)  # Direct URL to student plan signup
     availability = Column(String, default="US")  # Countries where available: "US", "US,UK,CA"
     
+    # Official page the prices were taken from, and the date they were last checked
+    source_url = Column(String, nullable=True)
+    price_checked_on = Column(Date, nullable=True)
+
     # Metadata
     notes = Column(Text, nullable=True)  # Additional info, tips, special conditions
     last_updated = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
@@ -52,5 +56,7 @@ class StudentDiscount(Base):
             "direct_link": self.direct_link,
             "availability": self.availability,
             "notes": self.notes,
+            "source_url": self.source_url,
+            "price_checked_on": self.price_checked_on.isoformat() if self.price_checked_on else None,
             "last_updated": self.last_updated.isoformat() if self.last_updated else None,
         }

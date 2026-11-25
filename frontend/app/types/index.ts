@@ -38,9 +38,14 @@ export interface StudentDiscount {
   direct_link: string;
   availability: string;
   notes: string | null;
+  /** Official page the prices come from, and the date they were last checked (YYYY-MM-DD). */
+  source_url?: string | null;
+  price_checked_on?: string | null;
   // Appended by the API when returned alongside a subscription
   subscription_id?: number;
   already_applied?: boolean;
+  /** What this user would save per month (their share, from their own price). */
+  your_monthly_savings_cents?: number;
 }
 
 // ─── User ─────────────────────────────────────────────────────────────────────

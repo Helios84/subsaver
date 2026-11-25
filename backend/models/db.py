@@ -66,6 +66,8 @@ class Subscription(Base):
 
     student_discount_applied = Column(Boolean, default=False)
     discount_applied_date = Column(DateTime, nullable=True)
+    # Price before the student price was applied; restored when it is removed
+    original_price_cents = Column(Integer, nullable=True)
     split_with = Column(Integer, default=1)
     cancelled_at = Column(DateTime, nullable=True)
 

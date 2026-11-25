@@ -1,13 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
-from typing import List
-from datetime import datetime, timezone
-from pydantic import BaseModel, Field
+"""Student discount catalog: lookup, apply/remove a student price, savings summary."""
 import logging
+from datetime import datetime, timezone
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from dependencies import get_db, get_current_user
-from models.db import User, Subscription
 from limiter import limiter
+from models.db import User, Subscription
+from models.student_discount import StudentDiscount
+from services.savings import available_saving_cents, find_discount, savings_summary
 
 logger = logging.getLogger(__name__)
 
@@ -18,250 +22,130 @@ class BatchCheckRequest(BaseModel):
     subscription_ids: List[int] = Field(..., max_length=500)
 
 
+def _active_discounts(db: Session) -> List[StudentDiscount]:
+    return db.query(StudentDiscount).filter(StudentDiscount.is_active == True).all()  # noqa: E712
+
+
+def _own_subscription(db: Session, user: User, subscription_id: int) -> Subscription:
+    sub = db.query(Subscription).filter(
+        Subscription.id == subscription_id, Subscription.user_id == user.id
+    ).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    return sub
+
+
 @router.post("/batch-check")
 @limiter.limit("30/minute")
-async def batch_check_discounts(
+def batch_check_discounts(
     request: Request,
     payload: BatchCheckRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Match several of the user's subscriptions against the catalog in one request.
+
+    Returns a dict of subscription id (as a string) to the catalog entry, or null.
+    An entry is returned when the student price is already applied, or when it
+    would lower what the user pays.
     """
-    Check student discounts for multiple subscriptions in one request.
-    Returns a dict mapping subscription_id (str) → discount or null.
-    Eliminates N+1 HTTP requests from the dashboard.
-    """
-    try:
-        from models.student_discount import StudentDiscount
+    subs = db.query(Subscription).filter(
+        Subscription.id.in_(payload.subscription_ids),
+        Subscription.user_id == current_user.id,
+    ).all()
+    sub_map = {s.id: s for s in subs}
+    discounts = _active_discounts(db)
 
-        # Verify all subscriptions belong to this user
-        subs = db.query(Subscription).filter(
-            Subscription.id.in_(payload.subscription_ids),
-            Subscription.user_id == current_user.id,
-        ).all()
-
-        sub_map = {s.id: s for s in subs}
-
-        # Load all active discounts once
-        all_discounts = db.query(StudentDiscount).filter(
-            StudentDiscount.is_active == True
-        ).all()
-
-        result: dict = {}
-        for sub_id in payload.subscription_ids:
-            sub = sub_map.get(sub_id)
-            if not sub:
-                result[str(sub_id)] = None
-                continue
-
-            matched = None
-            for discount in all_discounts:
-                if (discount.service_name.lower() in sub.name.lower()
-                        or sub.name.lower() in discount.service_name.lower()):
-                    matched = discount
-                    break
-
-            if matched:
-                d = matched.to_dict()
-                d["subscription_id"] = sub_id
-                d["already_applied"] = sub.student_discount_applied
-                result[str(sub_id)] = d
-            else:
-                result[str(sub_id)] = None
-
-        return result
-    except Exception as e:
-        logger.error(f"batch-check failed: {e}", exc_info=True)
-        return {str(sid): None for sid in payload.subscription_ids}
+    result: dict = {}
+    for sub_id in payload.subscription_ids:
+        result[str(sub_id)] = None
+        sub = sub_map.get(sub_id)
+        if not sub:
+            continue
+        discount = find_discount(sub.name, discounts)
+        if discount is None:
+            continue
+        saving = available_saving_cents(sub, discount)
+        if not sub.student_discount_applied and saving <= 0:
+            continue
+        entry = discount.to_dict()
+        entry["subscription_id"] = sub_id
+        entry["already_applied"] = sub.student_discount_applied
+        entry["your_monthly_savings_cents"] = saving
+        result[str(sub_id)] = entry
+    return result
 
 
 @router.get("")
 @limiter.limit("30/minute")
-async def get_all_student_discounts(request: Request, db: Session = Depends(get_db)):
-    """
-    Get all available student discounts.
-    Public endpoint - no authentication required.
-    """
-    try:
-        from models.student_discount import StudentDiscount
-        discounts = db.query(StudentDiscount).filter(
-            StudentDiscount.is_active == True
-        ).all()
-        return [discount.to_dict() for discount in discounts]
-    except Exception as e:
-        # Only swallow the error if the table doesn't exist yet (fresh deploy)
-        err_str = str(e).lower()
-        if "no such table" in err_str or "relation" in err_str and "does not exist" in err_str:
-            return []
-        raise
+def get_all_student_discounts(request: Request, db: Session = Depends(get_db)):
+    """The whole catalog. Public: no authentication required."""
+    return [d.to_dict() for d in _active_discounts(db)]
 
 
 @router.post("/apply/{subscription_id}")
-async def mark_discount_applied(
+def apply_student_price(
     subscription_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """
-    Mark a student discount as applied for a subscription.
-    Updates the subscription to reflect the discounted price.
-    """
-    subscription = db.query(Subscription).filter(
-        Subscription.id == subscription_id,
-        Subscription.user_id == current_user.id
-    ).first()
-    
-    if not subscription:
-        raise HTTPException(status_code=404, detail="Subscription not found")
-    
-    try:
-        from models.student_discount import StudentDiscount
-        
-        # Find the matching discount
-        discount = db.query(StudentDiscount).filter(
-            StudentDiscount.service_name.ilike(f"%{subscription.name}%"),
-            StudentDiscount.is_active == True
-        ).first()
-        
-        if not discount:
-            raise HTTPException(status_code=404, detail="No student discount found for this service")
-        
-        # Update subscription — apply student price to actual subscription cost
-        subscription.student_discount_applied = True
-        subscription.discount_applied_date = datetime.now(timezone.utc).replace(tzinfo=None)
-        subscription.price_cents = discount.student_price_cents
-        
-        db.commit()
-        db.refresh(subscription)
-        
-        monthly_savings = discount.regular_price_cents - discount.student_price_cents
-        # For yearly subscriptions, savings are already annual — don't multiply
-        if subscription.billing_cycle == "yearly":
-            yearly_savings = monthly_savings  # already a yearly difference
-            monthly_savings_display = monthly_savings // 12
-        else:
-            yearly_savings = monthly_savings * 12
-            monthly_savings_display = monthly_savings
-        return {
-            "message": "Student discount marked as applied",
-            "subscription_id": subscription_id,
-            "savings_per_month_cents": monthly_savings_display,
-            "savings_per_year_cents": yearly_savings
-        }
-    except HTTPException:
-        raise
-    except Exception:
-        db.rollback()
-        logger.exception("Failed to apply discount")
-        raise HTTPException(status_code=500, detail="Failed to apply discount")
+    """Switch a subscription to the catalog's student price, remembering the old price."""
+    sub = _own_subscription(db, current_user, subscription_id)
+    if sub.student_discount_applied:
+        raise HTTPException(status_code=400, detail="A student price is already applied")
+    if sub.billing_cycle != "monthly":
+        raise HTTPException(status_code=400, detail="Student prices in the catalog are monthly prices")
+
+    discount = find_discount(sub.name, _active_discounts(db))
+    if discount is None:
+        raise HTTPException(status_code=404, detail="No student price found for this service")
+    if discount.student_price_cents >= sub.price_cents:
+        raise HTTPException(status_code=400, detail="You already pay the student price or less")
+
+    saving = available_saving_cents(sub, discount)
+    sub.original_price_cents = sub.price_cents
+    sub.price_cents = discount.student_price_cents
+    sub.student_discount_applied = True
+    sub.discount_applied_date = datetime.now(timezone.utc).replace(tzinfo=None)
+    db.commit()
+    db.refresh(sub)
+
+    return {
+        "message": "Student price applied",
+        "subscription_id": sub.id,
+        "price_cents": sub.price_cents,
+        "original_price_cents": sub.original_price_cents,
+        "savings_per_month_cents": saving,
+        "savings_per_year_cents": saving * 12,
+    }
 
 
 @router.delete("/unapply/{subscription_id}")
-async def unmark_discount_applied(
+def remove_student_price(
     subscription_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """
-    Remove the student discount applied status from a subscription.
-    """
-    subscription = db.query(Subscription).filter(
-        Subscription.id == subscription_id,
-        Subscription.user_id == current_user.id
-    ).first()
-    
-    if not subscription:
-        raise HTTPException(status_code=404, detail="Subscription not found")
-    
-    subscription.student_discount_applied = False
-    subscription.discount_applied_date = None
-    
+    """Undo apply: restore the price the subscription had before the student price."""
+    sub = _own_subscription(db, current_user, subscription_id)
+    if not sub.student_discount_applied:
+        raise HTTPException(status_code=400, detail="No student price is applied")
+
+    if sub.original_price_cents is not None:
+        sub.price_cents = sub.original_price_cents
+    sub.original_price_cents = None
+    sub.student_discount_applied = False
+    sub.discount_applied_date = None
     db.commit()
-    db.refresh(subscription)
-    
-    return {"message": "Student discount removed"}
+    db.refresh(sub)
+    return {"message": "Student price removed", "subscription_id": sub.id, "price_cents": sub.price_cents}
 
 
 @router.get("/savings")
-async def get_savings_summary(
+def get_savings_summary(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """
-    Calculate savings summary based on applied discounts and potential opportunities.
-    """
-    try:
-        from models.student_discount import StudentDiscount
-
-        # Get all user subscriptions
-        subs = db.query(Subscription).filter(Subscription.user_id == current_user.id).all()
-        
-        # Get all active discounts
-        all_discounts = db.query(StudentDiscount).filter(StudentDiscount.is_active == True).all()
-        
-        # Map discounts by lower-case service name for easy lookup
-        # Some services might have multiple plans, we'll just take the best one or first one for simplicity
-        # Ideally we match exactly, but for "Potential" logic:
-        discount_map = {d.service_name.lower(): d for d in all_discounts}
-
-        total_saved_monthly = 0
-        potential_monthly = 0
-        discounts_applied_count = 0
-        discounts_available_count = 0
-        breakdown = []
-
-        for sub in subs:
-            sub_name_lower = sub.name.lower()
-            discount = discount_map.get(sub_name_lower)
-            
-            # Helper to check partial match if exact match fails
-            if not discount:
-                for name, d in discount_map.items():
-                    if name in sub_name_lower or sub_name_lower in name:
-                        discount = d
-                        break
-            
-            if discount:
-                monthly_savings = (discount.regular_price_cents - discount.student_price_cents)
-                if sub.billing_cycle == "yearly":
-                    # Normalize to monthly for summary
-                    monthly_savings = monthly_savings // 12
-
-                item = {
-                    "service": sub.name,
-                    "monthly_savings": monthly_savings,
-                    "applied": sub.student_discount_applied,
-                    "subscription_id": sub.id
-                }
-
-                if sub.student_discount_applied:
-                    total_saved_monthly += monthly_savings
-                    discounts_applied_count += 1
-                    item["status"] = "applied"
-                else:
-                    potential_monthly += monthly_savings
-                    discounts_available_count += 1
-                    item["status"] = "available"
-                
-                breakdown.append(item)
-
-        return {
-            "total_saved_monthly": total_saved_monthly,
-            "total_saved_yearly": total_saved_monthly * 12,
-            "potential_monthly": potential_monthly,
-            "potential_yearly": potential_monthly * 12,
-            "discounts_applied": discounts_applied_count,
-            "discounts_available": discounts_available_count, # This is potentially available ones
-            "breakdown": breakdown
-        }
-    except Exception as e:
-        logger.error(f"Error calculating savings: {e}", exc_info=True)
-        return {
-            "total_saved_monthly": 0, 
-            "total_saved_yearly": 0,
-            "potential_monthly": 0,
-            "potential_yearly": 0,
-             "discounts_applied": 0,
-            "discounts_available": 0,
-            "breakdown": []
-        }
+    """Savings from student prices and from cancelled subscriptions, based on the user's own prices."""
+    subs = db.query(Subscription).filter(Subscription.user_id == current_user.id).all()
+    return savings_summary(subs, _active_discounts(db))

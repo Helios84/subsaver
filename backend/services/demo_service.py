@@ -24,9 +24,9 @@ DEMO_MAX_AGE = timedelta(hours=24)
 
 # name, price_cents, cycle, category, split_with, months since added, days until next charge
 _ACTIVE = [
-    ("Spotify",          499, "monthly", "Entertainment",    1, 5,   4),
+    ("Spotify",          699, "monthly", "Entertainment",    1, 5,   4),
     ("Netflix",         1549, "monthly", "Entertainment",    3, 6,  11),
-    ("YouTube Premium", 1399, "monthly", "Entertainment",    2, 1,  19),
+    ("YouTube Premium", 1599, "monthly", "Entertainment",    2, 1,  19),
     ("iCloud+",          299, "monthly", "Utilities",        1, 6,   7),
     ("ChatGPT Plus",    2000, "monthly", "Productivity",     1, 3,  23),
     ("Xbox Game Pass",   999, "monthly", "Gaming",           1, 4,  15),
@@ -35,9 +35,10 @@ _ACTIVE = [
     ("The Daily Paper",  400, "monthly", "News & Media",     1, 2,  27),
 ]
 # One subscription that was cancelled two months ago, so trends show a drop.
-_CANCELLED = ("Hulu", 799, "monthly", "Entertainment", 1, 6)
-# The subscription shown with a student discount already applied.
+_CANCELLED = ("Hulu", 1199, "monthly", "Entertainment", 1, 6)
+# The subscription shown with a student price already applied, and what it cost before.
 _DISCOUNTED = "Spotify"
+_DISCOUNTED_ORIGINAL_CENTS = 1299
 
 
 def _now() -> datetime:
@@ -67,6 +68,7 @@ def _seed_subscriptions(db: Session, user: User, now: datetime) -> None:
             next_billing_date=now + timedelta(days=due_in_days),
             student_discount_applied=discounted,
             discount_applied_date=added if discounted else None,
+            original_price_cents=_DISCOUNTED_ORIGINAL_CENTS if discounted else None,
         ))
 
     name, price, cycle, category, split, months_ago = _CANCELLED
