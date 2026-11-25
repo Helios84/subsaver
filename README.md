@@ -1,355 +1,246 @@
 <div align="center">
 
-<img src="frontend/public/logo.svg" alt="SubSaver logo" width="80" height="80"/>
+<img src="frontend/public/logo.svg" alt="SubSaver logo" width="72" height="72"/>
 
 # SubSaver
 
-A subscription tracker for students: see what you pay each month, split shared plans, get renewal reminders and look up student prices.
+A subscription tracker for students: enter what you pay for and see the monthly total, your share of split plans, and what renews next.
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-subsaver--mu.vercel.app-7C3AED?style=for-the-badge&logo=vercel&logoColor=white)](https://subsaver-mu.vercel.app)
-[![API Docs](https://img.shields.io/badge/API%20Docs-Swagger-0B0D0E?style=for-the-badge&logo=fastapi&logoColor=white)](https://subsaver-production.up.railway.app/docs)
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
+**[Live demo: subsaver-mu.vercel.app](https://subsaver-mu.vercel.app)**
+Click **Try the demo** on the home page. It opens a temporary account with sample data; no sign-up or password is needed.
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)](https://neon.tech)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+<img src="docs/screenshots/dashboard.png" alt="The SubSaver dashboard with sample data: monthly spend, spending trend, category breakdown, tips and upcoming renewals" width="900"/>
 
 </div>
 
 ---
 
-## What is SubSaver?
+## What it is
 
-SubSaver is a web app where you enter the subscriptions you pay for and see them in one dashboard: monthly and yearly spend, a 6-month trend, a category breakdown and upcoming renewals. It also includes a hand-maintained catalog of student prices for 60 services and matches it against your subscriptions by name.
+SubSaver is a web app where you enter your subscriptions by hand and see them in one dashboard. It also includes a hand-maintained catalog of student prices for 60 services and matches it against your subscriptions by name.
 
-Everything is entered by hand. SubSaver does not connect to a bank, a card, an email inbox or any subscription provider, and it does not cancel or pay for anything on your behalf.
+It does not connect to a bank, a card, an email inbox or any subscription provider, and it does not cancel or pay for anything on your behalf.
 
 This is a solo student portfolio project, not a commercial service.
 
----
-
 ## Features
 
-### Subscriptions
-- Add, edit, delete and duplicate subscriptions
-- Monthly and yearly billing cycles
-- Cost splitting: record how many people share a plan and track your own share
-- Statuses: active, cancelled, trial, paused
-- Search, filter and sort
-- Export the list to CSV
+**Subscriptions**
+- Add, edit, duplicate and delete subscriptions; monthly and yearly billing
+- Cost splitting: record how many people share a plan and track only your share
+- Statuses (active, cancelled, trial, paused); search, filter, sort; CSV export
 
-### Student prices
-- Catalog of 60 services with regular and student prices
-- Subscriptions are matched to catalog entries by name
-- `.edu` email verification by 6-digit code
-- Applying a discount replaces the stored price with the catalog student price
-
-### Dashboard
+**Dashboard**
 - Monthly spend, yearly projection and average per subscription
-- 6-month spending trend that takes cancellation dates and cost splits into account
-- Category breakdown chart
-- Rule-based tips: renewals due this week, a category that dominates spending, plans that may be cheaper yearly
-- Billing calendar
+- Six-month spending trend that takes cancellation dates and cost splits into account
+- Category breakdown, upcoming renewals and a billing calendar
+- Rule-based tips: renewals due this week, a category that dominates spending, monthly plans worth comparing with a yearly price
+- Drag-and-drop widget order, widget on/off and width, layout presets; USD, EUR or GBP display
 
-### Email
-- Registration confirmation, password reset and student verification codes
-- Daily renewal reminders a configurable number of days before a charge (APScheduler)
+**Student prices**
+- Catalog of 60 services with regular and student prices, matched to your subscriptions by name
+- `.edu` email verification by a 6-digit code sent to that address
 
-### Dashboard customization
-- Drag-and-drop widget order (`@dnd-kit`), widget on/off and width
-- Layout presets and density modes
-- USD, EUR and GBP display using exchange rates cached on the server
-- Undo and redo
+**Accounts and email**
+- Registration with email confirmation, password reset by code
+- JWT authentication with server-side revocation on logout, bcrypt password hashing, per-client rate limits
+- Optional renewal reminder emails a chosen number of days before a charge
 
-### Security
-- JWT authentication (HS256, 24-hour expiry) with server-side revocation on logout
-- bcrypt password hashing
-- Rate limits on auth endpoints (slowapi)
-- Email confirmation required before first login
-- Password required to delete an account
-
-### Demo account
-- Optional "Try the demo" button: each visitor gets a private temporary account with sample subscriptions
+**Demo**
+- "Try the demo" creates a private temporary account with ten sample subscriptions
 - Demo accounts are deleted after 24 hours by an hourly job and cannot change account settings
 
----
+## Screenshots
 
-## Limitations
+| Landing page | Adding a subscription |
+|:---:|:---:|
+| <img src="docs/screenshots/landing.png" alt="Landing page with the headline, the demo button and a product screenshot" width="430"/> | <img src="docs/screenshots/add-subscription.png" alt="Service picker with search and a list of services" width="430"/> |
 
-- All data is entered manually; nothing is imported from banks or providers.
-- "Cancelled" is a status in your own list. The app does not cancel subscriptions with the provider.
-- Catalog prices are maintained by hand and may be out of date.
-- Spending trends are estimates from the data you entered, not a payment history.
-- There are no automated tests yet.
-- Database migrations require PostgreSQL.
+| Editing a subscription | Dashboard on a phone |
+|:---:|:---:|
+| <img src="docs/screenshots/edit-subscription.png" alt="Edit dialog with price, billing cycle, status, category and cost splitting" width="430"/> | <img src="docs/screenshots/dashboard-mobile.png" alt="Dashboard at phone width" width="210"/> |
 
----
+All screenshots show the demo account with sample data.
 
-## Tech Stack
+## Tech stack
 
-### Frontend
-| Technology | Version |
+| Layer | Technology |
 |---|---|
-| Next.js (App Router) | 16.1.3 |
-| React | 19.2.3 |
-| TypeScript | ^5 |
-| Tailwind CSS | ^4 |
-| Recharts | ^3.6.0 |
-| @dnd-kit | core ^6.3, sortable ^10 |
-| Framer Motion | ^12.27 |
-| Lucide React | ^0.562 |
-| date-fns | ^4.1.0 |
-
-### Backend
-| Technology | Version |
-|---|---|
-| Python | 3.11 |
-| FastAPI | 0.104.1 |
-| SQLAlchemy | 2.0.23 |
-| Alembic | 1.13.1 |
-| Pydantic | 2.5.0 |
-| python-jose (JWT) | 3.3.0 |
-| bcrypt | 4.1.2 |
-| APScheduler | 3.10.4 |
-| slowapi | 0.1.9 |
-| psycopg2 | 2.9.9 |
-| httpx | 0.27.0 |
-
-### Infrastructure
-| Service | Role |
-|---|---|
-| Vercel | Frontend hosting |
-| Railway | Backend hosting (Docker) |
-| Neon | PostgreSQL |
-| SMTP provider | Outgoing email |
-
----
+| Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Recharts, @dnd-kit |
+| Backend | Python 3.11, FastAPI 0.104, SQLAlchemy 2.0, Alembic, Pydantic 2, APScheduler, slowapi |
+| Auth | python-jose (JWT, HS256), bcrypt |
+| Database | PostgreSQL (Neon) |
+| Hosting | Vercel (frontend), Railway (backend, Docker) |
+| Email | SMTP |
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────┐
-│               CLIENT (Vercel)                    │
-│   Next.js 16 App Router  ·  React 19  ·  TS      │
-│                                                  │
-│  /           /dashboard   /customize  /settings  │
-│  /login      /register    /verify-email          │
-└─────────────────────┬────────────────────────────┘
-                      │  HTTPS · JWT Bearer
-                      │  (proxied through /backend_api)
-┌─────────────────────▼────────────────────────────┐
-│               BACKEND (Railway)                  │
-│              FastAPI 0.104 · Python 3.11         │
-│                                                  │
-│  /auth/*    /subscriptions/*   /api/analytics/*  │
-│  /api/student-discounts/*      /api/dashboard/*  │
-│  /users/me  /reminders/*       /health           │
-│                                                  │
-│   ┌──────────┐  ┌────────────┐  ┌────────────┐   │
-│   │   JWT    │  │ Scheduler  │  │   Email    │   │
-│   │   Auth   │  │(APScheduler)│ │  Service   │   │
-│   └──────────┘  └────────────┘  └────────────┘   │
-└─────────────────────┬────────────────────────────┘
-                      │  SQLAlchemy ORM
-┌─────────────────────▼────────────────────────────┐
-│              DATABASE (Neon)                     │
-│                PostgreSQL                        │
-│                                                  │
-│   users ◄──── subscriptions     revoked_tokens   │
-│                                                  │
-│           student_discounts                      │
-└──────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    U[Browser] -->|HTTPS| FE["Next.js app<br/>(Vercel)"]
+    FE -->|"/backend_api/* proxy<br/>JWT bearer token"| API["FastAPI<br/>(Railway, Docker)"]
+    API -->|SQLAlchemy| DB[("PostgreSQL<br/>(Neon)")]
+    API -->|SMTP| MAIL[Email provider]
+    API -->|"cached 1 h"| FX[open.er-api.com<br/>exchange rates]
+
+    subgraph Backend process
+        API
+        SCH["APScheduler<br/>daily: renewal reminders, token cleanup<br/>hourly: demo account cleanup"]
+    end
+    SCH --> DB
+    SCH --> MAIL
 ```
 
----
+- The browser only talks to the Next.js app. `next.config.ts` proxies `/backend_api/*` to the API, so there are no cross-origin calls.
+- The scheduler runs inside the API process, so the backend is meant to run as a single instance.
+- Schema changes are Alembic migrations, applied automatically when the container starts.
 
-## Project Structure
+## Project structure
 
 ```
 subsaver/
 ├── backend/
-│   ├── core/               # Password hashing and JWT helpers
-│   ├── migrations/         # Alembic migrations
-│   ├── models/             # SQLAlchemy models
-│   ├── routers/            # FastAPI route handlers
-│   ├── schemas/            # Pydantic request/response schemas
-│   ├── services/           # Email, reminders, scheduler
-│   ├── scripts/
-│   │   └── seed_discounts.py  # Seeds the 60-service discount catalog
-│   ├── templates/          # HTML email template
-│   ├── config.py           # Settings read from environment variables
-│   ├── database.py         # SQLAlchemy engine and session
-│   ├── dependencies.py     # Shared FastAPI dependencies
-│   ├── main.py             # App entry point
-│   ├── Dockerfile
-│   └── requirements.txt
-│
-└── frontend/
-    └── app/
-        ├── components/     # UI components
-        ├── dashboard/      # Main dashboard page
-        ├── customize/      # Dashboard customization
-        ├── settings/       # Account settings
-        ├── login/  register/  verify-email/
-        ├── privacy/  terms/
-        ├── lib/            # API client, currency, categories
-        ├── types/          # TypeScript types
-        └── page.tsx        # Landing page
+│   ├── core/           # Password hashing and JWT helpers
+│   ├── migrations/     # Alembic migrations
+│   ├── models/         # SQLAlchemy models
+│   ├── routers/        # FastAPI route handlers
+│   ├── schemas/        # Pydantic request/response schemas
+│   ├── services/       # Email, reminders, scheduler, demo accounts
+│   ├── scripts/        # seed_discounts.py: seeds the discount catalog
+│   ├── config.py       # Settings read from environment variables
+│   └── main.py         # App entry point
+├── frontend/
+│   ├── app/            # Pages, components, lib (API client, money and currency helpers)
+│   └── public/         # Logo and landing-page screenshots
+└── docs/screenshots/   # Images used in this README
 ```
 
----
+## Run locally
 
-## Local Development
+Prerequisites: Python 3.11 or 3.12, Node.js 20+, and a PostgreSQL database (a free [Neon](https://neon.tech) database works; the migrations are PostgreSQL-only).
 
-### Prerequisites
-- Python 3.11 or 3.12
-- Node.js 20+
-- PostgreSQL (a free [Neon](https://neon.tech) database works)
-
-### 1. Backend
+### Backend
 
 ```bash
 cd backend
-
 python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS/Linux
-
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # macOS/Linux
 pip install -r requirements.txt
+```
 
-# Create backend/.env with the variables listed below, then:
+Create `backend/.env`:
+
+```
+JWT_SECRET=<a long random string>
+DATABASE_URL=postgresql://<user>:<password>@<host>/<database>
+ALLOWED_ORIGINS=http://localhost:3000
+FRONTEND_URL=http://localhost:3000
+ENVIRONMENT=development
+DEMO_ENABLED=true
+```
+
+Then:
+
+```bash
 alembic upgrade head
 python scripts/seed_discounts.py
 uvicorn main:app --reload --port 8000
 ```
 
-- API: http://localhost:8000
-- Swagger docs: http://localhost:8000/docs
+The API runs at http://localhost:8000 and the interactive docs at http://localhost:8000/docs.
+Without SMTP settings no email is sent; in `development` the confirmation codes are written to the server log instead.
 
-### 2. Frontend
+### Frontend
 
 ```bash
 cd frontend
 npm install
-echo "BACKEND_URL=http://localhost:8000" > .env.local
-npm run dev
 ```
 
-- App: http://localhost:3000
+Create `frontend/.env.local`:
 
----
+```
+BACKEND_URL=http://localhost:8000
+NEXT_PUBLIC_DEMO_ENABLED=true
+```
 
-## Environment Variables
+Then `npm run dev` and open http://localhost:3000.
 
-### Backend (`backend/.env`)
+### Environment variables
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `JWT_SECRET` | yes | none | Long random string used to sign tokens |
-| `DATABASE_URL` | yes | `sqlite:///./subsaver.db` | PostgreSQL connection string |
-| `ALLOWED_ORIGINS` | yes | `http://localhost:3000` | Comma-separated CORS origins |
-| `FRONTEND_URL` | yes | `http://localhost:3000` | Base URL used for links in emails |
-| `ENVIRONMENT` | no | `production` | `development` or `production`. Verification codes are written to the log only in `development` |
-| `TRUSTED_PROXY_COUNT` | no | `0` | Number of reverse proxies in front of the API; used to read the client IP for rate limiting from `X-Forwarded-For` |
-| `DEMO_ENABLED` | no | `false` | `true` enables temporary demo accounts (`POST /auth/demo-login`) |
-| `DEMO_MAX_USERS` | no | `500` | Maximum number of live demo accounts; the oldest are removed first |
-| `SMTP_HOST` | no | empty | SMTP host |
-| `SMTP_PORT` | no | `2525` | SMTP port |
-| `SMTP_USER` | no | empty | SMTP username |
-| `SMTP_PASSWORD` | no | empty | SMTP password |
-| `SMTP_FROM_EMAIL` | no | `noreply@subsaver.example` | Sender address |
-| `SMTP_FROM_NAME` | no | `SubSaver` | Sender name |
-
-The server starts without SMTP settings; emails are then skipped and a warning is logged.
-
-### Frontend (`frontend/.env.local`)
-
-| Variable | Required | Description |
+| Backend variable | Default | Purpose |
 |---|---|---|
-| `BACKEND_URL` | yes | Backend URL used by the Next.js proxy |
-| `NEXT_PUBLIC_SITE_URL` | no | Public URL of the site, used for Open Graph links |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | no | Contact address; contact links are hidden when unset |
-| `NEXT_PUBLIC_DEMO_ENABLED` | no | `true` shows the "Try the demo" button (the backend needs `DEMO_ENABLED=true`) |
+| `JWT_SECRET` | none (required) | Signs access tokens |
+| `DATABASE_URL` | `sqlite:///./subsaver.db` | PostgreSQL connection string |
+| `ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated CORS origins |
+| `FRONTEND_URL` | `http://localhost:3000` | Base URL for links in emails |
+| `ENVIRONMENT` | `production` | `development` logs verification codes when email is off |
+| `TRUSTED_PROXY_COUNT` | `0` | Reverse proxies in front of the API, used to find the client IP for rate limits |
+| `DEMO_ENABLED` | `false` | Enables `POST /auth/demo-login` |
+| `DEMO_MAX_USERS` | `500` | Cap on live demo accounts |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | empty | Outgoing email |
+| `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME` | `noreply@subsaver.example`, `SubSaver` | Sender |
 
----
-
-## Deployment
-
-### Railway (backend)
-
-1. Create a Railway project from the GitHub repo.
-2. Set **Root Directory** to `backend`. Railway builds the `Dockerfile`.
-3. Add the backend environment variables.
-4. On start the container runs migrations, seeds the catalog and starts Uvicorn.
-
-### Vercel (frontend)
-
-1. Import the GitHub repo in Vercel.
-2. Set **Root Directory** to `frontend`.
-3. Add `BACKEND_URL` (the Railway URL) and, optionally, the `NEXT_PUBLIC_*` variables.
-
----
-
-## API Reference
-
-Interactive docs are served at `/docs` on any running backend.
-
-### Auth
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/auth/register` | Register; sends a 6-digit email code |
-| `POST` | `/auth/confirm-email` | Confirm the email with the code |
-| `POST` | `/auth/login` | Log in and receive a JWT |
-| `POST` | `/auth/logout` | Revoke the current token |
-| `POST` | `/auth/demo-login` | Create a temporary demo account and sign in (when enabled) |
-| `POST` | `/auth/forgot-password` | Request a password reset code |
-| `POST` | `/auth/reset-password` | Set a new password with the code |
-| `POST` | `/auth/verify-edu` | Request a `.edu` verification code |
-| `POST` | `/auth/verify-edu/confirm` | Confirm student status |
-| `GET` | `/users/me` | Current user profile |
-| `DELETE` | `/users/me` | Delete the account (password required) |
-
-### Subscriptions
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/subscriptions` | List subscriptions |
-| `POST` | `/subscriptions` | Create a subscription |
-| `PATCH` | `/subscriptions/{id}` | Update a subscription |
-| `DELETE` | `/subscriptions/{id}` | Delete a subscription |
-
-### Dashboard and analytics
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/dashboard/summary` | Subscriptions, trends, breakdown and tips in one response |
-| `GET` | `/api/analytics/trends` | 6-month trend and category breakdown |
-| `GET` | `/api/analytics/insights` | Rule-based tips |
-| `GET` | `/api/rates` | Cached exchange rates |
-
-### Student discounts
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/student-discounts` | The discount catalog (public) |
-| `POST` | `/api/student-discounts/batch-check` | Match several subscriptions against the catalog |
-| `POST` | `/api/student-discounts/apply/{id}` | Apply the student price to a subscription |
-| `GET` | `/api/student-discounts/savings` | Savings summary |
-
-### System
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/health` | Health check |
-
----
-
-## Project Timeline
-
-Developed between December 2025 and May 2026.
-
-| Period | Milestone |
+| Frontend variable | Purpose |
 |---|---|
-| Jan 2026 | Next.js and FastAPI scaffolding, auth, subscription CRUD, email reminders |
-| Feb 2026 | Student discount catalog, service picker, student verification, dashboard redesign |
-| Mar 2026 | Dashboard customization with drag-and-drop widgets, bcrypt and rate limiting |
-| Apr 2026 | PostgreSQL on Neon with Alembic migrations, deployment to Vercel and Railway, mobile layout |
-| May 2026 | Token revocation, single dashboard summary endpoint, server-side exchange-rate cache |
+| `BACKEND_URL` | Backend URL used by the proxy (required) |
+| `NEXT_PUBLIC_DEMO_ENABLED` | `true` shows the "Try the demo" button |
+| `NEXT_PUBLIC_SITE_URL` | Public site URL for link previews |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Contact address; contact links are hidden when unset |
 
----
+## Tests
+
+There is no automated test suite yet. What can be run today:
+
+```bash
+cd frontend
+npx tsc --noEmit    # type check
+npm run build       # production build
+npm run lint        # ESLint (reports existing issues)
+```
+
+A backend test suite and CI are on the roadmap below.
+
+## API
+
+Interactive documentation is served at `/docs` on a running backend ([live API docs](https://subsaver-production.up.railway.app/docs)). Main groups:
+
+| Group | Endpoints |
+|---|---|
+| Auth | `/auth/register`, `/auth/confirm-email`, `/auth/login`, `/auth/logout`, `/auth/demo-login`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/verify-edu` |
+| Account | `/users/me`, `/users/me/preferences`, `/reminders/settings` |
+| Subscriptions | `/subscriptions`, `/subscriptions/{id}` |
+| Dashboard | `/api/dashboard/summary`, `/api/analytics/trends`, `/api/analytics/insights`, `/api/rates` |
+| Student prices | `/api/student-discounts`, `/api/student-discounts/batch-check`, `/api/student-discounts/apply/{id}`, `/api/student-discounts/savings` |
+
+## Limitations
+
+- Everything is entered by hand. Nothing is imported from banks or providers.
+- "Cancelled" is a status in your own list; the app does not cancel anything with the provider.
+- Catalog prices are maintained by hand and have not been checked against current provider pricing.
+- The savings figures use catalog prices rather than the price you entered.
+- Spending trends are estimates from the data you entered, not a payment history.
+- There are no automated tests yet.
+- Migrations run only on PostgreSQL.
+- Rate limits can be bypassed by calling the API host directly instead of going through the site.
+
+## Roadmap
+
+- Savings based on the user's own price, and realized savings from cancelled subscriptions
+- A reviewed discount catalog with a source link and a "checked on" date for each entry
+- Backend tests (pytest) and CI on every push
+- A committed `.env.example` and a database setup that works from a fresh clone
+- Lint clean-up (replace `any` types)
+
+## Timeline
+
+Developed between December 2025 and May 2026, with a clean-up pass in November 2026.
 
 ## License
 
