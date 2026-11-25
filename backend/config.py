@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     # X-Forwarded-For. 0 = ignore the header and use the socket address.
     trusted_proxy_count: int = 0
 
+    # Shared with the Next.js proxy. When set, every request except the public
+    # paths below must carry it in X-Proxy-Secret, so the API cannot be called
+    # directly. Empty (the default) turns the check off, e.g. for local development.
+    proxy_shared_secret: str = ""
+
     # ── Demo account ──
     # When enabled, POST /auth/demo-login gives each visitor a private sample
     # account that is deleted after 24 hours.

@@ -1,17 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  async rewrites() {
-    const backendUrl = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
-    return [
-      {
-        source: '/backend_api/:path*',
-        destination: `${backendUrl}/:path*`,
-      },
-    ];
-  },
+  // /backend_api/* is proxied by app/backend_api/[...path]/route.ts
 
-  // S-2: Security headers — prevents clickjacking, XSS, MIME sniffing
+  // Security headers: prevent clickjacking, XSS and MIME sniffing
   async headers() {
     return [
       {

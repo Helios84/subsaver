@@ -10,7 +10,7 @@ echo "BACKEND_URL=http://localhost:8000" > .env.local
 npm run dev
 ```
 
-The app runs at http://localhost:3000. API calls go to `/backend_api/*`, which `next.config.ts` proxies to `BACKEND_URL`.
+The app runs at http://localhost:3000. API calls go to `/backend_api/*`, which the route handler in `app/backend_api/[...path]/route.ts` forwards to `BACKEND_URL`.
 
 ## Scripts
 
@@ -26,6 +26,7 @@ The app runs at http://localhost:3000. API calls go to `/backend_api/*`, which `
 | Variable | Required | Description |
 |---|---|---|
 | `BACKEND_URL` | yes | Backend URL used by the proxy |
+| `PROXY_SHARED_SECRET` | no | Secret shared with the backend; leave empty locally |
 | `NEXT_PUBLIC_SITE_URL` | no | Public site URL for Open Graph links |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | no | Contact address; contact links are hidden when unset |
 | `NEXT_PUBLIC_DEMO_ENABLED` | no | `true` shows the "Try the demo" button (the backend needs `DEMO_ENABLED=true`) |

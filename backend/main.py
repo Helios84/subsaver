@@ -5,11 +5,12 @@ Models, schemas, and routers are in their own modules.
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from limiter import limiter  # shared singleton — same instance used in all routers
+from limiter import limiter, from_proxy  # shared singleton — same instance used in all routers
 
 from config import settings
 
@@ -56,6 +57,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Paths that stay reachable without the proxy secret: the health check and the
+# read-only API description.
+PUBLIC_PATHS = {"/health", "/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"}
+
+
+@app.middleware("http")
+async def require_proxy_secret(request: Request, call_next):
+    """With PROXY_SHARED_SECRET set, only the Next.js proxy may call the API."""
+    if settings.proxy_shared_secret and request.url.path not in PUBLIC_PATHS and not from_proxy(request):
+        return JSONResponse(status_code=403, content={"detail": "Direct access to the API is not allowed"})
+    return await call_next(request)
+
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 from routers.auth import router as auth_router

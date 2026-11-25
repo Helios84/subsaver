@@ -85,7 +85,7 @@ All screenshots show the demo account with sample data.
 ```mermaid
 flowchart LR
     U[Browser] -->|HTTPS| FE["Next.js app<br/>(Vercel)"]
-    FE -->|"/backend_api/* proxy<br/>JWT bearer token"| API["FastAPI<br/>(Railway, Docker)"]
+    FE -->|"/backend_api/* route handler<br/>JWT + shared proxy secret"| API["FastAPI<br/>(Railway, Docker)"]
     API -->|SQLAlchemy| DB[("PostgreSQL<br/>(Neon)")]
     API -->|SMTP| MAIL[Email provider]
     API -->|"cached 1 h"| FX[open.er-api.com<br/>exchange rates]
@@ -98,7 +98,8 @@ flowchart LR
     SCH --> MAIL
 ```
 
-- The browser only talks to the Next.js app. `next.config.ts` proxies `/backend_api/*` to the API, so there are no cross-origin calls.
+- The browser only talks to the Next.js app. A route handler (`frontend/app/backend_api/[...path]/route.ts`) forwards `/backend_api/*` to the API, so there are no cross-origin calls.
+- The route handler adds a secret shared with the API and the visitor's IP. With `PROXY_SHARED_SECRET` set, the API rejects requests that did not come through the site (except `/health` and the API docs), and rate limits count each visitor separately.
 - The scheduler runs inside the API process, so the backend is meant to run as a single instance.
 - Schema changes are Alembic migrations, applied automatically when the container starts.
 
@@ -169,7 +170,8 @@ Production runs on PostgreSQL. To use it locally, set `DATABASE_URL=postgresql:/
 | `ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated CORS origins |
 | `FRONTEND_URL` | `http://localhost:3000` | Base URL for links in emails |
 | `ENVIRONMENT` | `production` | `development` logs verification codes when email is off |
-| `TRUSTED_PROXY_COUNT` | `0` | Reverse proxies in front of the API, used to find the client IP for rate limits |
+| `PROXY_SHARED_SECRET` | empty | Secret shared with the frontend proxy; when set, requests without it get 403. Leave empty locally |
+| `TRUSTED_PROXY_COUNT` | `0` | Reverse proxies in front of the API; used to find the client IP when `PROXY_SHARED_SECRET` is not set |
 | `DEMO_ENABLED` | `false` | Enables `POST /auth/demo-login` |
 | `DEMO_MAX_USERS` | `500` | Cap on live demo accounts |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | empty | Outgoing email |
@@ -178,6 +180,7 @@ Production runs on PostgreSQL. To use it locally, set `DATABASE_URL=postgresql:/
 | Frontend variable | Purpose |
 |---|---|
 | `BACKEND_URL` | Backend URL used by the proxy (required) |
+| `PROXY_SHARED_SECRET` | Same value as on the backend; server-only, never exposed to the browser |
 | `NEXT_PUBLIC_DEMO_ENABLED` | `true` shows the "Try the demo" button |
 | `NEXT_PUBLIC_SITE_URL` | Public site URL for link previews |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | Contact address; contact links are hidden when unset |
@@ -197,7 +200,7 @@ A backend test suite and CI are on the roadmap below.
 
 ## API
 
-Interactive documentation is served at `/docs` on a running backend ([live API docs](https://subsaver-production.up.railway.app/docs)). Main groups:
+Interactive documentation is served at `/docs` on a running backend. The [hosted API docs](https://subsaver-production.up.railway.app/docs) are read-only: the hosted API accepts requests only through the site, so use a local run to try requests. Main groups:
 
 | Group | Endpoints |
 |---|---|
@@ -216,7 +219,6 @@ Interactive documentation is served at `/docs` on a running backend ([live API d
 - "Saved so far" is an estimate: it assumes the old price would have stayed the same.
 - Spending trends are estimates from the data you entered, not a payment history.
 - There are no automated tests yet.
-- Rate limits can be bypassed by calling the API host directly instead of going through the site.
 
 ## Roadmap
 
