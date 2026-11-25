@@ -148,24 +148,6 @@ class ReminderService:
                     next_date = next_date + timedelta(days=365)
         
         return next_date
-    
-    def reset_reminder_for_next_cycle(self, subscription, db: Session):
-        """
-        Reset reminder flags when subscription renews.
-        Use next_billing_date as base, not created_at.
-        
-        Args:
-            subscription: Subscription object
-            db: Database session
-        """
-        subscription.reminder_sent = False
-        subscription.last_reminder_date = None
-        # Use next_billing_date as base
-        subscription.next_billing_date = self.calculate_next_billing_date(
-            subscription.next_billing_date,
-            subscription.billing_cycle
-        )
-        db.commit()
 
 
 # Singleton instance

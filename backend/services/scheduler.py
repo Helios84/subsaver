@@ -113,11 +113,6 @@ class ReminderScheduler:
         """Stop the scheduler."""
         self.scheduler.shutdown()
         logger.info("📅 Reminder scheduler stopped")
-    
-    def run_now(self):
-        """Manually trigger reminder check (for testing)."""
-        logger.info("🔔 Manually triggering reminder check...")
-        self.check_and_send_reminders()
 
 
 # Singleton instance

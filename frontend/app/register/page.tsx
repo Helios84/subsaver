@@ -168,14 +168,10 @@ export default function RegisterPage() {
       return;
     }
     try {
-      const res = await apiFetch("/auth/register", {
+      await apiFetch("/auth/register", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      // Only propagate dev_code in development — never in production
-      if (res.dev_code && process.env.NODE_ENV === "development") {
-        sessionStorage.setItem("register_dev_code", res.dev_code);
-      }
       router.push(`/verify-email?email=${encodeURIComponent(email)}`);
 
     } catch (err: unknown) {

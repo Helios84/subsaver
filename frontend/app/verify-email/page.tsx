@@ -39,7 +39,6 @@ function VerifyEmailInner() {
   const [resendMsg, setResendMsg] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [mounted, setMounted] = useState(false);
-  const [devCode, setDevCode] = useState<string | null>(null); // shown when SMTP is off
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -50,16 +49,6 @@ function VerifyEmailInner() {
     }
     setTimeout(() => setMounted(true), 50);
     inputRefs.current[0]?.focus();
-    // Read dev_code from sessionStorage only in development
-    if (process.env.NODE_ENV === "development") {
-      const saved = sessionStorage.getItem("register_dev_code");
-      if (saved) {
-        setDevCode(saved);
-        sessionStorage.removeItem("register_dev_code");
-      }
-    } else {
-      sessionStorage.removeItem("register_dev_code"); // clean up even in production
-    }
   }, [email, router]);
 
   // Cooldown countdown
@@ -133,19 +122,12 @@ function VerifyEmailInner() {
     setResending(true);
     setResendMsg("");
     setError("");
-    setDevCode(null);
     try {
-      const res = await apiFetch("/auth/resend-confirmation", {
+      await apiFetch("/auth/resend-confirmation", {
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      // Only show dev_code in development environment
-      if (res.dev_code && process.env.NODE_ENV === "development") {
-        setDevCode(res.dev_code);
-        setResendMsg("Dev mode: SMTP offline, use the code shown above.");
-      } else {
-        setResendMsg("New code sent! Check your inbox.");
-      }
+      setResendMsg("New code sent! Check your inbox.");
       setCooldown(60);
     } catch {
       setResendMsg("Failed to resend. Please try again.");
@@ -225,15 +207,6 @@ function VerifyEmailInner() {
             <p style={{ color: "#A78BFA", fontSize: 15, fontWeight: 600, marginBottom: 36, wordBreak: "break-all" }}>
               {email || "your email address"}
             </p>
-
-            {/* Dev code banner — shown when SMTP is not configured */}
-            {devCode && (
-              <div style={{ marginBottom: 24, padding: "14px 16px", borderRadius: 14, background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.25)", textAlign: "center" }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(234,179,8,0.8)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>🛠 Dev mode — SMTP not configured</p>
-                <p style={{ fontSize: 32, fontWeight: 900, color: "#FBBF24", letterSpacing: "0.4em", fontFamily: "monospace", margin: "0 0 6px" }}>{devCode}</p>
-                <p style={{ fontSize: 11, color: "rgba(234,179,8,0.5)", margin: 0 }}>Use this code to confirm your email</p>
-              </div>
-            )}
 
             {/* Digit inputs */}
             <div

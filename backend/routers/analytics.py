@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta, timezone
-import calendar
-from typing import List, Dict, Any
+from datetime import datetime, timezone
+from typing import Dict
 
 from dependencies import get_db, get_current_user
 from models.db import User, Subscription

@@ -19,7 +19,6 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [countdown, setCountdown] = useState(0); // seconds until resend allowed
-    const [devCode, setDevCode] = useState<string | null>(null); // shown when SMTP is off
 
     // Reset state when modal opens
     useEffect(() => {
@@ -28,7 +27,6 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
             setEduEmail("");
             setCode("");
             setError(null);
-            setDevCode(null);
             setCountdown(0);
         }
     }, [isOpen]);
@@ -52,14 +50,10 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
         setLoading(true);
         setError(null);
         try {
-            const res = await apiFetch("/auth/verify-edu", {
+            await apiFetch("/auth/verify-edu", {
                 method: "POST",
                 body: JSON.stringify({ edu_email: eduEmail }),
             });
-            // Only show dev_code in development — never expose in production
-            if (res.dev_code && process.env.NODE_ENV === "development") {
-                setDevCode(res.dev_code);
-            }
             setStep("code");
             setCountdown(60); // allow resend after 60s
 
@@ -101,15 +95,12 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
         if (countdown > 0) return;
         setLoading(true);
         setError(null);
-        setDevCode(null);
         setCode(""); // Clear stale code so user can't accidentally submit it
         try {
-            const res = await apiFetch("/auth/verify-edu", {
+            await apiFetch("/auth/verify-edu", {
                 method: "POST",
                 body: JSON.stringify({ edu_email: eduEmail }),
             });
-            // Only show dev_code in development
-            if (res.dev_code && process.env.NODE_ENV === "development") setDevCode(res.dev_code);
             setCountdown(60);
         } catch (err: any) {
             setError(err.message || "Failed to resend. Please try again.");
@@ -232,24 +223,12 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
                     {/* ── STEP 2: Code ──────────────────────────────────── */}
                     {step === "code" && (
                         <form onSubmit={handleConfirmCode} className="space-y-4">
-                            {/* Dev code hint */}
-                            {devCode && (
-                                <div className="p-3 rounded-xl text-center"
-                                    style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)" }}>
-                                    <p className="text-xs text-yellow-400/80 font-medium">🛠 Dev mode — SMTP not configured</p>
-                                    <p className="text-2xl font-black text-yellow-400 tracking-widest mt-1">{devCode}</p>
-                                    <p className="text-xs text-yellow-400/50 mt-1">Use this code to complete verification</p>
-                                </div>
-                            )}
-
-                            {!devCode && (
-                                <div className="p-3 rounded-xl text-center"
-                                    style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
-                                    <p className="text-sm text-white/60">Code sent to</p>
-                                    <p className="text-sm font-semibold text-violet-400 mt-0.5">{eduEmail}</p>
-                                    <p className="text-xs text-white/30 mt-1">Check your inbox & spam folder. Valid for 15 minutes.</p>
-                                </div>
-                            )}
+                            <div className="p-3 rounded-xl text-center"
+                                style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.15)" }}>
+                                <p className="text-sm text-white/60">Code sent to</p>
+                                <p className="text-sm font-semibold text-violet-400 mt-0.5">{eduEmail}</p>
+                                <p className="text-xs text-white/30 mt-1">Check your inbox & spam folder. Valid for 15 minutes.</p>
+                            </div>
 
                             <div>
                                 <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
@@ -290,7 +269,7 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
                             <div className="flex items-center justify-between">
                                 <button
                                     type="button"
-                                    onClick={() => { setStep("email"); setCode(""); setError(null); setDevCode(null); }}
+                                    onClick={() => { setStep("email"); setCode(""); setError(null); }}
                                     className="text-xs text-white/30 hover:text-white/60 transition-colors flex items-center gap-1"
                                 >
                                     <ArrowRight size={12} className="rotate-180" /> Change email

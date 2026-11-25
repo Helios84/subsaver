@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # ── Rate Limiter (shared singleton — imported from limiter.py) ────────────────
 
 # ── Database: import engine/session + register all ORM models with Base ──────
-from database import engine, Base, SessionLocal
+from database import SessionLocal
 import models  # noqa: F401 — registers all ORM models with Base
 # NOTE: Schema is managed by Alembic — run `alembic upgrade head` to apply migrations.
 
