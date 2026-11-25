@@ -302,7 +302,7 @@ def reset_password(request: Request, payload: ResetPasswordRequest, db: Session 
 # ═══════════════════════════════════════════════════════════════════════════════
 @router.post("/auth/verify-edu")
 @limiter.limit("5/minute")
-async def request_verification_code(
+def request_verification_code(
     request: Request,
     req: VerificationRequest,
     current_user: User = Depends(get_current_user),
@@ -333,7 +333,7 @@ async def request_verification_code(
 
 @router.post("/auth/verify-edu/confirm")
 @limiter.limit("10/minute")
-async def confirm_verification_code(
+def confirm_verification_code(
     request: Request,
     req: VerificationConfirmRequest,
     current_user: User = Depends(get_current_user),
@@ -363,7 +363,7 @@ async def confirm_verification_code(
 # USER PROFILE
 # ═══════════════════════════════════════════════════════════════════════════════
 @router.get("/users/me", response_model=UserOut)
-async def read_users_me(current_user: User = Depends(get_current_user)):
+def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 

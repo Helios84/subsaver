@@ -17,7 +17,7 @@ def get_month_name(dt: datetime) -> str:
 
 
 @router.get("/trends")
-async def get_spending_trends(
+def get_spending_trends(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -104,7 +104,7 @@ async def get_spending_trends(
 
 
 @router.get("/insights")
-async def get_insights(
+def get_insights(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

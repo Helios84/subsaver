@@ -124,62 +124,48 @@ subsaver/
 
 ## Run locally
 
-Prerequisites: Python 3.11 or 3.12, Node.js 20+, and a PostgreSQL database (a free [Neon](https://neon.tech) database works; the migrations are PostgreSQL-only).
+Prerequisites: Python 3.11 or 3.12 and Node.js 20+. No database server is needed: locally the backend uses a SQLite file.
+The commands below are for macOS/Linux; Windows notes are in the comments.
 
 ### Backend
 
 ```bash
 cd backend
 python -m venv .venv
-.venv\Scripts\activate          # Windows
-# source .venv/bin/activate     # macOS/Linux
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-Create `backend/.env`:
-
-```
-JWT_SECRET=<a long random string>
-DATABASE_URL=postgresql://<user>:<password>@<host>/<database>
-ALLOWED_ORIGINS=http://localhost:3000
-FRONTEND_URL=http://localhost:3000
-ENVIRONMENT=development
-DEMO_ENABLED=true
-```
-
-Then:
-
-```bash
-alembic upgrade head
+cp .env.example .env             # Windows: copy .env.example .env
+alembic upgrade head             # creates subsaver.db
 python scripts/seed_discounts.py
 uvicorn main:app --reload --port 8000
 ```
 
 The API runs at http://localhost:8000 and the interactive docs at http://localhost:8000/docs.
-Without SMTP settings no email is sent; in `development` the confirmation codes are written to the server log instead.
+`.env.example` works as is for local use. Email is off by default: in `development` mode the confirmation codes are written to the server log instead.
 
 ### Frontend
+
+In a second terminal:
 
 ```bash
 cd frontend
 npm install
+cp .env.example .env.local       # Windows: copy .env.example .env.local
+npm run dev
 ```
 
-Create `frontend/.env.local`:
+Open http://localhost:3000 and click **Try the demo**, or register an account and take the confirmation code from the backend log.
 
-```
-BACKEND_URL=http://localhost:8000
-NEXT_PUBLIC_DEMO_ENABLED=true
-```
+### Using PostgreSQL
 
-Then `npm run dev` and open http://localhost:3000.
+Production runs on PostgreSQL. To use it locally, set `DATABASE_URL=postgresql://user:password@host/dbname` in `backend/.env` before running `alembic upgrade head`.
 
 ### Environment variables
 
 | Backend variable | Default | Purpose |
 |---|---|---|
 | `JWT_SECRET` | none (required) | Signs access tokens |
-| `DATABASE_URL` | `sqlite:///./subsaver.db` | PostgreSQL connection string |
+| `DATABASE_URL` | `sqlite:///./subsaver.db` | Database connection string (SQLite locally, PostgreSQL in production) |
 | `ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated CORS origins |
 | `FRONTEND_URL` | `http://localhost:3000` | Base URL for links in emails |
 | `ENVIRONMENT` | `production` | `development` logs verification codes when email is off |
@@ -230,13 +216,11 @@ Interactive documentation is served at `/docs` on a running backend ([live API d
 - "Saved so far" is an estimate: it assumes the old price would have stayed the same.
 - Spending trends are estimates from the data you entered, not a payment history.
 - There are no automated tests yet.
-- Migrations run only on PostgreSQL.
 - Rate limits can be bypassed by calling the API host directly instead of going through the site.
 
 ## Roadmap
 
 - Backend tests (pytest) and CI on every push
-- A committed `.env.example` and a database setup that works from a fresh clone
 - Lint clean-up (replace `any` types)
 
 ## Timeline

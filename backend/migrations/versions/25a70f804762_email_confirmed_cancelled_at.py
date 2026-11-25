@@ -24,7 +24,10 @@ def upgrade() -> None:
     op.add_column('users', sa.Column(
         'email_confirmed', sa.Boolean(), nullable=False, server_default=sa.false()
     ))
-    op.alter_column('users', 'email_confirmed', server_default=None)
+    # batch mode: SQLite cannot ALTER a column in place, so Alembic copies the
+    # table there; on PostgreSQL this is the same plain ALTER as before.
+    with op.batch_alter_table('users') as batch_op:
+        batch_op.alter_column('email_confirmed', server_default=None)
 
 
 def downgrade() -> None:

@@ -28,7 +28,7 @@ def _monthly_cost(sub: Subscription) -> int:
 
 @router.get("/summary")
 @limiter.limit("60/minute")  # Protect heavy 4-SQL endpoint
-async def get_dashboard_summary(
+def get_dashboard_summary(
     request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
