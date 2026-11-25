@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     # X-Forwarded-For. 0 = ignore the header and use the socket address.
     trusted_proxy_count: int = 0
 
+    # ── Demo account ──
+    # When enabled, POST /auth/demo-login gives each visitor a private sample
+    # account that is deleted after 24 hours.
+    demo_enabled: bool = False
+    demo_max_users: int = 500  # oldest demo accounts are removed beyond this
+
     # ── Email / SMTP (optional — server starts even without these) ──
     smtp_host: str = ""
     smtp_port: int = 2525

@@ -19,11 +19,18 @@ from schemas.auth import (
 )
 from core.security import hash_password, verify_password, needs_rehash, create_access_token
 from limiter import limiter
+from services.demo_service import create_demo_user
 from config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["auth"])
+
+
+def _forbid_demo(user: User | None, action: str) -> None:
+    """Demo accounts are temporary and have placeholder addresses, so account actions are blocked."""
+    if user is not None and user.is_demo:
+        raise HTTPException(status_code=403, detail=f"{action} is not available for demo accounts")
 
 
 def _log_unsent_code(kind: str, email: str, code: str) -> None:
@@ -199,6 +206,21 @@ def token(request: Request, form: OAuth2PasswordRequestForm = Depends(), db: Ses
     return {"access_token": create_access_token(email), "token_type": "bearer"}
 
 
+@router.post("/auth/demo-login", response_model=TokenResponse)
+@limiter.limit("10/hour")
+def demo_login(request: Request, db: Session = Depends(get_db)):
+    """Create a private temporary demo account and sign in to it (only when DEMO_ENABLED=true)."""
+    if not settings.demo_enabled:
+        raise HTTPException(status_code=404, detail="Demo account is not enabled")
+    try:
+        user = create_demo_user(db)
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to create demo account")
+        raise HTTPException(status_code=500, detail="Could not start the demo")
+    return {"access_token": create_access_token(user.email), "token_type": "bearer"}
+
+
 @router.post("/auth/logout")
 @limiter.limit("20/minute")
 def logout(
@@ -222,6 +244,7 @@ def logout(
 def forgot_password(request: Request, payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
+    _forbid_demo(user, "Password reset")
     if not user:
         return {"message": "If that email exists, a reset code has been sent."}
     code = str(secrets.randbelow(900000) + 100000)
@@ -240,6 +263,7 @@ def forgot_password(request: Request, payload: ForgotPasswordRequest, db: Sessio
 def verify_reset_code(request: Request, payload: VerifyResetCodeRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
+    _forbid_demo(user, "Password reset")
     if not user or not user.reset_code or not user.reset_expires:
         raise HTTPException(status_code=400, detail="Invalid request")
     if datetime.now(timezone.utc).replace(tzinfo=None) > user.reset_expires:
@@ -254,6 +278,7 @@ def verify_reset_code(request: Request, payload: VerifyResetCodeRequest, db: Ses
 def reset_password(request: Request, payload: ResetPasswordRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
+    _forbid_demo(user, "Password reset")
     if not user or not user.reset_code or not user.reset_expires:
         raise HTTPException(status_code=400, detail="Invalid request")
     if datetime.now(timezone.utc).replace(tzinfo=None) > user.reset_expires:
@@ -283,6 +308,7 @@ async def request_verification_code(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    _forbid_demo(current_user, "Student verification")
     try:
         if current_user.is_verified:
             return {"message": "Already verified", "is_verified": True}
@@ -313,6 +339,7 @@ async def confirm_verification_code(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    _forbid_demo(current_user, "Student verification")
     if current_user.is_verified:
         return {"message": "Already verified", "is_verified": True}
     # Use dedicated edu_verification_code fields
@@ -353,6 +380,7 @@ def delete_account(
     """Permanently delete the current user's account and all associated data.
     Requires password confirmation to prevent accidental/unauthorized deletion.
     """
+    _forbid_demo(current_user, "Account deletion")
     if not verify_password(payload.password, current_user.password_hash):
         raise HTTPException(status_code=403, detail="Incorrect password")
     db.delete(current_user)

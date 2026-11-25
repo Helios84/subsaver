@@ -65,6 +65,10 @@ This is a solo student portfolio project, not a commercial service.
 - Email confirmation required before first login
 - Password required to delete an account
 
+### Demo account
+- Optional "Try the demo" button: each visitor gets a private temporary account with sample subscriptions
+- Demo accounts are deleted after 24 hours by an hourly job and cannot change account settings
+
 ---
 
 ## Limitations
@@ -244,6 +248,8 @@ npm run dev
 | `FRONTEND_URL` | yes | `http://localhost:3000` | Base URL used for links in emails |
 | `ENVIRONMENT` | no | `production` | `development` or `production`. Verification codes are written to the log only in `development` |
 | `TRUSTED_PROXY_COUNT` | no | `0` | Number of reverse proxies in front of the API; used to read the client IP for rate limiting from `X-Forwarded-For` |
+| `DEMO_ENABLED` | no | `false` | `true` enables temporary demo accounts (`POST /auth/demo-login`) |
+| `DEMO_MAX_USERS` | no | `500` | Maximum number of live demo accounts; the oldest are removed first |
 | `SMTP_HOST` | no | empty | SMTP host |
 | `SMTP_PORT` | no | `2525` | SMTP port |
 | `SMTP_USER` | no | empty | SMTP username |
@@ -260,6 +266,7 @@ The server starts without SMTP settings; emails are then skipped and a warning i
 | `BACKEND_URL` | yes | Backend URL used by the Next.js proxy |
 | `NEXT_PUBLIC_SITE_URL` | no | Public URL of the site, used for Open Graph links |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | no | Contact address; contact links are hidden when unset |
+| `NEXT_PUBLIC_DEMO_ENABLED` | no | `true` shows the "Try the demo" button (the backend needs `DEMO_ENABLED=true`) |
 
 ---
 
@@ -291,6 +298,7 @@ Interactive docs are served at `/docs` on any running backend.
 | `POST` | `/auth/confirm-email` | Confirm the email with the code |
 | `POST` | `/auth/login` | Log in and receive a JWT |
 | `POST` | `/auth/logout` | Revoke the current token |
+| `POST` | `/auth/demo-login` | Create a temporary demo account and sign in (when enabled) |
 | `POST` | `/auth/forgot-password` | Request a password reset code |
 | `POST` | `/auth/reset-password` | Set a new password with the code |
 | `POST` | `/auth/verify-edu` | Request a `.edu` verification code |

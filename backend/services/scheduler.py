@@ -62,6 +62,20 @@ class ReminderScheduler:
             db.close()
 
     
+    def cleanup_demo_users(self):
+        """Delete temporary demo accounts that are older than 24 hours."""
+        if not self.db_session_maker:
+            return
+        from services.demo_service import delete_expired_demo_users
+        db = self.db_session_maker()
+        try:
+            delete_expired_demo_users(db)
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error during demo account cleanup: {str(e)}")
+        finally:
+            db.close()
+
     def start(self):
         """Start the scheduler."""
         # Run every day at 9:00 AM UTC (timezone explicitly set)
@@ -79,6 +93,16 @@ class ReminderScheduler:
             CronTrigger(hour=3, minute=0, timezone="UTC"),
             id="daily_token_cleanup",
             name="Clean up expired revoked tokens",
+            replace_existing=True
+        )
+
+        # Remove expired demo accounts every hour. Runs even when the demo is
+        # switched off, so accounts created earlier are still cleaned up.
+        self.scheduler.add_job(
+            self.cleanup_demo_users,
+            CronTrigger(minute=15, timezone="UTC"),
+            id="hourly_demo_cleanup",
+            name="Delete expired demo accounts",
             replace_existing=True
         )
 

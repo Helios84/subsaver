@@ -3,7 +3,7 @@ ORM models for User and Subscription.
 Extracted from main.py so all modules can import without circular imports.
 """
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, false
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -40,6 +40,9 @@ class User(Base):
 
     # Dashboard customization preferences (JSON blob synced from frontend)
     dashboard_preferences = Column(Text, nullable=True)
+
+    # Temporary demo account: restricted, and deleted automatically after 24 hours
+    is_demo = Column(Boolean, default=False, nullable=False, server_default=false(), index=True)
 
     subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
 

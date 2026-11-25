@@ -9,6 +9,7 @@ import {
   Users, TrendingDown, ArrowRight
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
+import DemoLoginButton from "./components/DemoLoginButton";
 
 // Optional contact address; the footer link is hidden when it is not set.
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
@@ -509,6 +510,15 @@ export default function Home() {
               </>
             )}
           </div>
+
+          {!isAuthenticated && (
+            <div style={{ marginBottom: "20px" }}>
+              <DemoLoginButton
+                className="hero-btn-ghost"
+                style={{ gap: "10px", padding: "0 28px", fontSize: "14px", fontWeight: 600, height: "44px" }}
+              />
+            </div>
+          )}
 
           {/* Trust row */}
           <div

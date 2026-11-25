@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { apiFetch } from "../lib/api";
+import DemoLoginButton from "../components/DemoLoginButton";
 import { Mail, Lock, ArrowRight, Sparkles, Shield, Zap, Star, Eye, EyeOff, CheckCircle, Hash } from "lucide-react";
 
 /* ── Styled input wrapper ─────────────────────────────────────────────────── */
@@ -377,6 +378,15 @@ function LoginPageInner() {
                 </button>
               )}
             </form>
+          )}
+
+          {forgotStage === "login" && (
+            <div style={{ marginTop: "1rem" }}>
+              <DemoLoginButton
+                className="hero-btn-ghost"
+                style={{ width: "100%", padding: "13px", fontSize: "14px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+              />
+            </div>
           )}
 
           {/* Footer */}

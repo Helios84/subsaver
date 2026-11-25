@@ -39,6 +39,9 @@ def update_reminder_settings(
     db: Session = Depends(get_db)
 ):
     """Update user's reminder settings."""
+    # Demo addresses are placeholders, so reminder emails stay off for them.
+    if current_user.is_demo and settings.reminder_enabled:
+        raise HTTPException(status_code=403, detail="Email reminders are not available for demo accounts")
     if settings.reminder_enabled is not None:
         current_user.reminder_enabled = settings.reminder_enabled
     

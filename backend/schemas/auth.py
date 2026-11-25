@@ -109,6 +109,7 @@ class UserOut(BaseModel):
     email_confirmed: bool
     edu_email: Optional[str] = None
     created_at: datetime
+    is_demo: bool = False
 
     class Config:
         from_attributes = True

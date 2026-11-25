@@ -148,6 +148,7 @@ async def get_dashboard_summary(
         "is_verified": current_user.is_verified,
         "email_confirmed": current_user.email_confirmed,
         "edu_email": current_user.edu_email,
+        "is_demo": current_user.is_demo,
         "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
     }
 

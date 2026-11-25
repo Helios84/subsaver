@@ -751,6 +751,17 @@ export default function DashboardPage() {
 
         {/* Subtle divider between actions and content */}
         <div style={{ height: 1, background: "rgba(255,255,255,0.05)", margin: "-0.5rem 0" }} />
+        {/* Demo account notice */}
+        {user?.is_demo && (
+          <div
+            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl"
+            style={{ background: "rgba(6,182,212,0.07)", border: "1px solid rgba(6,182,212,0.25)" }}
+          >
+            <p className="text-sm text-cyan-200">
+              You&apos;re using a temporary demo account with sample data. It will be deleted within 24 hours.
+            </p>
+          </div>
+        )}
         {/* Verify Student prompt */}
         {user && !user.is_verified && (
           <button

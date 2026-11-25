@@ -52,6 +52,7 @@ export interface UserOut {
   email_confirmed: boolean;
   edu_email?: string | null;
   created_at: string;
+  is_demo?: boolean;
 }
 
 // ─── Analytics ────────────────────────────────────────────────────────────────

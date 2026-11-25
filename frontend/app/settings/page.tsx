@@ -21,6 +21,7 @@ interface UserProfile {
   is_verified: boolean;
   edu_email: string | null;
   created_at: string;
+  is_demo?: boolean;
 }
 
 // ─── Tab config ───────────────────────────────────────────────────────────────
@@ -104,6 +105,12 @@ function SettingsPageInner() {
     }
   }
 
+  // Demo accounts are temporary: password, student verification, email
+  // reminders and account deletion are not available, so only Profile is shown.
+  const isDemo = !!user?.is_demo;
+  const tabs = isDemo ? TABS.filter((t) => t.id === "profile") : TABS;
+  const shownTab: Tab = isDemo ? "profile" : activeTab;
+
   return (
     <main className="min-h-screen text-white pb-24 relative overflow-hidden" style={{ background: "#080B14" }}>
 
@@ -152,6 +159,12 @@ function SettingsPageInner() {
             </p>
           </div>
 
+          {isDemo && (
+            <div style={{ marginBottom: 16, padding: "12px 16px", borderRadius: 12, background: "rgba(6,182,212,0.07)", border: "1px solid rgba(6,182,212,0.25)", color: "#A5F3FC", fontSize: 13, lineHeight: 1.6 }}>
+              You&apos;re using a temporary demo account. Password, student verification, email reminders and account deletion are not available here.
+            </div>
+          )}
+
           {/* Tab Bar */}
           <div style={{
             display: "flex", gap: 4, padding: "5px",
@@ -160,8 +173,8 @@ function SettingsPageInner() {
             borderRadius: 16, marginBottom: 24,
             overflowX: "auto",
           }}>
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
+            {tabs.map((tab) => {
+              const isActive = shownTab === tab.id;
               return (
                 <button
                   key={tab.id}
@@ -190,11 +203,11 @@ function SettingsPageInner() {
             </div>
           ) : (
             <>
-              {activeTab === "profile"       && <ProfileTab user={user} onRefresh={fetchUser} toast={toast} />}
-              {activeTab === "security"      && <SecurityTab user={user} toast={toast} />}
-              {activeTab === "student"       && <StudentTab user={user} onRefresh={fetchUser} toast={toast} />}
-              {activeTab === "notifications" && <NotificationsTab toast={toast} />}
-              {activeTab === "danger"        && <DangerTab router={router} toast={toast} />}
+              {shownTab === "profile"       && <ProfileTab user={user} onRefresh={fetchUser} toast={toast} />}
+              {shownTab === "security"      && <SecurityTab user={user} toast={toast} />}
+              {shownTab === "student"       && <StudentTab user={user} onRefresh={fetchUser} toast={toast} />}
+              {shownTab === "notifications" && <NotificationsTab toast={toast} />}
+              {shownTab === "danger"        && <DangerTab router={router} toast={toast} />}
             </>
           )}
         </div>
