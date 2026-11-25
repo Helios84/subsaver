@@ -23,6 +23,7 @@ import OnboardingModal, { shouldShowOnboarding } from "../components/OnboardingM
 import { getExchangeRates, formatMoney as fxFormat, type Currency } from "../lib/currency";
 import { CATEGORIES } from "../lib/categories";
 import type { Sub, StudentDiscount, UserOut as User } from "../types/index";
+import { monthlyShareCents, displayName } from "../lib/money";
 
 // ─── Local aliases ────────────────────────────────────────────────────────────
 type BillingCycle = "monthly" | "yearly";
@@ -238,7 +239,7 @@ export default function DashboardPage() {
   }
 
   async function addSampleData() {
-    toast("Adding demo subscriptions…", "info");
+    toast("Adding sample subscriptions…", "info");
     const sampleSubs = [
       { name: "Spotify",              price_cents: 999,  billing_cycle: "monthly", category: "Entertainment", split_with: 2 },
       { name: "Netflix",              price_cents: 1599, billing_cycle: "monthly", category: "Entertainment", split_with: 4 },
@@ -250,9 +251,9 @@ export default function DashboardPage() {
         await apiFetch("/subscriptions", { method: "POST", body: JSON.stringify(sub) });
       }
       await fetchSubs();
-      toast("Demo data added! Explore your dashboard.", "success");
+      toast("Sample subscriptions added.", "success");
     } catch (err) {
-      toast("Failed to add demo data. Please try again.", "error");
+      toast("Could not add the sample subscriptions. Please try again.", "error");
     }
   }
 
@@ -506,10 +507,7 @@ export default function DashboardPage() {
     totalSavings, cancelledCount, mostExpensive, nextRenewalDays,
   } = useMemo(() => {
     const activeSubs = subs.filter((s) => s.status === "active");
-    const sumMonthly = activeSubs.reduce((acc, s) => {
-      const split = Math.max(1, s.split_with ?? 1);
-      return acc + (s.billing_cycle === "monthly" ? Math.round(s.price_cents / split) : Math.round(s.price_cents / split / 12));
-    }, 0);
+    const sumMonthly = activeSubs.reduce((acc, s) => acc + monthlyShareCents(s), 0);
     const avgPerSubscription = activeSubs.length > 0 ? sumMonthly / activeSubs.length : 0;
     const upcoming = activeSubs
       .filter((s) => s.next_billing_date)
@@ -600,7 +598,7 @@ export default function DashboardPage() {
                 </h1>
                 {user && (
                   <p className="text-xs text-white/45 mt-0.5 leading-none">
-                    Hey, <span className="text-white/70 font-semibold">{user.email?.split('@')[0] ?? 'there'}</span> 👋
+                    Hey, <span className="text-white/70 font-semibold">{displayName(user)}</span> 👋
                   </p>
                 )}
               </div>
@@ -690,7 +688,7 @@ export default function DashboardPage() {
                   {(user.email?.[0] ?? 'U').toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">{user.email?.split('@')[0]}</p>
+                  <p className="text-sm font-semibold text-white">{displayName(user)}</p>
                   <p className="text-[11px] text-white/40">{user.email}</p>
                 </div>
                 {user.is_verified && (
@@ -744,7 +742,7 @@ export default function DashboardPage() {
               title="Export subscriptions as CSV"
             >
               <Download className="w-[18px] h-[18px] shrink-0 text-emerald-400" />
-              <span className="font-semibold text-[15px] leading-none hidden sm:inline">Export CSV</span>
+              <span className="font-semibold text-[15px] leading-none">Export CSV</span>
             </button>
           )}
         </div>
@@ -922,6 +920,7 @@ export default function DashboardPage() {
                         <div style={{ flex: "1 1 140px", minWidth: 120 }}>
                           <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "rgba(255,255,255,0.3)", marginBottom: 6 }}>Category</div>
                           <select
+                            aria-label="Filter by category"
                             value={filterCategory}
                             onChange={(e) => setFilterCategory(e.target.value)}
                             className="liquid-select"
@@ -936,6 +935,7 @@ export default function DashboardPage() {
                         <div style={{ flex: "1 1 140px", minWidth: 120 }}>
                           <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "rgba(255,255,255,0.3)", marginBottom: 6 }}>Sort by</div>
                           <select
+                            aria-label="Sort by"
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as any)}
                             className="liquid-select"

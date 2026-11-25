@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "../lib/api";
 import { useToast } from "../components/ToastProvider";
+import { displayName } from "../lib/money";
 import {
   ArrowLeft, User, Shield, GraduationCap, Bell, AlertTriangle,
   Mail, Calendar, Lock, Eye, EyeOff, CheckCircle2, XCircle,
@@ -231,7 +232,7 @@ export default function SettingsPage() {
 function ProfileTab({ user, onRefresh, toast }: { user: UserProfile | null; onRefresh: () => void; toast: Function }) {
   if (!user) return null;
 
-  const initials = user.email.slice(0, 2).toUpperCase();
+  const initials = displayName(user).slice(0, 1).toUpperCase();
   const joined = new Date(user.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
   return (
@@ -252,7 +253,7 @@ function ProfileTab({ user, onRefresh, toast }: { user: UserProfile | null; onRe
           </div>
           <div>
             <div style={{ color: "white", fontWeight: 700, fontSize: 18, marginBottom: 4 }}>
-              {user.email.split("@")[0]}
+              {displayName(user)}
             </div>
             <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontFamily: "monospace" }}>
               {user.email}

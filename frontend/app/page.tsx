@@ -4,771 +4,330 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import {
-  DollarSign, BarChart3, Shield, Zap, Bell,
-  GraduationCap, CheckCircle2, Sparkles,
-  Users, TrendingDown, ArrowRight
+  BarChart3, Bell, CalendarClock, GraduationCap, LayoutDashboard,
+  ListPlus, Menu, PieChart, Shield, SlidersHorizontal, Users, X, ArrowRight,
 } from "lucide-react";
-import { apiFetch } from "./lib/api";
 import DemoLoginButton from "./components/DemoLoginButton";
 
 // Optional contact address; the footer link is hidden when it is not set.
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
+const DEMO_ENABLED = process.env.NEXT_PUBLIC_DEMO_ENABLED === "true";
 
-/* ── Centre wrapper — inline styles to bypass any Tailwind/CSS issues ── */
-const CONTAINER_STYLE: React.CSSProperties = {
-  maxWidth: "1024px",
-  width: "100%",
-  margin: "0 auto",
-  paddingLeft: "clamp(20px, 5vw, 32px)",
-  paddingRight: "clamp(20px, 5vw, 32px)",
-  boxSizing: "border-box",
-};
+const HEADING_FONT = { fontFamily: "var(--font-syne, sans-serif)" } as const;
 
-/* ── Floating Subscription Card ── */
-function FloatingCard({ name, price, icon, color, delay, x, y, rotate }: {
-  name: string; price: string; icon: string; color: string;
-  delay: string; x: string; y: string; rotate: string;
-}) {
+const STEPS = [
+  {
+    icon: ListPlus,
+    title: "Add what you pay for",
+    text: "Pick a service from the list or type your own. Enter the price, the billing cycle and how many people share it.",
+    image: "/screenshots/step-add.webp",
+    alt: "The service picker with a search box and a list of services",
+  },
+  {
+    icon: PieChart,
+    title: "See where the money goes",
+    text: "The dashboard adds everything up: your monthly total, a six-month trend and a breakdown by category.",
+    image: "/screenshots/step-dashboard.webp",
+    alt: "Dashboard charts: spending trend and category breakdown",
+  },
+  {
+    icon: CalendarClock,
+    title: "Know what renews next",
+    text: "Upcoming charges are listed by date and shown on a calendar. Turn on email reminders to hear about them a few days ahead.",
+    image: "/screenshots/step-renewals.webp",
+    alt: "The list of upcoming renewals and the billing calendar",
+  },
+];
+
+const FEATURES = [
+  { icon: Users, color: "#D946EF", title: "Cost splitting", text: "Share a plan with roommates? Record how many people split it and see only your share in the totals." },
+  { icon: GraduationCap, color: "#A78BFA", title: "Student prices", text: "A catalog of 60 services with student pricing, matched against your subscriptions by name." },
+  { icon: Bell, color: "#22D3EE", title: "Renewal reminders", text: "An optional email a few days before a subscription renews. You choose how many days." },
+  { icon: BarChart3, color: "#34D399", title: "Spending charts", text: "Monthly and yearly totals, a six-month trend and a category breakdown, in USD, EUR or GBP." },
+  { icon: SlidersHorizontal, color: "#FBBF24", title: "Adjustable dashboard", text: "Reorder, resize or hide dashboard widgets with drag and drop. Your layout is saved to your account." },
+  { icon: Shield, color: "#F87171", title: "Private by design", text: "You enter everything by hand. No bank connection, no ads, no analytics. Passwords are stored as bcrypt hashes." },
+];
+
+function Logo({ size = 24 }: { size?: number }) {
   return (
-    <div
-      className="absolute liquid-card rounded-2xl px-4 py-3 flex items-center gap-3 select-none"
-      style={{
-        left: x, top: y,
-        animation: `liquid-float 7s ease-in-out infinite ${delay}`,
-        transform: `rotate(${rotate})`,
-        minWidth: "170px",
-        zIndex: 2,
-      }}
-    >
-      <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
-        style={{ background: `${color}25`, border: `1px solid ${color}40` }}
-      >
-        {icon}
-      </div>
-      <div>
-        <p className="text-xs text-white/50 font-medium">{name}</p>
-        <p className="text-sm font-bold text-white">{price}</p>
-      </div>
-    </div>
+    <span className="flex items-center gap-2.5">
+      <Image src="/logo.svg" alt="" width={size} height={size} className="rounded-md" />
+      <span className="text-lg font-extrabold tracking-tight text-white" style={HEADING_FONT}>
+        Sub<span className="gradient-text">Saver</span>
+      </span>
+    </span>
   );
 }
 
-/* ── Feature Card — centred icon, centred text ── */
-function FeatureCard({ icon: Icon, title, desc, color, delay }: {
-  icon: any; title: string; desc: string; color: string; delay: string;
-}) {
-  return (
-    <div
-      className="liquid-card rounded-2xl p-8 group cursor-default flex flex-col items-center text-center gap-4 transition-all duration-300 hover:translate-y-[-4px]"
-      style={{
-        animationDelay: delay,
-        borderColor: "rgba(255,255,255,0.07)",
-      }}
-    >
-      <div
-        className="flex items-center justify-center shrink-0 rounded-2xl transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg"
-        style={{
-          width: "56px", height: "56px",
-          minWidth: "56px", minHeight: "56px",
-          background: `${color}18`,
-          border: `1px solid ${color}38`,
-          boxShadow: `0 0 0 0 ${color}30`,
-        }}
-      >
-        <Icon style={{ width: "24px", height: "24px", color, flexShrink: 0 }} />
-      </div>
-      <div>
-        <h3
-          className="text-base font-bold text-white mb-2"
-          style={{ fontFamily: "var(--font-syne, sans-serif)" }}
-        >
-          {title}
-        </h3>
-        <p className="text-sm text-white/45 leading-relaxed">{desc}</p>
-      </div>
-    </div>
-  );
-}
-
-/* ─── PAGE ─── */
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("subsaver_token");
-      if (token) {
-        setIsAuthenticated(true);
-        apiFetch("/users/me")
-          .then(data => setUser(data))
-          .catch(err => console.error("Failed to load user info:", err));
-      }
-    }
+    setIsAuthenticated(!!localStorage.getItem("subsaver_token"));
   }, []);
 
-  const handleLogout = () => {
+  const logout = () => {
     localStorage.removeItem("subsaver_token");
     setIsAuthenticated(false);
-    setUser(null);
+    setMenuOpen(false);
   };
 
+  const navLinks = [
+    { label: "How it works", href: "#how-it-works" },
+    { label: "Features", href: "#features" },
+  ];
+
   return (
-    <main style={{ minHeight: "100vh", background: "#080B14", color: "white", display: "block", width: "100%" }}>
+    <main className="min-h-screen w-full overflow-x-clip text-white" style={{ background: "#080B14" }}>
 
-      {/* ─── HEADER ─── */}
-      <header className="glass-header sticky top-0 z-50" style={{ width: "100%" }}>
-        <div style={CONTAINER_STYLE}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            height: "64px",
-            position: "relative",
-          }}>
+      {/* ─── Header ─── */}
+      <header className="glass-header sticky top-0 z-50 w-full">
+        <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-4 px-5 sm:px-8">
+          <Link href="/" aria-label="SubSaver home" className="shrink-0">
+            <Logo />
+          </Link>
 
-            {/* LEFT: Logo */}
-            <Link href="/" className="group" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", flexShrink: 0 }}>
-              <div style={{ position: "relative", flexShrink: 0 }}>
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #7C3AED, #D946EF)", borderRadius: "10px", filter: "blur(8px)", opacity: 0.5 }} className="group-hover:opacity-80 transition-opacity" />
-                <div style={{ position: "relative", background: "linear-gradient(135deg, #7C3AED, #D946EF)", borderRadius: "10px", padding: "6px", boxShadow: "0 4px 12px rgba(124,58,237,0.4)" }}>
-                  <Image src="/logo.svg" alt="SubSaver" width={24} height={24} style={{ width: 24, height: 24, borderRadius: "6px", display: "block" }} />
-                </div>
-              </div>
-              <span style={{ fontFamily: "var(--font-syne, sans-serif)", fontSize: "18px", fontWeight: 800, letterSpacing: "-0.01em", color: "white" }}>
-                Sub<span className="gradient-text">Saver</span>
-              </span>
-            </Link>
+          <nav aria-label="Main" className="hidden items-center gap-8 md:flex">
+            {navLinks.map((l) => (
+              <a key={l.href} href={l.href} className="text-sm font-medium text-white/70 transition-colors hover:text-white">
+                {l.label}
+              </a>
+            ))}
+          </nav>
 
-            {/* CENTER: Nav — desktop only */}
-            <nav style={{
-              position: "absolute",
-              left: "50%",
-              top: "50%",
-              transform: "translate(-50%, -50%)",
-              display: "flex",
-              alignItems: "center",
-              gap: "32px",
-            }} className="hidden lg:flex">
-              {[
-                { label: "Features", href: "#features" },
-              ].map(({ label, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "rgba(255,255,255,0.55)",
-                    textDecoration: "none",
-                    transition: "color 0.2s",
-                    cursor: "pointer",
-                    paddingBottom: "2px",
-                    borderBottom: "1px solid transparent",
-                  }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLAnchorElement).style.color = "white";
-                    (e.currentTarget as HTMLAnchorElement).style.borderBottomColor = "rgba(167,139,250,0.6)";
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.55)";
-                    (e.currentTarget as HTMLAnchorElement).style.borderBottomColor = "transparent";
-                  }}
-                >
-                  {label}
+          <div className="hidden items-center gap-2.5 md:flex">
+            {isAuthenticated ? (
+              <>
+                <button onClick={logout} className="hero-btn-ghost h-10 px-4 text-sm font-semibold">Log out</button>
+                <Link href="/dashboard" className="hero-btn-primary h-10 gap-2 px-5 text-sm font-bold">
+                  <LayoutDashboard className="h-4 w-4" /> Dashboard
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="hero-btn-ghost h-10 px-4 text-sm font-semibold">Log in</Link>
+                <Link href="/register" className="hero-btn-primary h-10 px-5 text-sm font-bold">Create account</Link>
+              </>
+            )}
+          </div>
+
+          <button
+            id="mobile-menu-btn"
+            type="button"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-white md:hidden"
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+
+        {menuOpen && (
+          <div className="border-t border-white/10 px-5 pb-5 pt-3 md:hidden" style={{ background: "rgba(8,11,20,0.97)" }}>
+            <nav aria-label="Mobile" className="flex flex-col">
+              {navLinks.map((l) => (
+                <a key={l.href} href={l.href} onClick={() => setMenuOpen(false)} className="rounded-lg px-2 py-3 text-base font-medium text-white/80">
+                  {l.label}
                 </a>
               ))}
             </nav>
-
-            {/* RIGHT: Actions */}
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+            <div className="mt-3 flex flex-col gap-2.5">
               {isAuthenticated ? (
                 <>
-                  {user && (
-                    <span className="hidden lg:block" style={{ fontSize: "13px", color: "rgba(255,255,255,0.45)", marginRight: "4px" }}>
-                      {user.email}
-                    </span>
-                  )}
-                  <button
-                    onClick={handleLogout}
-                    className="hidden md:flex"
-                    style={{
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "38px",
-                      padding: "0 18px",
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      color: "rgba(255,255,255,0.6)",
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.10)",
-                      borderRadius: "10px",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      boxSizing: "border-box",
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.color = "white"; e.currentTarget.style.background = "rgba(255,255,255,0.09)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.6)"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
-                  >
-                    Log out
-                  </button>
-                  <Link
-                    href="/dashboard"
-                    className="hero-btn-primary"
-                    style={{ height: "38px", padding: "0 18px", fontSize: "13px", fontWeight: 700, gap: "6px" }}
-                  >
-                    Dashboard
-                  </Link>
+                  <Link href="/dashboard" className="hero-btn-primary h-12 text-sm font-bold">Go to dashboard</Link>
+                  <button onClick={logout} className="hero-btn-ghost h-12 text-sm font-semibold">Log out</button>
                 </>
               ) : (
                 <>
-                  {/* Log in — ghost button, visible border */}
-                  <Link
-                    href="/login"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "38px",
-                      padding: "0 18px",
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      color: "rgba(255,255,255,0.80)",
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      borderRadius: "10px",
-                      textDecoration: "none",
-                      transition: "all 0.2s",
-                      boxSizing: "border-box",
-                      whiteSpace: "nowrap",
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.color = "white"; e.currentTarget.style.background = "rgba(255,255,255,0.09)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.22)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.80)"; e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; }}
-                  >
-                    Log in
-                  </Link>
-
-                  {/* Get Started — primary */}
-                  <Link
-                    href="/register"
-                    className="hero-btn-primary"
-                    style={{ height: "38px", padding: "0 18px", fontSize: "13px", fontWeight: 700, whiteSpace: "nowrap" }}
-                  >
-                    Get Started
-                  </Link>
+                  <Link href="/register" className="hero-btn-primary h-12 text-sm font-bold">Create account</Link>
+                  <Link href="/login" className="hero-btn-ghost h-12 text-sm font-semibold">Log in</Link>
                 </>
               )}
-
-              {/* Mobile hamburger */}
-              <button
-                id="mobile-menu-btn"
-                onClick={() => setMobileMenuOpen(o => !o)}
-                className="flex lg:hidden"
-                style={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "38px",
-                  height: "38px",
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "10px",
-                  cursor: "pointer",
-                  flexDirection: "column",
-                  gap: "5px",
-                  padding: 0,
-                  flexShrink: 0,
-                }}
-                aria-label="Toggle menu"
-              >
-                {mobileMenuOpen ? (
-                  <>
-                    <span style={{ display: "block", width: "16px", height: "1.5px", background: "white", borderRadius: "2px", transform: "rotate(45deg) translateY(4.5px)" }} />
-                    <span style={{ display: "block", width: "16px", height: "1.5px", background: "white", borderRadius: "2px", transform: "rotate(-45deg) translateY(-4.5px)" }} />
-                  </>
-                ) : (
-                  <>
-                    <span style={{ display: "block", width: "16px", height: "1.5px", background: "rgba(255,255,255,0.7)", borderRadius: "2px" }} />
-                    <span style={{ display: "block", width: "12px", height: "1.5px", background: "rgba(255,255,255,0.7)", borderRadius: "2px" }} />
-                    <span style={{ display: "block", width: "16px", height: "1.5px", background: "rgba(255,255,255,0.7)", borderRadius: "2px" }} />
-                  </>
-                )}
-              </button>
             </div>
-          </div>
-        </div>
-
-        {/* Mobile nav dropdown */}
-        {mobileMenuOpen && (
-          <div style={{
-            background: "rgba(8,11,20,0.97)",
-            backdropFilter: "blur(24px)",
-            borderTop: "1px solid rgba(255,255,255,0.07)",
-            padding: "20px",
-          }}>
-            <nav style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "20px" }}>
-              {[
-                { label: "Features", href: "#features" },
-              ].map(({ label, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  style={{
-                    display: "block",
-                    padding: "12px 16px",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    color: "rgba(255,255,255,0.65)",
-                    textDecoration: "none",
-                    borderRadius: "10px",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "white"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.65)"; }}
-                >
-                  {label}
-                </a>
-              ))}
-            </nav>
-            {!isAuthenticated && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    height: "46px", borderRadius: "12px",
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    color: "rgba(255,255,255,0.85)",
-                    fontSize: "15px", fontWeight: 600,
-                    textDecoration: "none",
-                  }}
-                >
-                  Log in
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="hero-btn-primary"
-                  style={{ height: "46px", fontSize: "15px", fontWeight: 700 }}
-                >
-                  Get Started Free
-                </Link>
-              </div>
-            )}
-            {isAuthenticated && (
-              <Link
-                href="/dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="hero-btn-primary"
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "46px", fontSize: "15px", fontWeight: 700, textDecoration: "none" }}
-              >
-                Go to Dashboard
-              </Link>
-            )}
           </div>
         )}
       </header>
 
-      {/* ─── HERO ─── */}
-      <section
-        style={{ position: "relative", minHeight: "100vh", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
-      >
-        {/* Aurora blobs */}
-        <div className="aurora-container">
-          <div className="aurora-blob animate-aurora-1 animate-aurora-pulse" style={{ width: "700px", height: "700px", background: "radial-gradient(circle, rgba(124,58,237,0.35) 0%, rgba(124,58,237,0.05) 70%)", top: "5%", left: "-10%" }} />
-          <div className="aurora-blob animate-aurora-2" style={{ width: "600px", height: "600px", background: "radial-gradient(circle, rgba(217,70,239,0.3) 0%, rgba(217,70,239,0.04) 70%)", top: "20%", right: "-5%" }} />
-          <div className="aurora-blob animate-aurora-3" style={{ width: "500px", height: "500px", background: "radial-gradient(circle, rgba(79,70,229,0.25) 0%, transparent 70%)", bottom: "10%", left: "30%" }} />
-          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+      {/* ─── Hero ─── */}
+      <section className="relative w-full overflow-hidden">
+        <div className="aurora-container" aria-hidden="true">
+          <div className="aurora-blob animate-aurora-1" style={{ width: 640, height: 640, top: "-18%", left: "-12%", background: "radial-gradient(circle, rgba(124,58,237,0.32) 0%, transparent 70%)" }} />
+          <div className="aurora-blob animate-aurora-2" style={{ width: 560, height: 560, top: "8%", right: "-14%", background: "radial-gradient(circle, rgba(217,70,239,0.22) 0%, transparent 70%)" }} />
         </div>
 
-        {/* Floating subscription cards */}
-        <div className="absolute inset-0 pointer-events-none hidden lg:block">
-          <FloatingCard name="Spotify" price="$4.99/mo" icon="🎵" color="#1DB954" delay="0s" x="4%" y="28%" rotate="-4deg" />
-          <FloatingCard name="Adobe CC" price="$19.99/mo" icon="🎨" color="#FF0000" delay="0.5s" x="76%" y="24%" rotate="5deg" />
-          <FloatingCard name="Xbox Pass" price="$4.99/mo" icon="🎮" color="#107C10" delay="1.8s" x="72%" y="62%" rotate="-3deg" />
-          <FloatingCard name="Notion" price="Free" icon="📝" color="#FFFFFF" delay="0.8s" x="3%" y="46%" rotate="2deg" />
-        </div>
-
-        {/* Hero content — absolute centre */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 10,
-            width: "100%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            textAlign: "center",
-            padding: "clamp(80px, 13vh, 144px) clamp(20px, 5vw, 32px)",
-          }}
-        >
-          {/* Badge */}
-          <div className="liquid-badge animate-pulse-glow" style={{ marginBottom: "28px" }}>
-            <GraduationCap className="w-3.5 h-3.5 text-violet-400" />
-            <span>Subscription tracker for students</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+        <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-5 pb-16 pt-16 text-center sm:px-8 sm:pt-24">
+          <div className="liquid-badge mb-7">
+            <GraduationCap className="h-3.5 w-3.5 text-violet-300" aria-hidden="true" />
+            <span>Free subscription tracker for students</span>
           </div>
 
-          {/* Headline */}
           <h1
-            style={{
-              fontFamily: "var(--font-syne, sans-serif)",
-              fontSize: "clamp(52px, 9vw, 100px)",
-              fontWeight: 900,
-              letterSpacing: "-0.03em",
-              lineHeight: 0.93,
-              marginBottom: "36px",
-              maxWidth: "900px",
-              textAlign: "center",
-            }}
+            className="mb-6 max-w-4xl font-black text-white"
+            style={{ ...HEADING_FONT, fontSize: "clamp(28px, 5vw, 58px)", lineHeight: 1.08, letterSpacing: "-0.02em" }}
           >
-            <span style={{ color: "white" }}>Track your</span>
-            <br />
-            <span className="gradient-text-animate">subscriptions.</span>
+            Know what your <br className="hidden sm:block" />
+            <span className="gradient-text">subscriptions</span> cost
           </h1>
 
-          {/* Subtitle */}
-          <p
-            style={{
-              fontSize: "17px",
-              color: "rgba(255,255,255,0.5)",
-              maxWidth: "500px",
-              lineHeight: 1.7,
-              marginBottom: "44px",
-              textAlign: "center",
-            }}
-          >
-            See what your subscriptions cost each month, split shared plans,
-            get renewal reminders and look up student prices.
+          <p className="mb-9 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
+            Add the subscriptions you pay for and see the monthly total, your share of split plans,
+            and what renews next. You enter everything by hand; nothing connects to your bank.
           </p>
 
-          {/* CTA Buttons */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "12px",
-              flexWrap: "wrap",
-              marginBottom: "20px",
-            }}
-          >
+          <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row">
             {isAuthenticated ? (
-              <Link
-                href="/dashboard"
-                className="hero-btn-primary"
-                style={{
-                  gap: "10px",
-                  padding: "0 36px",
-                  fontSize: "15px",
-                  fontWeight: 700,
-                  height: "52px",
-                  letterSpacing: "0.01em",
-                }}
-              >
-                <BarChart3 style={{ width: 18, height: 18, flexShrink: 0 }} />
-                Go to Dashboard
+              <Link href="/dashboard" className="hero-btn-primary h-[52px] w-full gap-2.5 px-9 text-[15px] font-bold sm:w-auto">
+                <LayoutDashboard className="h-[18px] w-[18px]" /> Go to dashboard
               </Link>
             ) : (
               <>
+                {DEMO_ENABLED && (
+                  <div className="w-full sm:w-auto">
+                    <DemoLoginButton className="hero-btn-primary h-[52px] w-full gap-2.5 px-9 text-[15px] font-bold sm:w-auto" />
+                  </div>
+                )}
                 <Link
                   href="/register"
-                  className="hero-btn-primary"
-                  style={{
-                    gap: "10px",
-                    padding: "0 36px",
-                    fontSize: "15px",
-                    fontWeight: 700,
-                    height: "52px",
-                    letterSpacing: "0.01em",
-                  }}
+                  className={`${DEMO_ENABLED ? "hero-btn-ghost font-semibold" : "hero-btn-primary font-bold"} h-[52px] w-full gap-2.5 px-8 text-[15px] sm:w-auto`}
                 >
-                  <Zap style={{ width: 18, height: 18, flexShrink: 0, fill: "currentColor" }} />
-                  Start Saving Free
-                </Link>
-
-                <Link
-                  href="/login"
-                  className="hero-btn-ghost"
-                  style={{
-                    gap: "10px",
-                    padding: "0 36px",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    height: "52px",
-                    letterSpacing: "0.01em",
-                  }}
-                >
-                  Log In
-                  <ArrowRight style={{ width: 16, height: 16, flexShrink: 0 }} />
+                  Create free account <ArrowRight className="h-4 w-4" />
                 </Link>
               </>
             )}
           </div>
 
-          {!isAuthenticated && (
-            <div style={{ marginBottom: "20px" }}>
-              <DemoLoginButton
-                className="hero-btn-ghost"
-                style={{ gap: "10px", padding: "0 28px", fontSize: "14px", fontWeight: 600, height: "44px" }}
-              />
-            </div>
+          {!isAuthenticated && DEMO_ENABLED && (
+            <p className="mt-4 text-sm text-white/60">
+              The demo opens a temporary account with sample data. No sign-up needed.
+            </p>
           )}
 
-          {/* Trust row */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "28px",
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "rgba(255,255,255,0.32)", fontWeight: 500 }}>
-              <CheckCircle2 style={{ width: 15, height: 15, color: "rgba(74,222,128,0.6)", flexShrink: 0 }} />
-              No credit card required
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "rgba(255,255,255,0.32)", fontWeight: 500 }}>
-              <CheckCircle2 style={{ width: 15, height: 15, color: "rgba(74,222,128,0.6)", flexShrink: 0 }} />
-              Free for students
-            </div>
-          </div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div style={{ position: "absolute", bottom: "40px", left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", opacity: 0.25 }}>
-          <div className="w-5 h-8 rounded-full border border-white/30 flex items-start justify-center pt-1.5">
-            <div className="w-1 h-2 bg-white rounded-full" style={{ animation: "liquid-float 1.5s ease-in-out infinite" }} />
+          {/* Product screenshot */}
+          <div className="mt-14 w-full overflow-hidden rounded-2xl border border-white/10 shadow-2xl" style={{ boxShadow: "0 40px 120px -30px rgba(124,58,237,0.45)" }}>
+            <Image
+              src="/screenshots/dashboard.webp"
+              alt="The SubSaver dashboard with sample data: monthly spend, spending trend, category breakdown and upcoming renewals"
+              width={1440}
+              height={900}
+              priority
+              sizes="(max-width: 1024px) 100vw, 960px"
+              className="block h-auto w-full"
+            />
           </div>
         </div>
       </section>
 
-      {/* ─── DIVIDER ─── */}
+      {/* ─── How it works ─── */}
+      <section id="how-it-works" className="w-full scroll-mt-20 py-16 sm:py-24">
+        <div className="mx-auto w-full max-w-5xl px-5 sm:px-8">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <h2 className="mb-4 text-3xl font-black text-white sm:text-4xl" style={HEADING_FONT}>How it works</h2>
+            <p className="text-base text-white/70">Three steps, a few minutes. All screenshots show the demo account.</p>
+          </div>
+
+          <ol className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {STEPS.map((s, i) => (
+              <li key={s.title} className="liquid-card flex flex-col overflow-hidden rounded-2xl">
+                <div className="border-b border-white/10 bg-black/20">
+                  <Image src={s.image} alt={s.alt} width={800} height={600} sizes="(max-width: 768px) 100vw, 320px" className="block h-auto w-full" />
+                </div>
+                <div className="flex flex-1 flex-col gap-2 p-6">
+                  <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-violet-300">
+                    <s.icon className="h-4 w-4" aria-hidden="true" /> Step {i + 1}
+                  </p>
+                  <h3 className="text-lg font-bold text-white" style={HEADING_FONT}>{s.title}</h3>
+                  <p className="text-sm leading-relaxed text-white/70">{s.text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
       <div className="section-divider" />
 
-      {/* ─── FEATURES ─── */}
-      <section id="features" style={{ width: "100%", padding: "80px 0" }}>
-        <div style={CONTAINER_STYLE}>
-          {/* Centred heading */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: "64px", width: "100%" }}>
-            <div className="liquid-badge mb-6">
-              <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" />
-              <span>Powerful Features</span>
-            </div>
-            <h2
-              className="text-4xl lg:text-5xl font-black text-white mb-5 leading-tight"
-              style={{ fontFamily: "var(--font-syne, sans-serif)", maxWidth: "600px" }}
-            >
-              Everything You Need to <span className="gradient-text">Save Money</span>
-            </h2>
-            <p className="text-base text-white/40" style={{ maxWidth: "480px" }}>
-              Tools designed to help you understand and optimize your subscription spending.
-            </p>
+      {/* ─── Features ─── */}
+      <section id="features" className="w-full scroll-mt-20 py-16 sm:py-24">
+        <div className="mx-auto w-full max-w-5xl px-5 sm:px-8">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <h2 className="mb-4 text-3xl font-black text-white sm:text-4xl" style={HEADING_FONT}>What it does</h2>
+            <p className="text-base text-white/70">The features that exist today, nothing planned or promised.</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" style={{ width: "100%" }}>
-            <FeatureCard icon={DollarSign} title="Student Discounts" desc="Look up student prices for 60 services such as Spotify and Adobe, and see which of your subscriptions have one." color="#7C3AED" delay="0s" />
-            <FeatureCard icon={Bell} title="Renewal Reminders" desc="Get an email a few days before a subscription renews, so a charge never comes as a surprise." color="#06B6D4" delay="0.1s" />
-            <FeatureCard icon={BarChart3} title="Expense Tracking" desc="Visualize exactly where your money goes. Track both monthly and yearly subscriptions in one place." color="#10B981" delay="0.2s" />
-            <FeatureCard icon={Users} title="Split Costs" desc="Share Netflix with a roommate? Split the cost in the app and track exactly what your share is." color="#D946EF" delay="0.3s" />
-            <FeatureCard icon={Shield} title="Secure & Private" desc="Passwords are stored as bcrypt hashes and all traffic uses HTTPS. No ads, no analytics, no bank connection." color="#F59E0B" delay="0.4s" />
-            <FeatureCard icon={TrendingDown} title="Spending Insights" desc="Simple rule-based tips: renewals due this week, categories that dominate your budget, and plans that may be cheaper yearly." color="#EF4444" delay="0.5s" />
-          </div>
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((f) => (
+              <li key={f.title} className="liquid-card flex flex-col gap-4 rounded-2xl p-6">
+                <span
+                  className="flex h-12 w-12 items-center justify-center rounded-xl"
+                  style={{ background: `${f.color}1F`, border: `1px solid ${f.color}55` }}
+                >
+                  <f.icon className="h-5 w-5" style={{ color: f.color }} aria-hidden="true" />
+                </span>
+                <div>
+                  <h3 className="mb-1.5 text-base font-bold text-white" style={HEADING_FONT}>{f.title}</h3>
+                  <p className="text-sm leading-relaxed text-white/70">{f.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <p className="mx-auto mt-10 max-w-2xl text-center text-sm leading-relaxed text-white/60">
+            SubSaver is a student portfolio project. It does not cancel, pay for or manage subscriptions with any provider,
+            and catalog prices are maintained by hand, so check the provider&apos;s site before relying on them.
+          </p>
         </div>
       </section>
 
-      {/* ─── CTA ─── */}
-      <section style={{ width: "100%", padding: "80px 0 100px" }}>
-        <div style={CONTAINER_STYLE}>
-          <div
-            className="relative overflow-hidden"
-            style={{
-              borderRadius: "clamp(20px, 3vw, 28px)",
-              background: "linear-gradient(135deg, #3B1F7E 0%, #6B21A8 30%, #9D174D 65%, #7C3AED 100%)",
-            }}
-          >
-            {/* Ambient blobs — decorative only */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="aurora-blob animate-aurora-2" style={{ width: "500px", height: "500px", background: "radial-gradient(circle, rgba(255,255,255,0.10) 0%, transparent 70%)", top: "-30%", right: "-5%" }} />
-              <div className="aurora-blob animate-aurora-3" style={{ width: "350px", height: "350px", background: "radial-gradient(circle, rgba(0,0,0,0.22) 0%, transparent 70%)", bottom: "-20%", left: "5%" }} />
-            </div>
-
-            {/*
-              Layout:
-                • Mobile  (< lg): flex-col, text centred
-                • Desktop (≥ lg): 2-column grid, text left / card right
-            */}
-            <div className="relative z-10 flex flex-col lg:grid lg:grid-cols-2 lg:items-center">
-
-              {/* ── LEFT: headline + feature list ── */}
-              <div
-                className="flex flex-col items-center text-center lg:items-start lg:text-left"
-                style={{ padding: "clamp(36px, 6vw, 64px)" }}
-              >
-                {/* Badge */}
-                <div
-                  className="inline-flex items-center gap-2 rounded-lg mb-6"
-                  style={{
-                    padding: "6px 14px",
-                    background: "rgba(255,255,255,0.10)",
-                    border: "1px solid rgba(255,255,255,0.18)",
-                  }}
-                >
-                  <Zap className="w-3.5 h-3.5 text-yellow-300" style={{ fill: "currentColor" }} />
-                  <span className="text-sm text-white font-medium">Free Forever for Students</span>
-                </div>
-
-                {/* Headline */}
-                <h2
-                  className="font-black text-white mb-4 leading-[1.08]"
-                  style={{
-                    fontFamily: "var(--font-syne, sans-serif)",
-                    fontSize: "clamp(28px, 4vw, 48px)",
-                  }}
-                >
-                  Track your<br />subscriptions.
-                </h2>
-
-                {/* Sub */}
-                <p
-                  className="text-white/60 leading-relaxed mb-8"
-                  style={{ fontSize: "clamp(14px, 1.5vw, 16px)", maxWidth: "340px" }}
-                >
-                  Free to use. You enter your subscriptions by hand; nothing connects to your bank.
-                </p>
-
-                {/* Feature list */}
-                <div className="flex flex-col gap-3 w-full max-w-xs lg:max-w-none">
-                  {[
-                    "Student prices for 60 services",
-                    "Email reminders before a renewal",
-                    "Shared plans split between roommates",
-                  ].map((f, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <div
-                        className="shrink-0 rounded-full flex items-center justify-center"
-                        style={{ width: "20px", height: "20px", minWidth: "20px", background: "rgba(255,255,255,0.15)" }}
-                      >
-                        <CheckCircle2 style={{ width: "12px", height: "12px", color: "white" }} />
-                      </div>
-                      <span className="text-sm text-white/70">{f}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* ── RIGHT: glass action card ── */}
-              <div
-                className="flex items-center justify-center"
-                style={{ padding: "clamp(24px, 5vw, 64px)" }}
-              >
-                <div
-                  className="flex flex-col gap-4 w-full"
-                  style={{
-                    maxWidth: "360px",
-                    borderRadius: "20px",
-                    padding: "clamp(24px, 4vw, 36px)",
-                    background: "rgba(0,0,0,0.28)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    backdropFilter: "blur(40px)",
-                    WebkitBackdropFilter: "blur(40px)",
-                  }}
-                >
-                  <p className="text-white font-bold text-lg" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>
-                    Get started
-                  </p>
-                  <p className="text-white/50 text-sm leading-relaxed">
-                    Free account. No credit card needed.
-                  </p>
-
-                  {/* Stat pill */}
-                  <div
-                    className="flex items-center gap-3"
-                    style={{
-                      borderRadius: "12px",
-                      padding: "12px 16px",
-                      background: "rgba(255,255,255,0.08)",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                    }}
-                  >
-                    <p
-                      className="font-black text-fuchsia-300 font-mono tabular-nums"
-                      style={{ fontSize: "28px", lineHeight: 1 }}
-                    >
-                      60
-                    </p>
-                    <div>
-                      <p className="text-xs text-white font-semibold">services</p>
-                      <p className="text-xs text-white/40">in the student discount catalog</p>
-                    </div>
+      {/* ─── Call to action ─── */}
+      <section className="w-full px-5 pb-20 sm:px-8">
+        <div
+          className="mx-auto flex w-full max-w-5xl flex-col items-center gap-6 rounded-3xl px-6 py-12 text-center sm:px-12 sm:py-16"
+          style={{ background: "linear-gradient(135deg, #3B1F7E 0%, #5B21B6 45%, #86198F 100%)" }}
+        >
+          <h2 className="max-w-xl text-2xl font-black text-white sm:text-4xl" style={{ ...HEADING_FONT, textWrap: "balance" }}>
+            See it with sample data first
+          </h2>
+          <p className="max-w-lg text-base leading-relaxed text-white/80">
+            {DEMO_ENABLED
+              ? "Open the demo to look around, or create a free account to track your own subscriptions."
+              : "Create a free account to track your own subscriptions."}
+          </p>
+          <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row">
+            {isAuthenticated ? (
+              <Link href="/dashboard" className="cta-btn-white flex h-[52px] w-full items-center justify-center gap-2 px-8 text-[15px] font-black sm:w-auto">
+                <LayoutDashboard className="h-4 w-4" /> Go to dashboard
+              </Link>
+            ) : (
+              <>
+                {DEMO_ENABLED && (
+                  <div className="w-full sm:w-auto">
+                    <DemoLoginButton className="cta-btn-white flex h-[52px] w-full items-center justify-center gap-2 px-8 text-[15px] font-black sm:w-auto" />
                   </div>
-
-                  {/* Primary CTA */}
-                  {isAuthenticated ? (
-                    <Link
-                      href="/dashboard"
-                      className="cta-btn-white font-black flex items-center justify-center gap-2"
-                      style={{ padding: "14px 24px", fontSize: "15px", width: "100%" }}
-                    >
-                      <BarChart3 className="w-4 h-4" style={{ fill: "currentColor" }} />
-                      Go to Dashboard
-                    </Link>
-                  ) : (
-                    <>
-                      <Link
-                        href="/register"
-                        className="cta-btn-white font-black flex items-center justify-center gap-2"
-                        style={{ padding: "14px 24px", fontSize: "15px", width: "100%" }}
-                      >
-                        <Zap className="w-4 h-4" style={{ fill: "currentColor" }} />
-                        Create Free Account
-                      </Link>
-
-                      {/* Secondary link */}
-                      <Link
-                        href="/login"
-                        className="text-center transition-colors hover:text-white"
-                        style={{ fontSize: "13px", color: "rgba(255,255,255,0.45)" }}
-                      >
-                        Already have an account?{" "}
-                        <span className="text-violet-300 font-semibold">Log in →</span>
-                      </Link>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
+                )}
+                <Link
+                  href="/register"
+                  className={`${DEMO_ENABLED ? "border border-white/40 text-white hover:bg-white/10" : "cta-btn-white font-black"} flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] px-8 text-[15px] font-semibold transition-colors sm:w-auto`}
+                >
+                  Create free account
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
 
-      {/* ─── FOOTER ─── */}
-      <footer style={{ width: "100%", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-        <div style={CONTAINER_STYLE}>
-          <div className="py-10 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2.5">
-              <div className="bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl p-1.5">
-                <Image src="/logo.svg" alt="SubSaver" width={20} height={20} className="w-5 h-5 rounded" />
-              </div>
-              <span className="font-bold text-white" style={{ fontFamily: "var(--font-syne, sans-serif)" }}>
-                Sub<span className="text-white/40">Saver</span>
-              </span>
-            </div>
-            <p className="text-sm text-white/25">© {new Date().getFullYear()} SubSaver. All rights reserved.</p>
-            <div className="flex gap-6 text-sm text-white/35">
-              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-              {CONTACT_EMAIL && (
-                <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-white transition-colors">Contact</a>
-              )}
-            </div>
-          </div>
+      {/* ─── Footer ─── */}
+      <footer className="w-full border-t border-white/10">
+        <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-5 px-5 py-9 sm:px-8 md:flex-row">
+          <Logo size={20} />
+          <p className="text-sm text-white/60">© {new Date().getFullYear()} SubSaver. A student portfolio project.</p>
+          <nav aria-label="Footer" className="flex gap-6 text-sm text-white/70">
+            <Link href="/privacy" className="py-2 hover:text-white">Privacy</Link>
+            <Link href="/terms" className="py-2 hover:text-white">Terms</Link>
+            {CONTACT_EMAIL && <a href={`mailto:${CONTACT_EMAIL}`} className="py-2 hover:text-white">Contact</a>}
+          </nav>
         </div>
       </footer>
     </main>

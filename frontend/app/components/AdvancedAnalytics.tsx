@@ -38,7 +38,7 @@ export const DEFAULT_SPANS: Partial<Record<WidgetId, WidgetSpan>> = {
   category_breakdown: 2, // Half width
   insights: 1,           // Quarter (may expand adaptively)
   renewals: 1,           // Quarter (may expand adaptively)
-  billing_calendar: 4,   // Full width
+  billing_calendar: 2,   // Half width: month grid plus the list of charges
 };
 
 // Widget label map for chips in placeholder

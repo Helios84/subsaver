@@ -8,6 +8,9 @@ from models.db import User, Subscription
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 
+# Monthly subscriptions at or above this price get a "check the yearly plan" hint.
+MONTHLY_PLAN_HINT_CENTS = 1000
+
 
 def get_month_name(dt: datetime) -> str:
     return dt.strftime("%b")
@@ -159,25 +162,18 @@ async def get_insights(
                 "action": "Analyze"
             })
 
-    # Insight 3: Switch to Yearly
-    potential_yearly_savings = 0
-    count_switchable = 0
+    # Insight 3: monthly plans that cost enough for a yearly plan to be worth checking
+    count_switchable = sum(
+        1 for sub in subs
+        if sub.billing_cycle == "monthly" and sub.price_cents >= MONTHLY_PLAN_HINT_CENTS
+    )
 
-    for sub in subs:
-        if sub.billing_cycle == "monthly":
-            # Heuristic: 20% saving on yearly
-            saving = sub.price_cents * 12 * 0.20
-            if saving > 2000:  # Save more than $20
-                potential_yearly_savings += saving
-                count_switchable += 1
-
-    if potential_yearly_savings > 0:
+    if count_switchable > 0:
         insights.append({
             "type": "success",
-            "title": "Annual Plan Savings",
-            "message": f"Switching {count_switchable} service{'s' if count_switchable > 1 else ''} to annual plans could save you ~${round(potential_yearly_savings / 100):.0f}/year.",
-            "amount_cents": int(potential_yearly_savings),
-            "action": "View Options"
+            "title": "Monthly plans",
+            "message": f"{count_switchable} subscription{'s are' if count_switchable > 1 else ' is'} billed monthly. Yearly plans are often cheaper, so check each provider's pricing.",
+            "action": "Review"
         })
 
     return insights

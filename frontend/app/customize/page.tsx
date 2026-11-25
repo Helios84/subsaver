@@ -28,6 +28,7 @@ import StatsGrid from "../components/dashboard/StatsGrid";
 import AdvancedAnalytics from "../components/AdvancedAnalytics";
 import DraggableAnalyticsGrid from "../components/DraggableAnalyticsGrid";
 import { getExchangeRates, formatMoney as fxFormat, CURRENCY_SYMBOLS } from "../lib/currency";
+import { monthlyShareCents, shareCents } from "../lib/money";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type WidgetId =
@@ -78,10 +79,16 @@ export const STAT_CARD_LABELS: Record<StatCardId, string> = {
   next_renewal_days: "Next Renewal",
 };
 
+// "total_savings" is not offered yet: the app has no real savings figure to show there.
 export const DEFAULT_STATS_CARDS: StatCardId[] = [
   "monthly_spend", "active_count", "yearly_projection", "avg_per_sub",
-  "total_savings", "cancelled_count", "most_expensive", "next_renewal_days",
+  "cancelled_count", "most_expensive", "next_renewal_days",
 ];
+
+/** Drop cards that are no longer offered from a saved list. */
+function offeredStatCards(list: StatCardId[]): StatCardId[] {
+  return list.filter(id => DEFAULT_STATS_CARDS.includes(id));
+}
 
 
 const DEFAULT_WIDGET_SIZES: Partial<Record<WidgetId, WidgetSpan>> = {
@@ -90,7 +97,7 @@ const DEFAULT_WIDGET_SIZES: Partial<Record<WidgetId, WidgetSpan>> = {
   category_breakdown: 2,
   insights:           1,
   renewals:           1,
-  billing_calendar:   4,
+  billing_calendar:   2,  // with the rest this adds up to exactly 12 grid units (3 rows)
 };
 
 const DEFAULT_WIDGETS: WidgetConfig[] = [
@@ -140,7 +147,7 @@ export function loadDashboardSettings(): DashboardSettings {
       currency:         parsed.currency         ?? "USD",
       density:          parsed.density          ?? "comfortable",
       showQuickActions: parsed.showQuickActions ?? true,
-      statsCards:       parsed.statsCards       ?? DEFAULT_STATS_CARDS,
+      statsCards:       offeredStatCards(parsed.statsCards ?? DEFAULT_STATS_CARDS),
       widgetSizes:      (parsed.widgetSizes as any) ?? DEFAULT_WIDGET_SIZES,
     };
   } catch { return getDefaults(); }
@@ -337,8 +344,7 @@ function RealDashboardPreview({ settings, subs, user, onWidgetReorder }: {
 
   const isWidgetEnabled = (id: string) => settings.widgets.find(w => w.id === id)?.enabled ?? true;
   const activeSubs = subs.filter(s => s.status === "active");
-  const sumMonthly = activeSubs.reduce((acc, s) =>
-    acc + (s.billing_cycle === "monthly" ? s.price_cents : Math.round(s.price_cents / 12)), 0);
+  const sumMonthly = activeSubs.reduce((acc, s) => acc + monthlyShareCents(s), 0);
   const avgPerSub = activeSubs.length > 0 ? sumMonthly / activeSubs.length : 0;
   const today = new Date();
   const upcomingRenewals = activeSubs
@@ -361,7 +367,7 @@ function RealDashboardPreview({ settings, subs, user, onWidgetReorder }: {
     active_count:      String(activeSubs.length),
     yearly_projection: formatMoney(sumMonthly * 12, currency, fxRates),
     avg_per_sub:       formatMoney(avgPerSub, currency, fxRates),
-    total_savings:     formatMoney(activeSubs.filter(s => s.student_discount_applied).reduce((a) => a + 500, 0), currency, fxRates),
+    total_savings:     formatMoney(0, currency, fxRates),
     cancelled_count:   String(subs.filter(s => s.status === "cancelled").length),
     most_expensive:    activeSubs.length > 0 ? `${activeSubs.sort((a,b) => b.price_cents - a.price_cents)[0].name.slice(0,8)}…` : "N/A",
     next_renewal_days: upcomingRenewals.length > 0 ? `${upcomingRenewals[0].daysUntil}d` : "N/A",
@@ -483,7 +489,7 @@ function RealDashboardPreview({ settings, subs, user, onWidgetReorder }: {
                 <div className="space-y-2">
                   {subs.map(s => {
                     const col = "#7C3AED";
-                    const price = s.split_with && s.split_with > 1 ? s.price_cents / s.split_with : s.price_cents;
+                    const price = shareCents(s.price_cents, s.split_with);
                     return (
                       <div key={s.id} className="flex items-center gap-4 px-4 py-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm" style={{ background: `${col}18`, border: `1px solid ${col}30`, color: col }}>
@@ -502,7 +508,7 @@ function RealDashboardPreview({ settings, subs, user, onWidgetReorder }: {
                 <div className={`grid gap-4 ${settings.density === "standard" ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"}`}>
                   {subs.map(s => {
                     const col = "#7C3AED";
-                    const price = s.split_with && s.split_with > 1 ? s.price_cents / s.split_with : s.price_cents;
+                    const price = shareCents(s.price_cents, s.split_with);
                     return (
                       <div key={s.id} className="rounded-xl p-5 relative overflow-hidden liquid-card">
                         <div className="flex items-start gap-3 mb-4">
@@ -578,6 +584,7 @@ export default function CustomizePage() {
   const [isDirty, setIsDirty] = useState(false);
   const [activeId, setActiveId] = useState<WidgetId | null>(null);
   const [subs, setSubs] = useState<Sub[]>([]);
+  const [subsLoaded, setSubsLoaded] = useState(false);
   const [user, setUser] = useState<{ is_verified: boolean; email: string } | null>(null);
   // Undo stack — each entry is a full settings snapshot before the change
   const [undoStack, setUndoStack] = useState<DashboardSettings[]>([]);
@@ -600,7 +607,7 @@ export default function CustomizePage() {
     if (focus) setFocusWidgetId(focus);
     // Start with localStorage (instant, no flicker)
     setSettings(loadDashboardSettings());
-    apiFetch("/subscriptions").then(setSubs).catch(console.error);
+    apiFetch("/subscriptions").then(setSubs).catch(console.error).finally(() => setSubsLoaded(true));
     apiFetch("/users/me").then(setUser).catch(console.error);
     // Load preferences from backend and merge (cross-device sync)
     apiFetch("/users/me/preferences")
@@ -616,7 +623,7 @@ export default function CustomizePage() {
               if (backendPrefs.density) merged.density = backendPrefs.density;
               if (backendPrefs.layout) merged.layout = backendPrefs.layout;
               if (typeof backendPrefs.showQuickActions === "boolean") merged.showQuickActions = backendPrefs.showQuickActions;
-              if (backendPrefs.statsCards?.length) merged.statsCards = backendPrefs.statsCards;
+              if (backendPrefs.statsCards?.length) merged.statsCards = offeredStatCards(backendPrefs.statsCards);
               if (backendPrefs.widgetSizes) merged.widgetSizes = backendPrefs.widgetSizes;
               if (backendPrefs.widgets?.length) {
                 const enabledMap: Record<string, boolean> = {};
@@ -780,7 +787,7 @@ export default function CustomizePage() {
       icon: "💰",
       description: "Spending & categories first",
       widgetOrder: ["spending_trends", "category_breakdown", "renewals", "savings_card", "insights", "billing_calendar"] as WidgetId[],
-      widgetSizes: { spending_trends: 3, category_breakdown: 1, renewals: 2, savings_card: 2, insights: 2, billing_calendar: 4 } as Partial<Record<WidgetId, WidgetSpan>>,
+      widgetSizes: { spending_trends: 3, category_breakdown: 1, renewals: 1, savings_card: 2, insights: 1, billing_calendar: 4 } as Partial<Record<WidgetId, WidgetSpan>>,
     },
     {
       id: "overview",
@@ -864,8 +871,13 @@ export default function CustomizePage() {
       <div className="flex" style={{ height: "calc(100vh - 56px)" }}>
 
         {/* LEFT: Settings sidebar */}
-        <aside className="w-[320px] shrink-0 border-r border-white/[0.06] flex flex-col overflow-hidden" style={{ background: "rgba(0,0,0,0.25)" }}>
+        <aside className="w-full lg:w-[320px] shrink-0 border-r border-white/[0.06] flex flex-col overflow-hidden" style={{ background: "rgba(0,0,0,0.25)" }}>
           <div className="flex-1 overflow-y-auto p-4 space-y-5">
+
+            {/* The live preview needs a wide screen; on phones only the settings are shown. */}
+            <p className="lg:hidden rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3 text-xs leading-relaxed text-white/60">
+              The live preview is shown on larger screens. Your changes apply to the dashboard after you save.
+            </p>
 
             {/* ── 1. Density ── */}
             <div>
@@ -1044,8 +1056,8 @@ export default function CustomizePage() {
           </div>
         </aside>
 
-        {/* RIGHT: Live preview */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* RIGHT: Live preview (wide screens only) */}
+        <div className="hidden lg:flex flex-1 flex-col overflow-hidden">
           {/* Preview chrome bar */}
           <div className="flex items-center gap-3 px-5 py-2.5 border-b border-white/[0.04] shrink-0" style={{ background: "rgba(9,9,15,0.6)", backdropFilter: "blur(12px)" }}>
             <div className="flex gap-1.5">
@@ -1089,19 +1101,26 @@ export default function CustomizePage() {
               </div>
             )}
             <div className="relative z-10 h-full p-4">
-              <RealDashboardPreview
-                settings={settings}
-                subs={subs}
-                user={user}
-                onWidgetReorder={(newOrder) => {
-                  mark(prev => ({
-                    ...prev,
-                    widgets: newOrder
-                      .map(id => prev.widgets.find(w => w.id === id))
-                      .filter(Boolean) as typeof prev.widgets,
-                  }));
-                }}
-              />
+              {!subsLoaded ? (
+                <div role="status" className="flex h-full items-center justify-center gap-3 text-sm text-white/60">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
+                  Loading preview…
+                </div>
+              ) : (
+                <RealDashboardPreview
+                  settings={settings}
+                  subs={subs}
+                  user={user}
+                  onWidgetReorder={(newOrder) => {
+                    mark(prev => ({
+                      ...prev,
+                      widgets: newOrder
+                        .map(id => prev.widgets.find(w => w.id === id))
+                        .filter(Boolean) as typeof prev.widgets,
+                    }));
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>

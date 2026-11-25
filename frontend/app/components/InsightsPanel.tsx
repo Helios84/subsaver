@@ -11,9 +11,9 @@ interface Insight {
 }
 
 const TYPE_STYLES = {
-    warning: { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)',  title: '#FCA5A5', body: 'rgba(252,165,165,0.6)', dot: '#F87171', iconColor: '#EF4444' },
-    success: { bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)', title: '#6EE7B7', body: 'rgba(110,231,183,0.6)', dot: '#34D399', iconColor: '#10B981' },
-    info:    { bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.2)', title: '#C4B5FD', body: 'rgba(196,181,253,0.6)', dot: '#A78BFA', iconColor: '#7C3AED' },
+    warning: { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)',  title: '#FCA5A5', body: 'rgba(252,165,165,0.85)', dot: '#F87171', iconColor: '#EF4444' },
+    success: { bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)', title: '#6EE7B7', body: 'rgba(110,231,183,0.85)', dot: '#34D399', iconColor: '#10B981' },
+    info:    { bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.2)', title: '#C4B5FD', body: 'rgba(196,181,253,0.85)', dot: '#A78BFA', iconColor: '#7C3AED' },
 } as const;
 
 // Tip cards shown when there is spare space at the bottom
@@ -24,7 +24,7 @@ const SPACE_TIPS = [
 
 export default function InsightsPanel({ insights, span = 1 }: { insights: Insight[], span?: WidgetSpan }) {
     const compact = span === 1;
-    const showTips = compact && insights.length <= 2;
+    const showTips = compact && insights.length <= 1;
     const showFullTips = !compact && insights.length <= 1;
 
     return (
@@ -64,7 +64,10 @@ export default function InsightsPanel({ insights, span = 1 }: { insights: Insigh
                                     <div key={idx} className="flex items-start gap-2 p-2.5 rounded-xl"
                                         style={{ background: s.bg, border: `1px solid ${s.border}` }}>
                                         <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: s.dot }} />
-                                        <p className="text-xs font-semibold leading-snug" style={{ color: s.title }}>{insight.title}</p>
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-semibold leading-snug" style={{ color: s.title }}>{insight.title}</p>
+                                            <p className="text-[11px] mt-0.5 leading-snug" style={{ color: s.body }}>{insight.message}</p>
+                                        </div>
                                     </div>
                                 );
                             }

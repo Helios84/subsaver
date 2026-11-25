@@ -4,11 +4,13 @@ import type { WidgetSpan } from "./AdvancedAnalytics";
 import { WIDGET_H } from "./AdvancedAnalytics";
 import { formatMoney as fxFormat, CURRENCY_SYMBOLS } from "../lib/currency";
 import type { Currency } from "../lib/currency";
+import { shareCents } from "../lib/money";
 
 interface Subscription {
     id: number;
     name: string;
     price_cents: number;
+    split_with?: number;
     next_billing_date?: string;
     daysUntil?: number | null;
 }
@@ -38,7 +40,7 @@ export default function UpcomingRenewals({
     const compact = span === 1;
 
     // Summary for the footer
-    const totalUpcoming = subscriptions.reduce((sum, s) => sum + s.price_cents, 0);
+    const totalUpcoming = subscriptions.reduce((sum, s) => sum + shareCents(s.price_cents, s.split_with), 0);
     const nextRenewal   = subscriptions.length > 0 ? (subscriptions[0].daysUntil ?? 0) : null;
 
     return (
@@ -108,7 +110,7 @@ export default function UpcomingRenewals({
                                         </div>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <p className="text-xs font-bold text-white font-mono">{fxFormat(sub.price_cents, currency, fxRates)}</p>
+                                        <p className="text-xs font-bold text-white font-mono">{fxFormat(shareCents(sub.price_cents, sub.split_with), currency, fxRates)}</p>
                                         <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border"
                                             style={{ background: style.badgeBg, color: style.badgeColor, borderColor: style.badgeBorder }}>
                                             {label}

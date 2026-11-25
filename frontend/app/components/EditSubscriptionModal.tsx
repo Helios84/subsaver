@@ -127,6 +127,7 @@ export default function EditSubscriptionModal({ sub, editState, saving = false, 
           <div style={{ gridColumn: "1 / -1" }}>
             <Field label="Service Name">
               <input
+                aria-label="Service name"
                 value={editState.name}
                 onChange={(e) => onEditChange({ name: e.target.value })}
                 style={inputStyle}
@@ -138,10 +139,11 @@ export default function EditSubscriptionModal({ sub, editState, saving = false, 
           </div>
 
           {/* Price */}
-          <Field label="Price / month">
+          <Field label={`Full price / ${editState.cycle === "yearly" ? "year" : "month"}`}>
             <div style={{ position: "relative" }}>
               <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.4)", fontSize: 14 }}>$</span>
               <input
+                aria-label="Full price"
                 type="number" min="0" step="0.01"
                 value={editState.price}
                 onChange={(e) => onEditChange({ price: e.target.value })}
@@ -155,6 +157,7 @@ export default function EditSubscriptionModal({ sub, editState, saving = false, 
           {/* Billing Cycle */}
           <Field label="Billing Cycle">
             <select
+              aria-label="Billing cycle"
               value={editState.cycle}
               onChange={(e) => onEditChange({ cycle: e.target.value as BillingCycle })}
               style={{ ...inputStyle, cursor: "pointer" }}
@@ -169,6 +172,7 @@ export default function EditSubscriptionModal({ sub, editState, saving = false, 
           {/* Status */}
           <Field label="Status">
             <select
+              aria-label="Status"
               value={editState.status}
               onChange={(e) => onEditChange({ status: e.target.value as Status })}
               style={{ ...inputStyle, cursor: "pointer" }}
@@ -185,6 +189,7 @@ export default function EditSubscriptionModal({ sub, editState, saving = false, 
           {/* Category */}
           <Field label="Category">
             <select
+              aria-label="Category"
               value={editState.category}
               onChange={(e) => onEditChange({ category: e.target.value })}
               style={{ ...inputStyle, cursor: "pointer" }}
@@ -200,6 +205,7 @@ export default function EditSubscriptionModal({ sub, editState, saving = false, 
           {/* Next Billing Date */}
           <Field label="Next Billing Date">
             <input
+              aria-label="Next billing date"
               type="date"
               value={editState.billingDate}
               onChange={(e) => onEditChange({ billingDate: e.target.value })}
@@ -240,6 +246,7 @@ export default function EditSubscriptionModal({ sub, editState, saving = false, 
               <div style={{ marginTop: 10 }}>
                 <Field label="Split between (people)">
                   <input
+                    aria-label="Number of people sharing"
                     type="number" min="2" max="20"
                     value={editState.splitWith}
                     onChange={(e) => onEditChange({ splitWith: Math.max(2, parseInt(e.target.value) || 2) })}

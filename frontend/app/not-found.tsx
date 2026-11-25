@@ -9,6 +9,8 @@ export default function NotFound() {
   useEffect(() => { setTimeout(() => setMounted(true), 50); }, []);
 
   return (
+    <>
+    <title>Page not found | SubSaver</title>
     <main
       style={{
         minHeight: "100vh",
@@ -190,5 +192,6 @@ export default function NotFound() {
         }
       `}</style>
     </main>
+    </>
   );
 }

@@ -6,6 +6,7 @@ import { WIDGET_H } from "./AdvancedAnalytics";
 import { CAT_COLORS as MASTER_CAT_COLORS } from "../lib/categories";
 import { formatMoney as fxFormat } from "../lib/currency";
 import type { Currency } from "../lib/currency";
+import { shareCents } from "../lib/money";
 
 type Sub = {
   id: number;
@@ -30,8 +31,7 @@ function subColor(name: string, category?: string) {
 }
 
 function fmt(cents: number, split: number | undefined, currency: Currency, rates: Record<string, number>) {
-  const effective = split && split > 1 ? cents / split : cents;
-  return fxFormat(effective, currency, rates);
+  return fxFormat(shareCents(cents, split), currency, rates);
 }
 
 export default function BillingCalendar({
@@ -68,7 +68,7 @@ export default function BillingCalendar({
   }, [subscriptions, year, month]);
 
   const totalThisMonth = Object.values(dayMap).flat().reduce((acc, s) => {
-    return acc + (s.split_with && s.split_with > 1 ? s.price_cents / s.split_with : s.price_cents);
+    return acc + shareCents(s.price_cents, s.split_with);
   }, 0);
 
   const isToday = (day: number | null) =>
@@ -123,6 +123,10 @@ export default function BillingCalendar({
       return d >= 1 && d <= new Date(year, month + 1, 0).getDate() ? d : null;
     });
 
+    const weekCharges = weekDays.flatMap(d => (d !== null ? (dayMap[d] ?? []).map(s => ({ day: d, s })) : []));
+    const selectedCharges = selected !== null ? (dayMap[selected] ?? []).map(s => ({ day: selected, s })) : [];
+    const listed = selectedCharges.length > 0 ? selectedCharges : weekCharges;
+
     return (
       <div className="glass-card rounded-2xl overflow-hidden border border-white/10 bg-white/[0.02] flex flex-col" style={{ height: WIDGET_H }}>
         {/* Header */}
@@ -134,8 +138,8 @@ export default function BillingCalendar({
           <span className="text-xs font-bold text-cyan-300 font-mono">{fxFormat(totalThisMonth, currency, fxRates)} <span className="text-white/30 font-normal">this month</span></span>
         </div>
         {/* Week grid */}
-        <div className="flex-1 px-3 py-2 min-h-0">
-          <div className="grid grid-cols-7 gap-1 h-full">
+        <div className="flex-1 px-3 py-2 min-h-0 flex flex-col">
+          <div className="grid grid-cols-7 gap-1 shrink-0">
             {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
               <div key={d} className="text-[9px] text-white/25 text-center font-bold uppercase pb-1">{d}</div>
             ))}
@@ -143,7 +147,7 @@ export default function BillingCalendar({
               const has = day !== null && (dayMap[day]?.length ?? 0) > 0;
               const tod = isToday(day);
               return (
-                <div key={i} className="flex flex-col items-center gap-0.5 rounded-lg py-1 transition-all cursor-pointer"
+                <div key={i} className="flex flex-col items-center gap-0.5 rounded-lg py-1.5 min-h-[44px] transition-all cursor-pointer"
                   style={{ background: tod ? 'rgba(124,58,237,0.15)' : has ? 'rgba(6,182,212,0.08)' : 'transparent', border: `1px solid ${tod ? 'rgba(124,58,237,0.3)' : has ? 'rgba(6,182,212,0.2)' : 'transparent'}` }}
                   onClick={() => day && setSelected(selected === day ? null : day)}>
                   <span className="text-xs font-semibold" style={{ color: tod ? '#A78BFA' : has ? '#67E8F9' : 'rgba(255,255,255,0.4)' }}>{day ?? ''}</span>
@@ -152,17 +156,18 @@ export default function BillingCalendar({
               );
             })}
           </div>
-          {/* Selected subs */}
-          {selected !== null && (dayMap[selected]?.length ?? 0) > 0 && (
-            <div className="mt-2 pt-2 border-t border-white/5 space-y-1 overflow-y-auto max-h-[60px]">
-              {dayMap[selected].map(s => (
-                <div key={s.id} className="flex items-center justify-between text-xs">
-                  <span className="text-white/70 truncate">{s.name}</span>
-                  <span className="text-emerald-400 font-bold font-mono shrink-0 ml-2">{fmt(s.price_cents, s.split_with, currency, fxRates)}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Charges for the selected day, or for the whole week */}
+          <div className="mt-2 pt-2 border-t border-white/5 flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-1.5">
+            {listed.length === 0 ? (
+              <p className="text-xs text-white/50 text-center pt-3">No charges this week.</p>
+            ) : listed.map(({ day, s }) => (
+              <div key={`${day}-${s.id}`} className="flex items-center justify-between gap-2 text-xs">
+                <span className="text-white/50 font-mono w-5 shrink-0 text-right">{day}</span>
+                <span className="text-white/85 truncate flex-1">{s.name}</span>
+                <span className="text-emerald-400 font-bold font-mono shrink-0">{fmt(s.price_cents, s.split_with, currency, fxRates)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -195,12 +200,12 @@ export default function BillingCalendar({
             <p className="text-sm font-black text-cyan-300 font-mono">{fxFormat(totalThisMonth, currency, fxRates)}</p>
           </div>
           <div className="flex gap-1">
-            <button onClick={() => setViewDate(new Date(year, month - 1, 1))}
+            <button onClick={() => setViewDate(new Date(year, month - 1, 1))} aria-label="Previous month"
               className="w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-white/10"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <ChevronLeft className="w-3 h-3 text-white/50" />
             </button>
-            <button onClick={() => setViewDate(new Date(year, month + 1, 1))}
+            <button onClick={() => setViewDate(new Date(year, month + 1, 1))} aria-label="Next month"
               className="w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-white/10"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <ChevronRight className="w-3 h-3 text-white/50" />

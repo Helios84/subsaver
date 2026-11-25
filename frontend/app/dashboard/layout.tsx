@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Dashboard",
-  description: "Manage all your subscriptions, track spending, and discover student discounts in one place.",
+  description: "Your subscriptions, monthly spend, upcoming renewals and student prices in one place.",
   robots: { index: false, follow: false }, // Private page — don't index
 };
 

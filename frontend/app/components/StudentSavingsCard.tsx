@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { apiFetch } from "../lib/api";
-import { GraduationCap, ArrowRight, TrendingUp } from "lucide-react";
+import { GraduationCap, TrendingUp } from "lucide-react";
 import type { WidgetSpan } from "./AdvancedAnalytics";
 import { WIDGET_H } from "./AdvancedAnalytics";
 import { formatMoney as fxFormat } from "../lib/currency";
@@ -27,7 +26,6 @@ export default function StudentSavingsCard({
     currency?: Currency;
     fxRates?: Record<string, number>;
 }) {
-    const router = useRouter();
     const [data, setData] = useState<SavingsData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -79,7 +77,7 @@ export default function StudentSavingsCard({
                 <div className="space-y-1.5">
                     <div className="flex justify-between text-[10px] text-white/40">
                         <span>Discounts applied</span>
-                        <span className="text-white/60 font-semibold">{data.discounts_applied}/{data.discounts_available}</span>
+                        <span className="text-white/60 font-semibold">{data.discounts_applied} of {totalDiscounts}</span>
                     </div>
                     <div className="h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-1000"
@@ -141,19 +139,13 @@ export default function StudentSavingsCard({
             {/* Progress + CTA */}
             <div className="shrink-0 mt-3 space-y-2">
                 <div className="flex justify-between text-xs items-center">
-                    <span className="text-gray-400">Discounts Applied</span>
-                    <span className="font-bold text-white text-xs">{data.discounts_applied} <span className="text-gray-500 font-normal">/ {data.discounts_available}</span></span>
+                    <span className="text-gray-400">Student prices applied</span>
+                    <span className="font-bold text-white text-xs">{data.discounts_applied} <span className="text-gray-400 font-normal">of {totalDiscounts}</span></span>
                 </div>
                 <div className="h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(168,85,247,0.5)]"
                         style={{ width: `${Math.max(5, progress)}%` }} />
                 </div>
-                <button
-                    onClick={() => router.push('/settings#student-discounts')}
-                    className="w-full py-2 bg-gradient-to-r from-violet-600/30 to-fuchsia-600/30 hover:from-violet-600/50 hover:to-fuchsia-600/50 text-white rounded-lg font-medium text-xs transition-all border border-violet-500/20 flex items-center justify-center gap-1.5">
-                    View All Discounts
-                    <ArrowRight className="w-3.5 h-3.5" />
-                </button>
             </div>
 
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-violet-600/20 rounded-full blur-3xl pointer-events-none" />

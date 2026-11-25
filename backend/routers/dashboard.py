@@ -13,6 +13,7 @@ from limiter import limiter
 
 from dependencies import get_db, get_current_user
 from models.db import User, Subscription
+from routers.analytics import MONTHLY_PLAN_HINT_CENTS
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -123,22 +124,17 @@ async def get_dashboard_summary(
                 "action": "Analyze",
             })
 
-    # Annual plan savings
-    potential_savings = 0
-    count_switchable = 0
-    for sub in active_subs:
-        if sub.billing_cycle == "monthly":
-            saving = sub.price_cents * 12 * 0.20
-            if saving > 2000:
-                potential_savings += saving
-                count_switchable += 1
-    if potential_savings > 0:
+    # Monthly plans that cost enough for a yearly plan to be worth checking
+    count_switchable = sum(
+        1 for sub in active_subs
+        if sub.billing_cycle == "monthly" and sub.price_cents >= MONTHLY_PLAN_HINT_CENTS
+    )
+    if count_switchable > 0:
         insights.append({
             "type": "success",
-            "title": "Annual Plan Savings",
-            "message": f"Switching {count_switchable} service{'s' if count_switchable > 1 else ''} to annual plans could save you ~${round(potential_savings / 100):.0f}/year.",
-            "amount_cents": int(potential_savings),
-            "action": "View Options",
+            "title": "Monthly plans",
+            "message": f"{count_switchable} subscription{'s are' if count_switchable > 1 else ' is'} billed monthly. Yearly plans are often cheaper, so check each provider's pricing.",
+            "action": "Review"
         })
 
     # ── 5. User info ──────────────────────────────────────────────────────────

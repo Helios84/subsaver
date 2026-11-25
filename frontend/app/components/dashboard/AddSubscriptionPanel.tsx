@@ -93,6 +93,7 @@ export default function AddSubscriptionPanel({
             <div style={{ position: "relative" }}>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
+                  aria-label="Service name"
                   value={formState.name}
                   onChange={(e) => onNameChange(e.target.value)}
                   onBlur={() => setTimeout(() => onFormChange({ name: formState.name }), 200)}
@@ -102,6 +103,7 @@ export default function AddSubscriptionPanel({
                   autoComplete="off"
                 />
                 <button
+                  aria-label="Browse services"
                   type="button"
                   onClick={onOpenPicker}
                   title="Browse Services"
@@ -155,6 +157,7 @@ export default function AddSubscriptionPanel({
             <div style={{ position: "relative" }}>
               <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.35)", fontSize: 14, fontWeight: 500, pointerEvents: "none", zIndex: 1 }}>{currencySymbol ?? "$"}</span>
               <input
+                aria-label="Cost"
                 value={formState.price}
                 onChange={(e) => onFormChange({ price: e.target.value })}
                 type="number" min="0" step="0.01"
@@ -202,6 +205,7 @@ export default function AddSubscriptionPanel({
           <div style={fieldStyle}>
             <label style={labelStyle}>Category</label>
             <select
+              aria-label="Category"
               value={formState.category}
               onChange={(e) => onFormChange({ category: e.target.value })}
               style={{ ...inputStyle, cursor: "pointer" }}
@@ -216,6 +220,7 @@ export default function AddSubscriptionPanel({
           <div style={fieldStyle}>
             <label style={labelStyle}>Next Billing Date</label>
             <input
+              aria-label="Next billing date"
               value={formState.billingDate}
               onChange={(e) => onFormChange({ billingDate: e.target.value })}
               type="date"
@@ -254,6 +259,7 @@ export default function AddSubscriptionPanel({
               <div style={{ marginTop: 10 }}>
                 <label style={{ ...labelStyle, marginBottom: 6 }}>Number of People (including you)</label>
                 <input
+                  aria-label="Number of people sharing"
                   value={formState.splitWith}
                   onChange={(e) => onFormChange({ splitWith: parseInt(e.target.value) || 1 })}
                   type="number" min="1"

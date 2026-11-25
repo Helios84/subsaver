@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — SubSaver",
+  title: "Terms of Service",
   description: "Terms of use for SubSaver, a student portfolio project.",
 };
 

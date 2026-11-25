@@ -2,6 +2,7 @@
 
 import { Search, X, Sparkles, Tag, TrendingDown, Star, Zap } from "lucide-react";
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { apiFetch } from "../lib/api";
 import { getServiceIcon } from "../dashboard/serviceIcons";
 
@@ -84,7 +85,10 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
 
     const showTopPicks = !search && activeCategory === "All" && topPicks.length > 0;
 
-    return (
+    // Rendered into <body> so the dialog sits above the sticky page header,
+    // whatever stacking context the dashboard content is in.
+    if (typeof document === "undefined") return null;
+    return createPortal(
         <>
             {/* CSS for pure-CSS hover on list rows — no JS style mutations = no scroll jank */}
             <style>{`
@@ -108,6 +112,7 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
             `}</style>
 
             <div
+                role="dialog" aria-modal="true" aria-label="Choose a service"
                 className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"
                 style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(18px)" }}
                 onClick={e => e.target === e.currentTarget && onClose()}
@@ -398,6 +403,7 @@ export default function ServicePickerModal({ isVerified, onSelect, onClose }: Pr
                     </div>
                 </div>
             </div>
-        </>
+        </>,
+        document.body
     );
 }

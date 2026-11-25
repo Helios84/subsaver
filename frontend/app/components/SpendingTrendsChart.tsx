@@ -68,7 +68,7 @@ export default function SpendingTrendsChart({
                     <TrendingUp className="w-4 h-4 text-violet-400" />
                     Spending Trends
                 </h3>
-                {hasComparison && growth !== null && (
+                {hasComparison && growth !== null && Math.abs(growth) >= 0.05 && (
                     <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${growth > 0 ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
                         {growth > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                         {growth > 0 ? '+' : ''}{growth.toFixed(1)}%
@@ -79,7 +79,7 @@ export default function SpendingTrendsChart({
             {/* Chart */}
             <div className="flex-1 w-full min-h-0 pb-2">
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={formatted} margin={{ top: 4, right: 12, left: -24, bottom: 0 }}>
+                    <AreaChart data={formatted} margin={{ top: 8, right: 16, left: 4, bottom: 0 }}>
                         <defs>
                             <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.35} />
@@ -91,14 +91,15 @@ export default function SpendingTrendsChart({
                             dataKey="name"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#64748B', fontSize: 10 }}
+                            tick={{ fill: '#94A3B8', fontSize: 11 }}
                             dy={6}
                         />
                         {span >= 2 && (
                             <YAxis
+                                width={60}
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fill: '#64748B', fontSize: 10 }}
+                                tick={{ fill: '#94A3B8', fontSize: 11 }}
                                 tickFormatter={(v) => fxFormat(v * 100, currency, fxRates)}
                             />
                         )}

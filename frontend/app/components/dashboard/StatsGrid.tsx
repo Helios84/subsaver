@@ -50,23 +50,23 @@ export default function StatsGrid({ cards, totalMonthly, totalActive, totalYearl
       ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {displayCards.map(({ id, value, badge }) => {
         const meta = STAT_CARD_META[id];
         if (!meta) return null;
         const { label, icon: Icon, color, glow } = meta;
         return (
-          <div key={id} className="liquid-card rounded-2xl p-5 relative overflow-hidden">
+          <div key={id} className="liquid-card rounded-2xl p-4 sm:p-5 relative overflow-hidden min-w-0">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">{label}</span>
+              <span className="text-[11px] sm:text-xs font-semibold text-white/65 uppercase tracking-wider">{label}</span>
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center"
+                className="hidden sm:flex w-9 h-9 rounded-xl items-center justify-center shrink-0"
                 style={{ background: `${color}18`, border: `1px solid ${color}30` }}
               >
                 <Icon className="w-4 h-4" style={{ color }} />
               </div>
             </div>
-            <p className="text-3xl font-black text-white font-mono tabular-nums">
+            <p className="text-xl sm:text-3xl font-black text-white font-mono tabular-nums truncate">
               {value}
             </p>
             {badge && (
