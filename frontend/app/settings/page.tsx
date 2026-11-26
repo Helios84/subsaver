@@ -4,8 +4,8 @@ import { useEffect, useState, useCallback, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiFetch } from "../lib/api";
-import { useToast } from "../components/ToastProvider";
+import { apiFetch, errorMessage } from "../lib/api";
+import { useToast, type ToastFn } from "../components/ToastProvider";
 import { displayName } from "../lib/money";
 import {
   ArrowLeft, User, Shield, GraduationCap, Bell, AlertTriangle,
@@ -89,22 +89,23 @@ function SettingsPageInner() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    const t = localStorage.getItem("subsaver_token");
-    if (!t) { router.push("/login"); return; }
-    fetchUser();
-  }, [router]);
-
-  async function fetchUser() {
+  const fetchUser = useCallback(async () => {
     try {
-      const data = await apiFetch("/users/me");
+      const data = await apiFetch<UserProfile>("/users/me");
       setUser(data);
     } catch {
       toast("Failed to load profile", "error");
     } finally {
       setLoading(false);
     }
-  }
+  }, [toast]);
+
+  useEffect(() => {
+    const t = localStorage.getItem("subsaver_token");
+    if (!t) { router.push("/login"); return; }
+    fetchUser();
+  }, [router, fetchUser]);
+
 
   // Demo accounts are temporary: password, student verification, email
   // reminders and account deletion are not available, so only Profile is shown.
@@ -204,7 +205,7 @@ function SettingsPageInner() {
             </div>
           ) : (
             <>
-              {shownTab === "profile"       && <ProfileTab user={user} onRefresh={fetchUser} toast={toast} />}
+              {shownTab === "profile"       && <ProfileTab user={user} />}
               {shownTab === "security"      && <SecurityTab user={user} toast={toast} />}
               {shownTab === "student"       && <StudentTab user={user} onRefresh={fetchUser} toast={toast} />}
               {shownTab === "notifications" && <NotificationsTab toast={toast} />}
@@ -229,7 +230,7 @@ export default function SettingsPage() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB: PROFILE
 // ═══════════════════════════════════════════════════════════════════════════════
-function ProfileTab({ user, onRefresh, toast }: { user: UserProfile | null; onRefresh: () => void; toast: Function }) {
+function ProfileTab({ user }: { user: UserProfile | null }) {
   if (!user) return null;
 
   const initials = displayName(user).slice(0, 1).toUpperCase();
@@ -317,7 +318,7 @@ function ProfileTab({ user, onRefresh, toast }: { user: UserProfile | null; onRe
 // ═══════════════════════════════════════════════════════════════════════════════
 type PwStep = "idle" | "sending" | "code" | "verifying" | "newpw" | "resetting" | "done";
 
-function SecurityTab({ user, toast }: { user: UserProfile | null; toast: Function }) {
+function SecurityTab({ user, toast }: { user: UserProfile | null; toast: ToastFn }) {
   const [step, setStep] = useState<PwStep>("idle");
   const [code, setCode] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -335,8 +336,8 @@ function SecurityTab({ user, toast }: { user: UserProfile | null; toast: Functio
       });
       toast("Reset code sent to your email!", "success");
       setStep("code");
-    } catch (err: any) {
-      toast(err?.message ?? "Failed to send code", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Failed to send code"), "error");
       setStep("idle");
     }
   }
@@ -350,8 +351,8 @@ function SecurityTab({ user, toast }: { user: UserProfile | null; toast: Functio
         body: JSON.stringify({ email: user.email, code }),
       });
       setStep("newpw");
-    } catch (err: any) {
-      toast(err?.message ?? "Invalid code", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Invalid code"), "error");
       setStep("code");
     }
   }
@@ -373,8 +374,8 @@ function SecurityTab({ user, toast }: { user: UserProfile | null; toast: Functio
       try { await apiFetch("/auth/logout", { method: "POST" }); } catch { /* ignore */ }
       localStorage.removeItem("subsaver_token");
       setTimeout(() => window.location.href = "/login", 1500);
-    } catch (err: any) {
-      toast(err?.message ?? "Failed to reset password", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Failed to reset password"), "error");
       setStep("newpw");
     }
   }
@@ -384,7 +385,6 @@ function SecurityTab({ user, toast }: { user: UserProfile | null; toast: Functio
     setCode(""); setNewPw(""); setConfirmPw("");
   }
 
-  const busy = step === "sending" || step === "verifying" || step === "resetting";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -606,7 +606,7 @@ function SecurityTab({ user, toast }: { user: UserProfile | null; toast: Functio
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB: STUDENT
 // ═══════════════════════════════════════════════════════════════════════════════
-function StudentTab({ user, onRefresh, toast }: { user: UserProfile | null; onRefresh: () => void; toast: Function }) {
+function StudentTab({ user, onRefresh, toast }: { user: UserProfile | null; onRefresh: () => void; toast: ToastFn }) {
   const [eduEmail, setEduEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"idle" | "sending" | "code" | "verifying" | "done">("idle");
@@ -626,8 +626,8 @@ function StudentTab({ user, onRefresh, toast }: { user: UserProfile | null; onRe
       });
       toast("Verification code sent to your .edu email!", "success");
       setStep("code");
-    } catch (err: any) {
-      toast(err?.message ?? "Failed to send code", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Failed to send code"), "error");
       setStep("idle");
     }
   }
@@ -643,13 +643,12 @@ function StudentTab({ user, onRefresh, toast }: { user: UserProfile | null; onRe
       toast("Student status verified! 🎓", "success");
       setStep("done");
       onRefresh();
-    } catch (err: any) {
-      toast(err?.message ?? "Invalid code", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Invalid code"), "error");
       setStep("code");
     }
   }
 
-  const busy = step === "sending" || step === "verifying";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -803,18 +802,18 @@ function StudentTab({ user, onRefresh, toast }: { user: UserProfile | null; onRe
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB: NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════════════════════════
-function NotificationsTab({ toast }: { toast: Function }) {
+function NotificationsTab({ toast }: { toast: ToastFn }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [enabled, setEnabled] = useState(true);
   const [days, setDays] = useState(7);
 
   useEffect(() => {
-    apiFetch("/reminders/settings")
-      .then((data: any) => { setEnabled(data.reminder_enabled); setDays(data.reminder_days_before); })
-      .catch((err: any) => toast(err?.message ?? "Failed to load settings", "error"))
+    apiFetch<{ reminder_enabled: boolean; reminder_days_before: number }>("/reminders/settings")
+      .then((data) => { setEnabled(data.reminder_enabled); setDays(data.reminder_days_before); })
+      .catch((err) => toast(errorMessage(err, "Failed to load settings"), "error"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [toast]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -825,8 +824,8 @@ function NotificationsTab({ toast }: { toast: Function }) {
         body: JSON.stringify({ reminder_enabled: enabled, reminder_days_before: Number(days) }),
       });
       toast("Notification settings saved!", "success");
-    } catch (err: any) {
-      toast(err?.message ?? "Failed to save", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Failed to save"), "error");
     } finally {
       setSaving(false);
     }
@@ -929,7 +928,7 @@ function NotificationsTab({ toast }: { toast: Function }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB: DANGER ZONE
 // ═══════════════════════════════════════════════════════════════════════════════
-function DangerTab({ router, toast }: { router: any; toast: Function }) {
+function DangerTab({ router, toast }: { router: ReturnType<typeof useRouter>; toast: ToastFn }) {
   const [confirmText, setConfirmText] = useState("");
   const [password, setPassword] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -951,8 +950,8 @@ function DangerTab({ router, toast }: { router: any; toast: Function }) {
       localStorage.removeItem("subsaver_token");
       toast("Account deleted. Goodbye! 👋", "info");
       router.push("/");
-    } catch (err: any) {
-      toast(err?.message ?? "Failed to delete account", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Failed to delete account"), "error");
       setDeleting(false);
     }
   }

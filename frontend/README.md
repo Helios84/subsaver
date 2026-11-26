@@ -19,7 +19,7 @@ The app runs at http://localhost:3000. API calls go to `/backend_api/*`, which t
 | `npm run dev` | Start the development server |
 | `npm run build` | Production build |
 | `npm run start` | Serve the production build |
-| `npm run lint` | Run ESLint |
+| `npm run lint` | Run ESLint (CI also fails on warnings) |
 
 ## Environment variables
 

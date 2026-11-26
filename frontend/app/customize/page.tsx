@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -19,16 +19,16 @@ import {
   ArrowLeft, GripVertical, Activity, TrendingUp, PieChart, Zap,
   Calendar, GraduationCap, BarChart2, CreditCard, LayoutGrid,
   AlignJustify, Eye, EyeOff, Check, Sparkles, RotateCcw, Save,
-  Plus, BadgeCheck, Layout, Layers, ToggleLeft, Lock,
+  Plus, BadgeCheck, Layout, Layers,
 } from "lucide-react";
 import type { WidgetSpan } from "../components/AdvancedAnalytics";
 import { MAX_GRID_SPAN, ANALYTICS_WIDGET_IDS, DEFAULT_SPANS } from "../components/AdvancedAnalytics";
 import { apiFetch } from "../lib/api";
 import StatsGrid from "../components/dashboard/StatsGrid";
-import AdvancedAnalytics from "../components/AdvancedAnalytics";
 import DraggableAnalyticsGrid from "../components/DraggableAnalyticsGrid";
 import { getExchangeRates, formatMoney as fxFormat, CURRENCY_SYMBOLS } from "../lib/currency";
 import { monthlyShareCents, shareCents } from "../lib/money";
+import type { AnalyticsData, AnalyticsInsight } from "../types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type WidgetId =
@@ -124,6 +124,12 @@ type SavedSettings = {
   widgetSizes: Partial<Record<WidgetId, WidgetSpan>>;
 };
 
+// ─── URL helpers (browser only) ──────────────────────────────────────────
+function subscribeNever() { return () => {}; }
+function readFocusParam(): WidgetId | null {
+  return new URLSearchParams(window.location.search).get("focus") as WidgetId | null;
+}
+
 // ─── Settings Persistence ─────────────────────────────────────────────────────
 export function loadDashboardSettings(): DashboardSettings {
   if (typeof window === "undefined") return getDefaults();
@@ -147,7 +153,7 @@ export function loadDashboardSettings(): DashboardSettings {
       density:          parsed.density          ?? "comfortable",
       showQuickActions: parsed.showQuickActions ?? true,
       statsCards:       offeredStatCards(parsed.statsCards ?? DEFAULT_STATS_CARDS),
-      widgetSizes:      (parsed.widgetSizes as any) ?? DEFAULT_WIDGET_SIZES,
+      widgetSizes:      parsed.widgetSizes ?? DEFAULT_WIDGET_SIZES,
     };
   } catch { return getDefaults(); }
 }
@@ -315,12 +321,12 @@ function RealDashboardPreview({ settings, subs, user, savedToDateCents, onWidget
   user: { is_verified: boolean; email: string } | null;
   onWidgetReorder: (newOrder: WidgetId[]) => void;
 }) {
-  const [trendsData, setTrendsData] = useState<any>(null);
-  const [insights, setInsights] = useState<any[]>([]);
+  const [trendsData, setTrendsData] = useState<AnalyticsData | null>(null);
+  const [insights, setInsights] = useState<AnalyticsInsight[]>([]);
   const [fxRates, setFxRates] = useState<Record<string, number>>({ USD: 1, EUR: 0.93, GBP: 0.79 });
   useEffect(() => {
-    apiFetch('/api/analytics/trends').then(setTrendsData).catch(() => {});
-    apiFetch('/api/analytics/insights').then(setInsights).catch(() => {});
+    apiFetch<AnalyticsData>('/api/analytics/trends').then(setTrendsData).catch(() => {});
+    apiFetch<AnalyticsInsight[]>('/api/analytics/insights').then(setInsights).catch(() => {});
     getExchangeRates().then(setFxRates).catch(() => {});
   }, []);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -358,9 +364,8 @@ function RealDashboardPreview({ settings, subs, user, savedToDateCents, onWidget
   const analyticsVisible = widgetMap.spending_trends || widgetMap.category_breakdown || widgetMap.savings_card || widgetMap.insights || widgetMap.renewals;
 
   // stats cards
-  const enabledStats = settings.statsCards.filter(id => {
-    return true; // all from list, take first 4
-  }).slice(0, 4);
+  // the first four cards in the list are shown
+  const enabledStats = settings.statsCards.slice(0, 4);
 
   const statCardValues: Record<StatCardId, string> = {
     monthly_spend:     formatMoney(sumMonthly, currency, fxRates),
@@ -369,7 +374,7 @@ function RealDashboardPreview({ settings, subs, user, savedToDateCents, onWidget
     avg_per_sub:       formatMoney(avgPerSub, currency, fxRates),
     total_savings:     formatMoney(savedToDateCents, currency, fxRates),
     cancelled_count:   String(subs.filter(s => s.status === "cancelled").length),
-    most_expensive:    activeSubs.length > 0 ? `${activeSubs.sort((a,b) => b.price_cents - a.price_cents)[0].name.slice(0,8)}…` : "N/A",
+    most_expensive:    activeSubs.length > 0 ? `${[...activeSubs].sort((a,b) => b.price_cents - a.price_cents)[0].name.slice(0,8)}…` : "N/A",
     next_renewal_days: upcomingRenewals.length > 0 ? `${upcomingRenewals[0].daysUntil}d` : "N/A",
   };
 
@@ -575,11 +580,29 @@ function RealDashboardPreview({ settings, subs, user, savedToDateCents, onWidget
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
+/**
+ * Dashboard settings live in localStorage, which exists only in the browser.
+ * The editor is therefore rendered on the client only and reads the settings in
+ * its initial state, so the server HTML and the first client render always match.
+ */
 export default function CustomizePage() {
+  const isClient = useSyncExternalStore(subscribeNever, () => true, () => false);
+  if (!isClient) {
+    return (
+      <main className="min-h-screen flex items-center justify-center text-sm text-white/60" style={{ background: "#080B14" }}>
+        Loading…
+      </main>
+    );
+  }
+  return <CustomizeEditor />;
+}
+
+function CustomizeEditor() {
   const router = useRouter();
   // Read ?focus=widgetId from URL client-side only (avoids useSearchParams + Suspense requirement)
-  const [focusWidgetId, setFocusWidgetId] = useState<WidgetId | null>(null);
-  const [settings, setSettings] = useState<DashboardSettings>(getDefaults());
+  // ?focus=<widget id> scrolls to and highlights one widget row (read in the browser only)
+  const focusWidgetId = useSyncExternalStore(subscribeNever, readFocusParam, () => null);
+  const [settings, setSettings] = useState<DashboardSettings>(loadDashboardSettings);
   const [saved, setSaved] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [activeId, setActiveId] = useState<WidgetId | null>(null);
@@ -602,18 +625,12 @@ export default function CustomizePage() {
   useEffect(() => {
     const t = localStorage.getItem("subsaver_token");
     if (!t) { router.push("/login"); return; }
-    // Read ?focus=widgetId from URL (client-side only)
-    const params = new URLSearchParams(window.location.search);
-    const focus = params.get("focus") as WidgetId | null;
-    if (focus) setFocusWidgetId(focus);
-    // Start with localStorage (instant, no flicker)
-    setSettings(loadDashboardSettings());
-    apiFetch("/subscriptions").then(setSubs).catch(console.error).finally(() => setSubsLoaded(true));
-    apiFetch("/users/me").then(setUser).catch(console.error);
-    apiFetch("/api/student-discounts/savings").then((d: any) => setSavedToDateCents(d?.total_saved_to_date ?? 0)).catch(console.error);
+    apiFetch<Sub[]>("/subscriptions").then(setSubs).catch(console.error).finally(() => setSubsLoaded(true));
+    apiFetch<{ is_verified: boolean; email: string }>("/users/me").then(setUser).catch(console.error);
+    apiFetch<{ total_saved_to_date: number }>("/api/student-discounts/savings").then((d) => setSavedToDateCents(d.total_saved_to_date ?? 0)).catch(console.error);
     // Load preferences from backend and merge (cross-device sync)
-    apiFetch("/users/me/preferences")
-      .then((data: any) => {
+    apiFetch<{ preferences: string }>("/users/me/preferences")
+      .then((data) => {
         if (data?.preferences) {
           try {
             const backendPrefs = JSON.parse(data.preferences) as Partial<SavedSettings>;
@@ -719,13 +736,6 @@ export default function CustomizePage() {
       if (otherSpan + span > MAX_GRID_SPAN) return prev; // silently reject — button is disabled visually
       return { ...prev, widgetSizes: { ...prev.widgetSizes, [id]: span } };
     }, id);
-  }
-  function handleStatCardToggle(id: StatCardId) {
-    mark(prev => {
-      const already = prev.statsCards.includes(id);
-      const filtered = prev.statsCards.filter(c => c !== id);
-      return { ...prev, statsCards: already ? filtered : [...prev.statsCards, id] };
-    });
   }
   function moveStatCard(id: StatCardId, dir: -1 | 1) {
     mark(prev => {

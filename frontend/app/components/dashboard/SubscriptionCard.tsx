@@ -1,9 +1,8 @@
 "use client";
 
 import { Edit2, Activity, Trash2, GraduationCap, Calendar, Copy } from "lucide-react";
-import { getServiceIcon } from "../../dashboard/serviceIcons";
+import { SERVICE_ICONS } from "../../dashboard/serviceIcons";
 import type { Sub, StudentDiscount } from "../../types/index";
-import { CATEGORIES } from "../../lib/categories";
 import { formatMoney as fxFormat } from "../../lib/currency";
 import type { Currency } from "../../lib/currency";
 import { shareCents } from "../../lib/money";
@@ -50,6 +49,29 @@ function getServiceColor(name: string): string {
   return palette[Math.abs(hash) % palette.length];
 }
 
+/** Service icon (or first letter) on a tile in the service's accent colour. */
+function ServiceIconBlock({ name, size }: { name: string; size: "sm" | "md" }) {
+  const accent = getServiceColor(name);
+  // a fixed lucide icon from the module-level table, or null for unknown services
+  const ServiceIcon = SERVICE_ICONS[name.toLowerCase().trim()] ?? null;
+  const dim = size === "sm" ? "w-10 h-10 rounded-xl" : "w-12 h-12 rounded-xl";
+  const icon = size === "sm" ? "w-5 h-5" : "w-6 h-6";
+  const letter = size === "sm" ? "text-sm" : "text-xl";
+  return (
+    <div className="relative shrink-0">
+      <div className="absolute inset-0 blur-lg rounded-full" style={{ background: `${accent}40` }} />
+      <div
+        className={`relative ${dim} flex items-center justify-center border`}
+        style={{ background: `${accent}18`, borderColor: `${accent}35` }}
+      >
+        {ServiceIcon
+          ? <ServiceIcon className={icon} style={{ color: accent }} />
+          : <span className={`font-black ${letter}`} style={{ color: accent }}>{name.charAt(0).toUpperCase()}</span>}
+      </div>
+    </div>
+  );
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type Props = {
@@ -92,7 +114,6 @@ export default function SubscriptionCard({
   const daysUntil = calculateDaysUntil(s.next_billing_date);
   const progress = getBillingProgress(daysUntil, s.billing_cycle);
   const accent = getServiceColor(s.name);
-  const ServiceIcon = getServiceIcon(s.name);
 
   // Renewal urgency styles
   const urgency =
@@ -117,35 +138,12 @@ export default function SubscriptionCard({
     fxRates,
   );
 
-  // ── Service icon with accent colour ───────────────────────────────────────────
-  const IconBlock = ({ size }: { size: "sm" | "md" }) => {
-    const dim = size === "sm" ? "w-10 h-10 rounded-xl" : "w-12 h-12 rounded-xl";
-    const icon = size === "sm" ? "w-5 h-5" : "w-6 h-6";
-    const letter = size === "sm" ? "text-sm" : "text-xl";
-    return (
-      <div className="relative shrink-0">
-        <div className="absolute inset-0 blur-lg rounded-full" style={{ background: `${accent}40` }} />
-        <div
-          className={`relative ${dim} flex items-center justify-center border`}
-          style={{ background: `${accent}18`, borderColor: `${accent}35` }}
-        >
-          {ServiceIcon
-            ? <ServiceIcon className={icon} style={{ color: accent }} />
-            : <span className={`font-black ${letter}`} style={{ color: accent }}>
-              {s.name.charAt(0).toUpperCase()}
-            </span>
-          }
-        </div>
-      </div>
-    );
-  };
-
   // ── COMPACT LAYOUT ────────────────────────────────────────────────────────────
   if (layoutCompact) {
     return (
       <div className={`flex items-center gap-4 p-3 rounded-xl liquid-card transition-[transform,box-shadow,border-color] ${isDeleting ? "border border-red-500/30 bg-red-500/5" : ""
         }`}>
-        <IconBlock size="sm" />
+        <ServiceIconBlock name={s.name} size="sm" />
 
         {/* Info */}
         <div className="flex-1 min-w-0">
@@ -204,7 +202,7 @@ export default function SubscriptionCard({
       <div className="p-5">
         {/* Row 1: Icon + Name + badges */}
         <div className="flex items-center gap-3 mb-4">
-          <IconBlock size="md" />
+          <ServiceIconBlock name={s.name} size="md" />
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-white text-base truncate">{s.name}</h3>
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">

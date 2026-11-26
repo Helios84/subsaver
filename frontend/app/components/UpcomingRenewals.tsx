@@ -41,7 +41,6 @@ export default function UpcomingRenewals({
 
     // Summary for the footer
     const totalUpcoming = subscriptions.reduce((sum, s) => sum + shareCents(s.price_cents, s.split_with), 0);
-    const nextRenewal   = subscriptions.length > 0 ? (subscriptions[0].daysUntil ?? 0) : null;
 
     return (
         <div

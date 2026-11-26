@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, GraduationCap, CreditCard, Bell, ChevronRight, CheckCircle2 } from "lucide-react";
+import { X, GraduationCap, CreditCard, ChevronRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
 const ONBOARDING_KEY = "subsaver_onboarding_done";

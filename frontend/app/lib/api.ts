@@ -2,7 +2,11 @@ const API_BASE = "/backend_api";
 
 type ApiFetchOptions = RequestInit & { skipAuth?: boolean; timeoutMs?: number };
 
-export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
+/**
+ * Call the API through the /backend_api proxy. T is the expected response body;
+ * callers that ignore the body can leave it as unknown.
+ */
+export async function apiFetch<T = unknown>(path: string, opts: ApiFetchOptions = {}): Promise<T> {
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
 
   // AbortController with configurable timeout (default 15s)
@@ -43,7 +47,7 @@ export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
       const rawDetail = data?.detail ?? data?.message;
       let msg: string;
       if (Array.isArray(rawDetail)) {
-        msg = rawDetail.map((e: any) => e?.msg ?? JSON.stringify(e)).join(", ");
+        msg = rawDetail.map((e: { msg?: string }) => e?.msg ?? JSON.stringify(e)).join(", ");
       } else if (typeof rawDetail === "string") {
         msg = rawDetail;
       } else {
@@ -52,7 +56,7 @@ export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
       throw new Error(msg);
     }
 
-    return data;
+    return data as T;
   } catch (err) {
     clearTimeout(timeoutId);
 
@@ -66,4 +70,9 @@ export async function apiFetch(path: string, opts: ApiFetchOptions = {}) {
     }
     throw err;
   }
+}
+
+/** Message of a caught error, or the fallback when it has none. */
+export function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback;
 }

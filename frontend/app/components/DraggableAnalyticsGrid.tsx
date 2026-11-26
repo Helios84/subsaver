@@ -12,6 +12,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useState, useCallback, useRef, useMemo, memo } from "react";
 import type { WidgetId } from "../customize/page";
 import type { WidgetSpan } from "./AdvancedAnalytics";
+import type { AnalyticsData, AnalyticsInsight, Sub, UpcomingRenewal } from "../types";
 import { ANALYTICS_WIDGET_IDS, WIDGET_H } from "./AdvancedAnalytics";
 import SpendingTrendsChart from "./SpendingTrendsChart";
 import CategoryBreakdown from "./CategoryBreakdown";
@@ -23,10 +24,10 @@ import { ChartSkeleton } from "./SkeletonLoader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DataProps {
-  upcomingRenewals: any[];
-  allSubscriptions?: any[];
-  trendsData?: any;
-  insights?: any[];
+  upcomingRenewals: UpcomingRenewal[];
+  allSubscriptions?: Sub[];
+  trendsData?: AnalyticsData | null;
+  insights?: AnalyticsInsight[];
 }
 
 interface Props extends DataProps {
@@ -178,7 +179,6 @@ export default function DraggableAnalyticsGrid({
     dragOrderRef.current = snapshot;
     setDragOrder(snapshot);
     setActiveId(e.active.id as WidgetId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [widgetOrder, widgets]);
 
   const handleDragOver = useCallback((e: DragOverEvent) => {
@@ -202,7 +202,6 @@ export default function DraggableAnalyticsGrid({
   // upcomingRenewals/trendsData/insights come from parent and don't change during drag
   const dataProps = useMemo(
     () => ({ upcomingRenewals, allSubscriptions, trendsData, insights }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [upcomingRenewals, allSubscriptions, trendsData, insights]
   );
 

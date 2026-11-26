@@ -2,6 +2,7 @@
 
 import { Plus, Search, Activity } from "lucide-react";
 import { CATEGORIES } from "../../lib/categories";
+import type { StudentDiscount } from "../../types";
 
 type BillingCycle = "monthly" | "yearly";
 
@@ -9,10 +10,10 @@ type Props = {
   msg: string;
   onSubmit: (e: React.FormEvent) => void;
   onOpenPicker: () => void;
-  suggestions: any[];
+  suggestions: StudentDiscount[];
   showSuggestions: boolean;
   onNameChange: (val: string) => void;
-  onSuggestionSelect: (service: any) => void;
+  onSuggestionSelect: (service: StudentDiscount) => void;
   currency?: string;
   currencySymbol?: string;
   isSubmitting?: boolean;
@@ -60,7 +61,7 @@ const fieldStyle: React.CSSProperties = {
 export default function AddSubscriptionPanel({
   msg, onSubmit, onOpenPicker, suggestions, showSuggestions,
   onNameChange, onSuggestionSelect, formState, onFormChange,
-  currency, currencySymbol, isSubmitting, autocompleteContainerRef,
+  currencySymbol, isSubmitting, autocompleteContainerRef,
 }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

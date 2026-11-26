@@ -540,7 +540,7 @@ export default function RegisterPage() {
                 style={{ width: 15, height: 15, color: "rgba(167,139,250,0.7)", flexShrink: 0, marginTop: "1px" }}
               />
               <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>
-                After signing up you'll verify your{" "}
+                After signing up you&apos;ll verify your{" "}
                 <span style={{ color: "#A78BFA", fontWeight: 600 }}>.edu email</span>{" "}
                 in the dashboard to unlock student discounts.
               </p>

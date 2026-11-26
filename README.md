@@ -208,11 +208,12 @@ Frontend checks:
 
 ```bash
 cd frontend
-npx tsc --noEmit    # type check
-npm run build       # production build
+npx eslint . --max-warnings=0   # lint (no errors or warnings allowed)
+npx tsc --noEmit                # type check
+npm run build                   # production build
 ```
 
-[GitHub Actions](.github/workflows/ci.yml) runs the backend tests, the type check and the production build on every push to `main` and on pull requests.
+[GitHub Actions](.github/workflows/ci.yml) runs the backend tests, the lint, the type check and the production build on every push to `main` and on pull requests.
 
 ## API
 
@@ -239,7 +240,6 @@ Interactive documentation is served at `/docs` on a running backend. The [hosted
 ## Roadmap
 
 - End-to-end tests for the main browser flows
-- Lint clean-up (replace `any` types)
 
 ## Timeline
 

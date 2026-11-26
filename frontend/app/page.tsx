@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   BarChart3, Bell, CalendarClock, GraduationCap, LayoutDashboard,
   ListPlus, Menu, PieChart, Shield, SlidersHorizontal, Users, X, ArrowRight,
@@ -59,17 +59,24 @@ function Logo({ size = 24 }: { size?: number }) {
   );
 }
 
-export default function Home() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+function subscribeToStorage(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  return () => window.removeEventListener("storage", onChange);
+}
+function readHasToken() {
+  return !!localStorage.getItem("subsaver_token");
+}
 
-  useEffect(() => {
-    setIsAuthenticated(!!localStorage.getItem("subsaver_token"));
-  }, []);
+export default function Home() {
+  // Signed in = a token in localStorage (false while rendering on the server)
+  const hasToken = useSyncExternalStore(subscribeToStorage, readHasToken, () => false);
+  const [loggedOut, setLoggedOut] = useState(false);
+  const isAuthenticated = hasToken && !loggedOut;
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const logout = () => {
     localStorage.removeItem("subsaver_token");
-    setIsAuthenticated(false);
+    setLoggedOut(true);
     setMenuOpen(false);
   };
 

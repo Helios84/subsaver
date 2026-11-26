@@ -1,7 +1,7 @@
 "use client";
 import { X, ExternalLink, CheckCircle2, GraduationCap, ShieldCheck, Sparkles, ArrowRight } from "lucide-react";
 import { formatCheckedDate } from "../lib/money";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 type StudentDiscount = {
   id: number;
@@ -61,9 +61,10 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
     return () => cancelAnimationFrame(t);
   }, []);
 
-  // Esc to close
+  // Esc to close (the ref always points at the latest handleClose)
+  const closeRef = useRef<() => void>(() => {});
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") closeRef.current(); };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
@@ -72,6 +73,7 @@ export default function StudentDiscountModal({ discount, onApply, onClose }: Pro
     setVisible(false);
     setTimeout(onClose, 220);
   }
+  useEffect(() => { closeRef.current = handleClose; });
 
   const requirements = (() => {
     try { return JSON.parse(discount.requirements) as string[]; } catch { return []; }

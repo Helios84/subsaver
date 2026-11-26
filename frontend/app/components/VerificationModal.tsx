@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, GraduationCap, Loader2, CheckCircle, AlertCircle, Mail, ArrowRight, RotateCcw } from "lucide-react";
-import { apiFetch } from "../lib/api";
+import { apiFetch, errorMessage } from "../lib/api";
 
 type Step = "email" | "code" | "success";
 
@@ -57,8 +57,8 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
             setStep("code");
             setCountdown(60); // allow resend after 60s
 
-        } catch (err: any) {
-            setError(err.message || "Failed to send code. Please try again.");
+        } catch (err) {
+            setError(errorMessage(err, "Failed to send code. Please try again."));
         } finally {
             setLoading(false);
         }
@@ -83,8 +83,8 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
                 onSuccess();
                 onClose();
             }, 2500);
-        } catch (err: any) {
-            setError(err.message || "Invalid or expired code. Please try again.");
+        } catch (err) {
+            setError(errorMessage(err, "Invalid or expired code. Please try again."));
         } finally {
             setLoading(false);
         }
@@ -102,8 +102,8 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
                 body: JSON.stringify({ edu_email: eduEmail }),
             });
             setCountdown(60);
-        } catch (err: any) {
-            setError(err.message || "Failed to resend. Please try again.");
+        } catch (err) {
+            setError(errorMessage(err, "Failed to resend. Please try again."));
         } finally {
             setLoading(false);
         }
@@ -195,7 +195,7 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
                                     />
                                 </div>
                                 <p className="text-xs text-white/30 mt-2">
-                                    We'll send a 6-digit verification code to this address.
+                                    We&apos;ll send a 6-digit verification code to this address.
                                 </p>
                             </div>
 
@@ -296,8 +296,8 @@ export default function VerificationModal({ isOpen, onClose, onSuccess }: Props)
                             >
                                 <CheckCircle size={32} className="text-green-400" />
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">You're Verified! 🎓</h3>
-                            <p className="text-white/50">Student discounts are now unlocked.</p>
+                            <h3 className="text-xl font-bold text-white mb-2">You&apos;re verified 🎓</h3>
+                            <p className="text-white/50">Your account is now marked as a student account.</p>
                         </div>
                     )}
                 </div>

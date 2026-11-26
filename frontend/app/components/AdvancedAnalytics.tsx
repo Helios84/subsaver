@@ -11,7 +11,8 @@ import UpcomingRenewals from './UpcomingRenewals';
 import StudentSavingsCard from './StudentSavingsCard';
 import SkeletonLoader, { ChartSkeleton } from './SkeletonLoader';
 import BillingCalendar from './BillingCalendar';
-import type { WidgetId, WidgetConfig } from '../customize/page';
+import type { WidgetId } from '../customize/page';
+import type { AnalyticsData, AnalyticsInsight, Sub, UpcomingRenewal } from '../types';
 
 // Widget span: 1 = 1/4, 2 = 2/4, 3 = 3/4, 4 = full width
 export type WidgetSpan = 1 | 2 | 3 | 4;
@@ -29,7 +30,6 @@ export const ANALYTICS_WIDGET_IDS: WidgetId[] = [
 ];
 
 // Widgets that are always full-width (span-4), never participate in row-filling logic
-const FULL_WIDTH_WIDGETS = new Set<WidgetId>(['spending_trends', 'billing_calendar']);
 
 // Default spans — base values, adaptive logic adjusts them at render time
 export const DEFAULT_SPANS: Partial<Record<WidgetId, WidgetSpan>> = {
@@ -65,20 +65,20 @@ export default function AdvancedAnalytics({
   // New: disabled widgets for placeholder chips
   disabledWidgets = [],
 }: {
-  upcomingRenewals: any[];
+  upcomingRenewals: UpcomingRenewal[];
   widgets: Record<string, boolean>;
-  allSubscriptions?: any[];
+  allSubscriptions?: Sub[];
   widgetOrder?: WidgetId[];
   widgetSizes?: Partial<Record<WidgetId, WidgetSpan>>;
   currency?: import("../lib/currency").Currency;
   fxRates?: Record<string, number>;
-  trendsDataProp?: any;
-  insightsProp?: any[];
+  trendsDataProp?: AnalyticsData | null;
+  insightsProp?: AnalyticsInsight[];
   disabledWidgets?: Array<{ id: WidgetId; label: string; color: string }>;
 }) {
   const router = useRouter();
-  const [trendsData, setTrendsData] = useState<any>(trendsDataProp ?? null);
-  const [insights, setInsights] = useState<any[]>(insightsProp ?? []);
+  const [trendsData, setTrendsData] = useState<AnalyticsData | null>(trendsDataProp ?? null);
+  const [insights, setInsights] = useState<AnalyticsInsight[]>(insightsProp ?? []);
   const [loading, setLoading] = useState(!trendsDataProp);
 
   // Sync when parent passes updated data (e.g. after subscription mutation)
@@ -99,8 +99,8 @@ export default function AdvancedAnalytics({
     async function load() {
       try {
         const [t, i] = await Promise.all([
-          apiFetch('/api/analytics/trends'),
-          apiFetch('/api/analytics/insights'),
+          apiFetch<AnalyticsData>('/api/analytics/trends'),
+          apiFetch<AnalyticsInsight[]>('/api/analytics/insights'),
         ]);
         setTrendsData(t);
         setInsights(i);

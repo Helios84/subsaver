@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, X, Sparkles, Tag, GraduationCap, Star, Zap } from "lucide-react";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { apiFetch } from "../lib/api";
 import { formatCheckedDate } from "../lib/money";
@@ -50,7 +50,7 @@ export default function ServicePickerModal({ onSelect, onClose }: Props) {
     const [activeCategory, setCategory] = useState("All");
 
     useEffect(() => {
-        apiFetch("/api/student-discounts")
+        apiFetch<StudentDiscount[]>("/api/student-discounts")
             .then(data => { setServices(data || []); setLoading(false); })
             .catch(() => setLoading(false));
     }, []);
@@ -320,8 +320,9 @@ export default function ServicePickerModal({ onSelect, onClose }: Props) {
                                                 style={{
                                                     background: "rgba(255,255,255,0.028)",
                                                     border: "1px solid rgba(255,255,255,0.06)",
-                                                    ["--spm-accent" as any]: `${accent}45`,
-                                                }}
+                                                    // CSS variable read by the .spm-row:hover rule above
+                                                    "--spm-accent": `${accent}45`,
+                                                } as React.CSSProperties}
                                             >
                                                 {/* Icon */}
                                                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"

@@ -111,7 +111,7 @@ export default function SpendingTrendsChart({
                                 color: '#fff',
                                 fontSize: 12,
                             }}
-                            formatter={(value: any) => [fxFormat(Number(value) * 100, currency, fxRates), 'Spend']}
+                            formatter={(value?: number | string) => [fxFormat(Number(value ?? 0) * 100, currency, fxRates), 'Spend']}
                         />
                         <Area
                             type="monotone"

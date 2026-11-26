@@ -73,7 +73,7 @@ export default function CategoryBreakdown({
                             </Pie>
                             <Tooltip
                                 contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: 12 }}
-                                formatter={(value: any) => fxFormat(Number(value) * 100, currency, fxRates)}
+                                formatter={(value?: number | string) => fxFormat(Number(value ?? 0) * 100, currency, fxRates)}
                             />
                         </PieChart>
                     </ResponsiveContainer>
@@ -101,7 +101,7 @@ export default function CategoryBreakdown({
                                 </Pie>
                                 <Tooltip
                                     contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: 12 }}
-                                    formatter={(value: any) => fxFormat(Number(value) * 100, currency, fxRates)}
+                                    formatter={(value?: number | string) => fxFormat(Number(value ?? 0) * 100, currency, fxRates)}
                                 />
                             </PieChart>
                         </ResponsiveContainer>

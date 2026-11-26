@@ -4,6 +4,7 @@ import { useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { Play } from "lucide-react";
 import { apiFetch } from "../lib/api";
+import type { TokenResponse } from "../types";
 
 // The button is shown only when the deployment has a demo account
 // (backend DEMO_ENABLED=true and this flag set at build time).
@@ -20,7 +21,7 @@ export default function DemoLoginButton({ className, style }: { className?: stri
     setError("");
     setLoading(true);
     try {
-      const data = await apiFetch("/auth/demo-login", { method: "POST", skipAuth: true });
+      const data = await apiFetch<TokenResponse>("/auth/demo-login", { method: "POST", skipAuth: true });
       localStorage.setItem("subsaver_token", data.access_token);
       // The demo already has data, so skip the first-run walkthrough.
       localStorage.setItem("subsaver_onboarding_done", "1");

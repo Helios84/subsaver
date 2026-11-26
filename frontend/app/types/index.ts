@@ -6,7 +6,7 @@
 // ─── Subscription ─────────────────────────────────────────────────────────────
 
 export type BillingCycle = "monthly" | "yearly";
-export type SubscriptionStatus = "active" | "cancelled";
+export type SubscriptionStatus = "active" | "cancelled" | "trial" | "paused";
 
 export interface Sub {
   id: number;
@@ -20,6 +20,13 @@ export interface Sub {
   student_discount_applied?: boolean;
   split_with?: number;
   reminder_sent?: boolean;
+  cancelled_at?: string | null;
+  original_price_cents?: number | null;
+}
+
+/** A subscription with the number of days until its next charge. */
+export interface UpcomingRenewal extends Sub {
+  daysUntil: number | null;
 }
 
 // ─── Student Discount ─────────────────────────────────────────────────────────
@@ -70,15 +77,65 @@ export interface CategoryData {
 
 export interface SpendingTrend {
   month: string;
-  total: number;
+  year: number;
+  total_cents: number;
+}
+
+/** /api/analytics/trends and the "analytics" part of /api/dashboard/summary */
+export interface AnalyticsData {
+  trends: SpendingTrend[];
+  breakdown: CategoryData[];
+  total_monthly_cents: number;
 }
 
 export interface AnalyticsInsight {
   type: "warning" | "info" | "success";
   title: string;
-  message: string;   // backend returns "message", not "description"
+  message: string;
   action: string;
-  amount_cents?: number;  // optional — added in previous session for currency formatting
+  amount_cents?: number;
+}
+
+// ─── Savings ──────────────────────────────────────────────────────────────────
+
+/** /api/student-discounts/savings and the "savings" part of /api/dashboard/summary */
+export interface SavingsSummary {
+  total_saved_monthly: number;
+  total_saved_yearly: number;
+  potential_monthly: number;
+  potential_yearly: number;
+  discounts_applied: number;
+  discounts_available: number;
+  student_saved_to_date: number;
+  cancelled_saved_to_date: number;
+  cancelled_count: number;
+  total_saved_to_date: number;
+}
+
+// ─── API responses ────────────────────────────────────────────────────────────
+
+export interface DashboardSummary {
+  user: UserOut;
+  subscriptions: Sub[];
+  analytics: AnalyticsData;
+  insights: AnalyticsInsight[];
+  savings: SavingsSummary;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
+/** Fields accepted by POST /subscriptions and PATCH /subscriptions/{id} */
+export interface SubscriptionPayload {
+  name: string;
+  price_cents: number;
+  billing_cycle: BillingCycle;
+  status: SubscriptionStatus;
+  category: string;
+  split_with: number;
+  next_billing_date?: string;
 }
 
 // ─── Batch-check API response ─────────────────────────────────────────────────

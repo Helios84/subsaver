@@ -22,6 +22,9 @@ interface ToastContextValue {
 // ─── Context ──────────────────────────────────────────────────────────────────
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+/** The toast() function handed to components that cannot call useToast themselves. */
+export type ToastFn = ToastContextValue["toast"];
+
 export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error("useToast must be used inside <ToastProvider>");

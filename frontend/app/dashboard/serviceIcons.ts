@@ -1,8 +1,8 @@
 import {
     Music, Tv, Film, Gamepad2, Cloud,
-    Mail, Code, Dumbbell, BookOpen, ShoppingCart,
-    Coffee, Utensils, Smartphone, Layers, LucideIcon,
-    Video, Headphones, Play, Monitor, Tv2,
+    Code, Dumbbell, BookOpen, ShoppingCart,
+    Coffee, Utensils, Layers, LucideIcon,
+    Video, Headphones, Tv2,
     Github, Figma, Slack, Camera, Zap,
     Youtube, Twitter, Instagram, Facebook, Linkedin
 } from "lucide-react";

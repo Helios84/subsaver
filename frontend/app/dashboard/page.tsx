@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "../lib/api";
+import { apiFetch, errorMessage } from "../lib/api";
 import {
   LogOut, Plus, BadgeCheck, GraduationCap, Layout, CreditCard,
-  Search, SlidersHorizontal, X as XIcon, Menu, Download, Copy,
+  Search, SlidersHorizontal, X as XIcon, Menu, Download,
 } from "lucide-react";
 import VerificationModal from "../components/VerificationModal";
 import StudentDiscountModal from "../components/StudentDiscountModal";
@@ -22,7 +23,10 @@ import { useToast } from "../components/ToastProvider";
 import OnboardingModal, { shouldShowOnboarding } from "../components/OnboardingModal";
 import { getExchangeRates, formatMoney as fxFormat, type Currency } from "../lib/currency";
 import { CATEGORIES } from "../lib/categories";
-import type { Sub, StudentDiscount, UserOut as User } from "../types/index";
+import type {
+  AnalyticsData, AnalyticsInsight, BatchDiscountResult, DashboardSummary,
+  StudentDiscount, Sub, SubscriptionPayload, UserOut as User,
+} from "../types/index";
 import { monthlyShareCents, displayName } from "../lib/money";
 
 // ─── Local aliases ────────────────────────────────────────────────────────────
@@ -70,8 +74,8 @@ export default function DashboardPage() {
   const [fxRates, setFxRates] = useState<Record<string, number>>({ USD: 1, EUR: 0.93, GBP: 0.79 });
 
   // ── Analytics data (from /api/dashboard/summary — no separate fetch needed)
-  const [analyticsData, setAnalyticsData] = useState<any>(null);
-  const [insightsData, setInsightsData] = useState<any[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [insightsData, setInsightsData] = useState<AnalyticsInsight[]>([]);
 
   // ── Onboarding
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -110,7 +114,7 @@ export default function DashboardPage() {
   const [addingSubscription, setAddingSubscription] = useState(false);
 
   useEffect(() => {
-    apiFetch("/api/student-discounts")
+    apiFetch<StudentDiscount[]>("/api/student-discounts")
       .then((data) => { if (Array.isArray(data)) setAllServices(data); })
       .catch(() => { /* Non-critical autocomplete — fail silently */ });
   }, []);
@@ -163,24 +167,11 @@ export default function DashboardPage() {
   // ── Edit saving state
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // ── Fetch on mount
-  useEffect(() => {
-    const t = localStorage.getItem("subsaver_token");
-    if (!t) router.push("/login");
-    else {
-      fetchDashboard();
-      // Load real FX rates (now served from backend cache)
-      getExchangeRates().then(setFxRates).catch(console.warn);
-      // Show onboarding for first-time visitors
-      if (shouldShowOnboarding()) setShowOnboarding(true);
-    }
-  }, [router]);
-
   // Single summary call instead of 5-6 separate requests
-  async function fetchDashboard() {
+  const fetchDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const summary = await apiFetch("/api/dashboard/summary");
+      const summary = await apiFetch<DashboardSummary>("/api/dashboard/summary");
       setUser(summary.user);
       setSubs(summary.subscriptions);
       // Analytics data from summary — no extra requests needed
@@ -193,13 +184,13 @@ export default function DashboardPage() {
         .map((s: Sub) => s.id);
       if (activeIds.length > 0 && summary.user?.is_verified) {
         try {
-          const result = await apiFetch("/api/student-discounts/batch-check", {
+          const result = await apiFetch<BatchDiscountResult>("/api/student-discounts/batch-check", {
             method: "POST",
             body: JSON.stringify({ subscription_ids: activeIds }),
           });
           const discountMap = new Map<number, StudentDiscount>();
           for (const [idStr, discount] of Object.entries(result)) {
-            if (discount) discountMap.set(Number(idStr), discount as StudentDiscount);
+            if (discount) discountMap.set(Number(idStr), discount);
           }
           setStudentDiscounts(discountMap);
         } catch {
@@ -208,36 +199,49 @@ export default function DashboardPage() {
       } else {
         setStudentDiscounts(new Map());
       }
-    } catch (err: any) {
-      toast(err?.message ?? "Failed to load dashboard", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Failed to load dashboard"), "error");
     } finally {
       setLoading(false);
     }
-  }
+  }, [toast]);
+
+  // ── Fetch on mount
+  useEffect(() => {
+    const t = localStorage.getItem("subsaver_token");
+    if (!t) router.push("/login");
+    else {
+      fetchDashboard();
+      // Load real FX rates (now served from backend cache)
+      getExchangeRates().then(setFxRates).catch(console.warn);
+      // Show onboarding for first-time visitors
+      if (shouldShowOnboarding()) setShowOnboarding(true);
+    }
+  }, [router, fetchDashboard]);
 
   // Keep fetchSubs for post-mutation refresh (add/edit/delete) — still needed
   async function fetchSubs() {
     try {
-      const data = await apiFetch("/subscriptions");
+      const data = await apiFetch<Sub[]>("/subscriptions");
       setSubs(data);
       const ids = data.filter((s: Sub) => s.status === "active").map((s: Sub) => s.id);
       if (ids.length > 0) {
         try {
-          const result = await apiFetch("/api/student-discounts/batch-check", {
+          const result = await apiFetch<BatchDiscountResult>("/api/student-discounts/batch-check", {
             method: "POST",
             body: JSON.stringify({ subscription_ids: ids }),
           });
           const discountMap = new Map<number, StudentDiscount>();
           for (const [idStr, discount] of Object.entries(result)) {
-            if (discount) discountMap.set(Number(idStr), discount as StudentDiscount);
+            if (discount) discountMap.set(Number(idStr), discount);
           }
           setStudentDiscounts(discountMap);
         } catch {
           // Non-critical
         }
       }
-    } catch (err: any) {
-      toast(err?.message ?? "Failed to reload subscriptions", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Failed to reload subscriptions"), "error");
     }
   }
 
@@ -255,7 +259,7 @@ export default function DashboardPage() {
       }
       await fetchSubs();
       toast("Sample subscriptions added.", "success");
-    } catch (err) {
+    } catch {
       toast("Could not add the sample subscriptions. Please try again.", "error");
     }
   }
@@ -265,8 +269,8 @@ export default function DashboardPage() {
       await apiFetch(`/api/student-discounts/apply/${subscriptionId}`, { method: "POST" });
       await fetchDashboard();   // price, totals and savings all change
       toast("Student price applied.", "success");
-    } catch (err: any) {
-      toast(err?.message ?? "Could not apply the student price", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Could not apply the student price"), "error");
     }
   }
 
@@ -275,8 +279,8 @@ export default function DashboardPage() {
       await apiFetch(`/api/student-discounts/unapply/${sub.id}`, { method: "DELETE" });
       await fetchDashboard();
       toast(`Student price removed from ${sub.name}. The previous price is back.`, "success");
-    } catch (err: any) {
-      toast(err?.message ?? "Could not remove the student price", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Could not remove the student price"), "error");
     }
   }
 
@@ -297,7 +301,7 @@ export default function DashboardPage() {
     if (addingSubscription) return;
     setAddingSubscription(true);
     try {
-      const body: any = {
+      const body: SubscriptionPayload = {
         name: formState.name.trim(),
         price_cents: Math.max(0, Math.round(Number(formState.price) * 100)),
         billing_cycle: formState.cycle,
@@ -310,8 +314,8 @@ export default function DashboardPage() {
       setFormState({ name: "", price: "9.99", cycle: "monthly", category: "Other", billingDate: "", isSplit: false, splitWith: 1 });
       toast("Subscription created!", "success");
       fetchSubs();
-    } catch (err: any) {
-      toast(err?.message ?? "Create failed", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Create failed"), "error");
     } finally {
       setAddingSubscription(false);
     }
@@ -335,8 +339,8 @@ export default function DashboardPage() {
       });
       await fetchSubs();
       toast(`${service.service_name} added!`, "success");
-    } catch (err: any) {
-      toast(err?.message ?? "Failed to add subscription", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Failed to add subscription"), "error");
     }
   }
 
@@ -373,7 +377,7 @@ export default function DashboardPage() {
   async function saveEdit(subId: number) {
     setSavingEdit(true);
     try {
-      const body: any = {
+      const body: SubscriptionPayload = {
         name: editState.name.trim(),
         price_cents: Math.max(0, Math.round(Number(editState.price) * 100)),
         billing_cycle: editState.cycle,
@@ -382,12 +386,12 @@ export default function DashboardPage() {
         split_with: editState.isSplit ? editState.splitWith : 1,
       };
       if (editState.billingDate) body.next_billing_date = new Date(editState.billingDate).toISOString();
-      const updated = await apiFetch(`/subscriptions/${subId}`, { method: "PATCH", body: JSON.stringify(body) });
+      const updated = await apiFetch<Sub>(`/subscriptions/${subId}`, { method: "PATCH", body: JSON.stringify(body) });
       setSubs((prev) => prev.map((s) => (s.id === subId ? updated : s)));
       setEditingSub(null);
       toast("Subscription updated!", "success");
-    } catch (err: any) {
-      toast(err?.message ?? "Update failed", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Update failed"), "error");
     } finally {
       setSavingEdit(false);
     }
@@ -397,12 +401,12 @@ export default function DashboardPage() {
     const next: Status = s.status === "active" ? "cancelled" : "active";
     setSubs((prev) => prev.map((x) => (x.id === s.id ? { ...x, status: next } : x)));
     try {
-      const updated = await apiFetch(`/subscriptions/${s.id}`, { method: "PATCH", body: JSON.stringify({ status: next }) });
+      const updated = await apiFetch<Sub>(`/subscriptions/${s.id}`, { method: "PATCH", body: JSON.stringify({ status: next }) });
       setSubs((prev) => prev.map((x) => (x.id === s.id ? updated : x)));
-      toast(`Subscription ${next === "active" ? "resumed" : "paused"}`, "info");
-    } catch (err: any) {
+      toast(next === "active" ? "Subscription reactivated" : "Subscription marked as cancelled", "info");
+    } catch (err) {
       setSubs((prev) => prev.map((x) => (x.id === s.id ? s : x)));
-      toast(err?.message ?? "Toggle failed", "error");
+      toast(errorMessage(err, "Toggle failed"), "error");
     }
   }
 
@@ -420,8 +424,8 @@ export default function DashboardPage() {
       setSubs((prev) => prev.filter((s) => s.id !== subId));
       if (deletingId === subId) setDeletingId(null);
       toast("Subscription deleted", "info");
-    } catch (err: any) {
-      toast(err?.message ?? "Delete failed", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Delete failed"), "error");
     }
   }
 
@@ -470,8 +474,8 @@ export default function DashboardPage() {
       await apiFetch("/subscriptions", { method: "POST", body: JSON.stringify(body) });
       await fetchSubs();
       toast(`"${s.name}" duplicated!`, "success");
-    } catch (err: any) {
-      toast(err?.message ?? "Duplicate failed", "error");
+    } catch (err) {
+      toast(errorMessage(err, "Duplicate failed"), "error");
     }
   }
 
@@ -558,9 +562,9 @@ export default function DashboardPage() {
     most_expensive:    mostExpensive,
     next_renewal_days: nextRenewalDays,
   };
-  const statsCards = (dashSettings.statsCards ?? ["monthly_spend","active_count","yearly_projection","avg_per_sub"])
+  const statsCards = dashSettings.statsCards
     .slice(0, 4)
-    .map(id => ({ id: id as any, value: statsCardValues[id] ?? "—" }));
+    .map(id => ({ id, value: statsCardValues[id] ?? "—" }));
 
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -596,7 +600,7 @@ export default function DashboardPage() {
               <div className="relative flex-shrink-0">
                 <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl blur-md opacity-40" />
                 <div className="relative bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl p-1.5">
-                  <img src="/logo.svg" alt="SubSaver" className="w-7 h-7 rounded-lg" />
+                  <Image src="/logo.svg" alt="SubSaver" width={28} height={28} className="w-7 h-7 rounded-lg" />
                 </div>
               </div>
               <div className="hidden sm:block">
@@ -805,7 +809,7 @@ export default function DashboardPage() {
                 upcomingRenewals={upcomingRenewals}
                 widgets={analyticsWidgets}
                 allSubscriptions={subs}
-                widgetOrder={dashSettings.widgets.map(w => w.id as any)}
+                widgetOrder={dashSettings.widgets.map(w => w.id)}
                 widgetSizes={dashSettings.widgetSizes ?? {}}
                 currency={currency}
                 fxRates={fxRates}
@@ -813,7 +817,7 @@ export default function DashboardPage() {
                 insightsProp={insightsData}
                 disabledWidgets={dashSettings.widgets
                   .filter(w => !w.enabled && ["spending_trends","savings_card","category_breakdown","insights","renewals","billing_calendar"].includes(w.id))
-                  .map(w => ({ id: w.id as any, label: w.label, color: w.color }))}
+                  .map(w => ({ id: w.id, label: w.label, color: w.color }))}
               />
             )}
 
@@ -944,7 +948,7 @@ export default function DashboardPage() {
                           <select
                             aria-label="Sort by"
                             value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as any)}
+                            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                             className="liquid-select"
                             style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "#0F1220", color: "rgba(255,255,255,0.7)", fontSize: 12, outline: "none" }}
                           >

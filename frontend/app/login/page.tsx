@@ -4,7 +4,8 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { apiFetch } from "../lib/api";
+import { apiFetch, errorMessage } from "../lib/api";
+import type { TokenResponse } from "../types";
 import DemoLoginButton from "../components/DemoLoginButton";
 import { Mail, Lock, ArrowRight, Sparkles, Shield, Zap, Star, Eye, EyeOff, CheckCircle, Hash } from "lucide-react";
 
@@ -88,7 +89,7 @@ function LoginPageInner() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setMsg(""); setLoading(true);
     try {
-      const data = await apiFetch("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
+      const data = await apiFetch<TokenResponse>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
       localStorage.setItem("subsaver_token", data.access_token);
       router.push("/dashboard");
     } catch (err: unknown) {
@@ -109,7 +110,7 @@ function LoginPageInner() {
     try {
       await apiFetch("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) });
       setForgotStage("code"); setMsg("✅ If the email exists, a reset code was sent.");
-    } catch (err: any) { setMsg(err?.message ?? "Failed to send reset code"); }
+    } catch (err) { setMsg(errorMessage(err, "Failed to send reset code")); }
     finally { setLoading(false); }
   }
 
@@ -120,7 +121,7 @@ function LoginPageInner() {
     try {
       await apiFetch("/auth/verify-reset-code", { method: "POST", body: JSON.stringify({ email, code: resetCode }) });
       setMsg(""); setForgotStage("password");
-    } catch (err: any) { setMsg(err?.message ?? "Invalid reset code"); }
+    } catch (err) { setMsg(errorMessage(err, "Invalid reset code")); }
     finally { setLoading(false); }
   }
 
@@ -131,7 +132,7 @@ function LoginPageInner() {
     try {
       await apiFetch("/auth/reset-password", { method: "POST", body: JSON.stringify({ email, code: resetCode, new_password: newPassword }) });
       setForgotStage("success"); setMsg(""); setPassword("");
-    } catch (err: any) { setMsg(err?.message ?? "Failed to reset password"); }
+    } catch (err) { setMsg(errorMessage(err, "Failed to reset password")); }
     finally { setLoading(false); }
   }
 
@@ -248,7 +249,7 @@ function LoginPageInner() {
                 <CheckCircle style={{ width: 32, height: 32, color: "#34D399" }} />
               </div>
               <p style={{ textAlign: "center", color: "rgba(255,255,255,0.55)", fontSize: "14px", lineHeight: 1.7 }}>
-                You can now log in with your new password. We've also sent you a confirmation email.
+                You can now log in with your new password. We&apos;ve also sent you a confirmation email.
               </p>
               <button onClick={() => { setForgotStage("login"); setMsg(""); setResetCode(""); setNewPassword(""); setConfirmPassword(""); }}
                 style={{ width: "100%", padding: "14px", borderRadius: "14px", background: "linear-gradient(135deg,#7C3AED,#DB2777)", border: "none", color: "white", fontSize: "15px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", boxShadow: "0 4px 20px rgba(124,58,237,0.35)" }}>

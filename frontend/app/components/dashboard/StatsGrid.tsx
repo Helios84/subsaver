@@ -4,7 +4,7 @@ import {
   DollarSign, Activity, CreditCard, TrendingUp,
   GraduationCap, XCircle, Star, Clock,
 } from "lucide-react";
-import type { StatCardId, Currency } from "../../customize/page";
+import type { StatCardId } from "../../customize/page";
 
 // ─── Stat Card Registry ────────────────────────────────────────────────────────
 export type StatCardData = {

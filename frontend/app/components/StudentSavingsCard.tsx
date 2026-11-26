@@ -7,15 +7,9 @@ import type { WidgetSpan } from "./AdvancedAnalytics";
 import { WIDGET_H } from "./AdvancedAnalytics";
 import { formatMoney as fxFormat } from "../lib/currency";
 import type { Currency } from "../lib/currency";
+import type { SavingsSummary } from "../types";
 
-interface SavingsData {
-    total_saved_monthly: number;
-    total_saved_yearly: number;
-    potential_monthly: number;
-    potential_yearly: number;
-    discounts_applied: number;
-    discounts_available: number;
-}
+type SavingsData = SavingsSummary;
 
 export default function StudentSavingsCard({
     span = 2,
@@ -32,7 +26,7 @@ export default function StudentSavingsCard({
     useEffect(() => {
         async function load() {
             try {
-                const res = await apiFetch("/api/student-discounts/savings", { method: "GET" });
+                const res = await apiFetch<SavingsSummary>("/api/student-discounts/savings", { method: "GET" });
                 setData(res);
             } catch (e) {
                 console.error("Failed to load savings", e);
