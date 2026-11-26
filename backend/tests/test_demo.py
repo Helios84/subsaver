@@ -38,7 +38,7 @@ def test_demo_accounts_cannot_change_account_settings(client):
     h = demo_headers(client)
     email = client.get("/users/me", headers=h).json()["email"]
     assert client.request("DELETE", "/users/me", headers=h, json={"password": "x"}).status_code == 403
-    assert client.post("/auth/verify-edu", headers=h, json={"edu_email": "a@school.edu"}).status_code == 403
+    assert client.post("/auth/verify-edu", headers=h, json={"edu_email": "a@example.edu"}).status_code == 403
     assert client.put("/reminders/settings", headers=h, json={"reminder_enabled": True}).status_code == 403
     assert client.post("/auth/forgot-password", json={"email": email}).status_code == 403
     assert client.post("/auth/reset-password", json={"email": email, "code": "123456", "new_password": "something-new"}).status_code == 403

@@ -75,8 +75,8 @@ def test_edu_code_goes_only_to_the_edu_address(client, monkeypatch):
     sent = []
     monkeypatch.setattr(email_service, "send_verification_code", lambda to, code: sent.append(to) or True)
     headers = signup(client)
-    assert client.post("/auth/verify-edu", headers=headers, json={"edu_email": "me@school.edu"}).status_code == 200
-    assert sent == ["me@school.edu"]
+    assert client.post("/auth/verify-edu", headers=headers, json={"edu_email": "me@example.edu"}).status_code == 200
+    assert sent == ["me@example.edu"]
 
     session = SessionLocal()
     code = session.query(User).filter_by(email="student@example.com").one().edu_verification_code
@@ -88,7 +88,7 @@ def test_edu_code_goes_only_to_the_edu_address(client, monkeypatch):
 
 def test_non_edu_address_is_rejected(client):
     headers = signup(client)
-    assert client.post("/auth/verify-edu", headers=headers, json={"edu_email": "me@gmail.com"}).status_code == 422
+    assert client.post("/auth/verify-edu", headers=headers, json={"edu_email": "me@example.com"}).status_code == 422
 
 
 def test_edu_errors_do_not_leak_exception_text(client, monkeypatch):
@@ -96,7 +96,7 @@ def test_edu_errors_do_not_leak_exception_text(client, monkeypatch):
         raise RuntimeError("smtp password=hunter2")
     monkeypatch.setattr(email_service, "send_verification_code", boom)
     headers = signup(client)
-    r = client.post("/auth/verify-edu", headers=headers, json={"edu_email": "me@school.edu"})
+    r = client.post("/auth/verify-edu", headers=headers, json={"edu_email": "me@example.edu"})
     assert r.status_code == 500
     assert "hunter2" not in r.text
 

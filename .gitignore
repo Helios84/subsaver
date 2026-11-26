@@ -49,3 +49,39 @@ Thumbs.db
 *.db
 data/
 subsaver.db
+
+# Command output and scratch files
+*.out
+err.txt
+out.txt
+*.tmp
+*.bak
+*.orig
+*.backup.*
+tmp/
+scratch/
+
+# Python tooling
+.pytest_cache/
+.coverage
+htmlcov/
+*.sqlite3
+
+# Keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Archives and exports
+*.zip
+*.7z
+*.tar.gz
+exports/
+
+# Editors and OS
+*.code-workspace
+desktop.ini
+
+# Deployment tool state
+.vercel/
